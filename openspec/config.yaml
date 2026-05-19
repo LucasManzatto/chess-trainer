@@ -27,3 +27,5 @@ context: |
   - No default exports from feature modules — named exports only
   - Co-locate styles, hooks, and types within each feature folder
   - Server state (API data) → TanStack Query; UI/client state → Zustand
+  - ESLint enforces react-hooks/rules-of-hooks and react-hooks/exhaustive-deps (plugin v7, flat config)
+  - Never call setState inside a useEffect body to sync a prop — use the "adjust state during render" pattern (track prevProp in state, update in render body)
