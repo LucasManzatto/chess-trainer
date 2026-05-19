@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import type { PieceDropHandlerArgs } from 'react-chessboard'
@@ -37,16 +37,30 @@ export function ChessBoard({
     return g
   })
 
-  // Sync controlled position into internal state
-  useEffect(() => {
-    if (position === undefined) return
-    setGame(prev => {
-      if (prev.fen() === position) return prev
+  // Track previous controlled position to detect prop changes during render
+  const [prevPosition, setPrevPosition] = useState<string | undefined>(position)
+
+  // Adjust state during render when controlled position prop changes (React pattern:
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  if (position !== undefined && position !== prevPosition) {
+    setPrevPosition(position)
+    if (position !== game.fen()) {
       const g = new Chess()
       g.load(position)
-      return g
-    })
-  }, [position])
+      setGame(g)
+    }
+  }
+
+  // Latest ref pattern — sync after every render so handlePieceDrop is always up-to-date
+  const gameRef = useRef(game)
+  const onMoveRef = useRef(onMove)
+  const onGameOverRef = useRef(onGameOver)
+
+  useLayoutEffect(() => {
+    gameRef.current = game
+    onMoveRef.current = onMove
+    onGameOverRef.current = onGameOver
+  })
 
   // Responsive sizing via ResizeObserver
   const containerRef = useRef<HTMLDivElement>(null)
@@ -69,7 +83,7 @@ export function ChessBoard({
     ({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
       if (!targetSquare) return false
 
-      const gameCopy = new Chess(game.fen())
+      const gameCopy = new Chess(gameRef.current.fen())
 
       // Detect pawn promotion: pawn reaching last rank
       const piece = gameCopy.get(sourceSquare as Parameters<typeof gameCopy.get>[0])
@@ -88,7 +102,7 @@ export function ChessBoard({
 
       setGame(gameCopy)
 
-      onMove?.({
+      onMoveRef.current?.({
         from: move.from,
         to: move.to,
         san: move.san,
@@ -98,19 +112,18 @@ export function ChessBoard({
 
       if (gameCopy.isGameOver()) {
         if (gameCopy.isCheckmate()) {
-          // The side that just moved wins (opposite of current turn)
           const winner = gameCopy.turn() === 'w' ? 'b' : 'w'
-          onGameOver?.({ result: 'checkmate', winner })
+          onGameOverRef.current?.({ result: 'checkmate', winner })
         } else if (gameCopy.isStalemate()) {
-          onGameOver?.({ result: 'stalemate' })
+          onGameOverRef.current?.({ result: 'stalemate' })
         } else {
-          onGameOver?.({ result: 'draw' })
+          onGameOverRef.current?.({ result: 'draw' })
         }
       }
 
       return true
     },
-    [game, onMove, onGameOver],
+    [],
   )
 
   const width = boardWidth ?? containerWidth

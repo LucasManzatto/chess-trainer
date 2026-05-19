@@ -1,8 +1,7 @@
 import { useRef, useEffect } from 'react'
-import type { MoveResult } from '../ChessBoard'
 
 type MoveListProps = {
-  moves: MoveResult[]
+  moves: string[]
 }
 
 export function MoveList({ moves }: MoveListProps) {
@@ -12,11 +11,10 @@ export function MoveList({ moves }: MoveListProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [moves.length])
 
-  // Group flat move array into pairs: [[white, black?], ...]
-  const pairs: [MoveResult, MoveResult | undefined][] = []
-  for (let i = 0; i < moves.length; i += 2) {
-    pairs.push([moves[i], moves[i + 1]])
-  }
+  const pairs = Array.from(
+    { length: Math.ceil(moves.length / 2) },
+    (_, i) => [moves[i * 2], moves[i * 2 + 1]] as [string, string | undefined],
+  )
 
   const lastMoveIndex = moves.length - 1
 
@@ -47,16 +45,16 @@ export function MoveList({ moves }: MoveListProps) {
                           : 'text-gray-100'
                       }`}
                     >
-                      {white.san}
+                      {white}
                     </td>
                     <td
                       className={`px-2 py-1 w-1/2 font-mono ${
-                        black && blackIndex === lastMoveIndex
+                        black !== undefined && blackIndex === lastMoveIndex
                           ? 'bg-amber-500/25 text-amber-200 rounded'
                           : 'text-gray-100'
                       }`}
                     >
-                      {black?.san ?? ''}
+                      {black ?? ''}
                     </td>
                   </tr>
                 )

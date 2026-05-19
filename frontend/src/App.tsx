@@ -17,7 +17,7 @@ function App() {
           <ChessBoard onMove={handleMove} />
         </div>
         <div className="w-full md:w-64 md:min-h-[560px] bg-white/5 rounded-lg overflow-hidden">
-          <MoveList moves={moves} />
+          <MoveList moves={moves.map(m => m.san)} />
         </div>
       </div>
     </main>
