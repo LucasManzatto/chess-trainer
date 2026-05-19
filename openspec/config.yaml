@@ -1,0 +1,29 @@
+schema: spec-driven
+
+context: |
+  ## Project
+  Chess trainer app: interactive chess board, puzzles, game analysis, move history.
+  Two services: React frontend + FastAPI backend.
+
+  ## Frontend (frontend/)
+  - React 19, TypeScript, Vite
+  - TanStack Router v1 (file-based routing)
+  - TanStack Query v5 (server state)
+  - Tailwind CSS v4 (@tailwindcss/vite plugin)
+  - Zustand v5 (client state + localStorage persist)
+  - Radix UI primitives
+  - hey-api/openapi-ts + hey-api/client-fetch (typed API client generated from OpenAPI schema)
+  - chess.js (game logic), react-chessboard (board UI)
+  - Feature-sliced structure: src/features/<feature>/, src/components/ for shared UI
+  - API base URL from VITE_API_URL env var (src/config/env.ts)
+
+  ## Backend (backend/)
+  - FastAPI, Python
+  - OpenAPI schema auto-generated; frontend client regenerated via `npm run gen:api`
+  - CORS controlled by ALLOWED_ORIGINS env var
+
+  ## Conventions
+  - Conventional commits
+  - No default exports from feature modules — named exports only
+  - Co-locate styles, hooks, and types within each feature folder
+  - Server state (API data) → TanStack Query; UI/client state → Zustand
