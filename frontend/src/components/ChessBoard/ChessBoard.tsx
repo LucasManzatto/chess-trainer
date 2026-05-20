@@ -1,7 +1,10 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { Chess } from 'chess.js'
+import type { Square } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
-import type { PieceDropHandlerArgs } from 'react-chessboard'
+import type { PieceDropHandlerArgs, SquareHandlerArgs } from 'react-chessboard'
+
+const HINT_COLOR = 'rgba(0, 180, 80, 0.45)'
 
 export type MoveResult = {
   from: string
@@ -20,6 +23,8 @@ export type ChessBoardProps = {
   position?: string
   orientation?: 'white' | 'black'
   boardWidth?: number
+  interactive?: boolean
+  animationDurationInMs?: number
   onMove?: (move: MoveResult) => void
   onGameOver?: (result: GameOverResult) => void
 }
@@ -28,6 +33,8 @@ export function ChessBoard({
   position,
   orientation = 'white',
   boardWidth,
+  interactive = true,
+  animationDurationInMs = 300,
   onMove,
   onGameOver,
 }: ChessBoardProps) {
@@ -36,6 +43,8 @@ export function ChessBoard({
     if (position) g.load(position)
     return g
   })
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
+  const [hoveredSquare, setHoveredSquare] = useState<string | null>(null)
 
   // Track previous controlled position to detect prop changes during render
   const [prevPosition, setPrevPosition] = useState<string | undefined>(position)
@@ -51,15 +60,19 @@ export function ChessBoard({
     }
   }
 
-  // Latest ref pattern — sync after every render so handlePieceDrop is always up-to-date
+  // Latest ref pattern — sync after every render so callbacks are always up-to-date
   const gameRef = useRef(game)
   const onMoveRef = useRef(onMove)
   const onGameOverRef = useRef(onGameOver)
+  const interactiveRef = useRef(interactive)
+  const selectedSquareRef = useRef(selectedSquare)
 
   useLayoutEffect(() => {
     gameRef.current = game
     onMoveRef.current = onMove
     onGameOverRef.current = onGameOver
+    interactiveRef.current = interactive
+    selectedSquareRef.current = selectedSquare
   })
 
   // Responsive sizing via ResizeObserver
@@ -81,6 +94,7 @@ export function ChessBoard({
 
   const handlePieceDrop = useCallback(
     ({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
+      if (!interactiveRef.current) return false
       if (!targetSquare) return false
 
       const gameCopy = new Chess(gameRef.current.fen())
@@ -101,6 +115,7 @@ export function ChessBoard({
       if (!move) return false
 
       setGame(gameCopy)
+      setSelectedSquare(null)
 
       onMoveRef.current?.({
         from: move.from,
@@ -126,6 +141,84 @@ export function ChessBoard({
     [],
   )
 
+  const handleSquareClick = useCallback(({ square }: SquareHandlerArgs) => {
+    if (!interactiveRef.current) return
+    const sq = square as Square
+    const currentGame = gameRef.current
+    const currentSelected = selectedSquareRef.current
+
+    if (currentSelected === sq) {
+      setSelectedSquare(null)
+      return
+    }
+
+    if (currentSelected) {
+      const moves = currentGame.moves({ square: currentSelected, verbose: true })
+      const legalMove = moves.find(m => m.to === sq)
+
+      if (legalMove) {
+        const gameCopy = new Chess(currentGame.fen())
+        const piece = gameCopy.get(currentSelected)
+        const isPromotion =
+          piece?.type === 'p' &&
+          ((piece.color === 'w' && sq[1] === '8') || (piece.color === 'b' && sq[1] === '1'))
+
+        const move = gameCopy.move({ from: currentSelected, to: sq, promotion: isPromotion ? 'q' : undefined })
+
+        if (move) {
+          setGame(gameCopy)
+          setSelectedSquare(null)
+          onMoveRef.current?.({ from: move.from, to: move.to, san: move.san, promotion: move.promotion, fen: gameCopy.fen() })
+
+          if (gameCopy.isGameOver()) {
+            if (gameCopy.isCheckmate()) {
+              onGameOverRef.current?.({ result: 'checkmate', winner: gameCopy.turn() === 'w' ? 'b' : 'w' })
+            } else if (gameCopy.isStalemate()) {
+              onGameOverRef.current?.({ result: 'stalemate' })
+            } else {
+              onGameOverRef.current?.({ result: 'draw' })
+            }
+          }
+        }
+        return
+      }
+    }
+
+    const piece = currentGame.get(sq)
+    if (piece && piece.color === currentGame.turn()) {
+      setSelectedSquare(sq)
+    } else {
+      setSelectedSquare(null)
+    }
+  }, [])
+
+  const handleMouseOverSquare = useCallback(({ square }: SquareHandlerArgs) => {
+    setHoveredSquare(square)
+  }, [])
+
+  const handleMouseOutSquare = useCallback((_: SquareHandlerArgs) => {
+    setHoveredSquare(null)
+  }, [])
+
+  // Derive hint squares in render (cheap — O(legal moves))
+  const legalMoves = selectedSquare ? game.moves({ square: selectedSquare, verbose: true }) : []
+  const hintSquares = new Set(legalMoves.filter(m => m.captured === undefined).map(m => m.to))
+  const captureSquares = new Set(legalMoves.filter(m => m.captured !== undefined).map(m => m.to))
+
+  const squareStyles: Record<string, React.CSSProperties> = {}
+  for (const sq of hintSquares) {
+    squareStyles[sq] =
+      hoveredSquare === sq
+        ? { backgroundColor: HINT_COLOR }
+        : { background: `radial-gradient(circle, ${HINT_COLOR} 28%, transparent 28%)` }
+  }
+  for (const sq of captureSquares) {
+    squareStyles[sq] =
+      hoveredSquare === sq
+        ? { backgroundColor: HINT_COLOR }
+        : { backgroundColor: 'rgba(0, 180, 80, 0.25)' }
+  }
+
   const width = boardWidth ?? containerWidth
 
   return (
@@ -136,6 +229,12 @@ export function ChessBoard({
           boardOrientation: orientation,
           boardStyle: { width },
           onPieceDrop: handlePieceDrop,
+          onSquareClick: handleSquareClick,
+          onMouseOverSquare: handleMouseOverSquare,
+          onMouseOutSquare: handleMouseOutSquare,
+          squareStyles,
+          showAnimations: true,
+          animationDurationInMs,
         }}
       />
     </div>

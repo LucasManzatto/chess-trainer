@@ -1,5 +1,5 @@
 ### Requirement: Render interactive chess board
-The system SHALL render an 8×8 chess board with pieces in standard starting position by default. The board SHALL be interactive, allowing players to drag-and-drop or click-to-move pieces.
+The system SHALL render an 8×8 chess board with pieces in standard starting position by default. The board SHALL be interactive, allowing players to drag-and-drop or click-to-move pieces. When a piece is clicked, the board SHALL enter a selected state for that piece and display legal move hints (see `move-hints` spec); clicking a legal destination executes the move and clears selection; clicking any other square clears selection. The board SHALL animate piece movements for both live moves and programmatic position changes (history navigation), with a configurable duration.
 
 #### Scenario: Board renders with starting position
 - **WHEN** `ChessBoard` is mounted with no props
@@ -8,6 +8,26 @@ The system SHALL render an 8×8 chess board with pieces in standard starting pos
 #### Scenario: Board renders with custom FEN
 - **WHEN** `ChessBoard` is mounted with a `position` prop containing a valid FEN string
 - **THEN** board displays the position described by that FEN
+
+#### Scenario: Piece animates on position change
+- **WHEN** the `position` prop changes to a FEN differing by one piece movement
+- **THEN** the affected piece slides from its old square to its new square over `animationDurationInMs` milliseconds
+
+#### Scenario: Animation duration is configurable
+- **WHEN** `ChessBoard` is mounted with `animationDurationInMs={500}`
+- **THEN** piece movements animate over 500ms
+
+#### Scenario: Piece click enters selected state
+- **WHEN** a player clicks a piece on the board
+- **THEN** that square becomes the selected square and legal move hints are rendered
+
+#### Scenario: Click on legal destination executes move
+- **WHEN** a piece is selected and the player clicks a hinted destination square
+- **THEN** the move is executed, selection is cleared, and all hints are removed
+
+#### Scenario: Click on non-hint square clears selection
+- **WHEN** a piece is selected and the player clicks a square that is not a hint
+- **THEN** selection and hints are cleared with no move made
 
 ### Requirement: Enforce legal moves only
 The system SHALL prevent illegal moves. Only moves valid under standard chess rules SHALL be accepted.
@@ -63,3 +83,18 @@ The board SHALL fill its container width while maintaining a 1:1 aspect ratio. T
 #### Scenario: Fixed width override
 - **WHEN** `boardWidth={480}` is passed
 - **THEN** board renders at exactly 480px wide
+
+### Requirement: Read-only mode via `interactive` prop
+The component SHALL accept an optional `interactive` prop (boolean, default `true`). When `interactive` is `false`, all piece drop attempts SHALL be rejected and the board SHALL be visually non-interactive (no moves accepted).
+
+#### Scenario: Interactive prop defaults to true
+- **WHEN** `ChessBoard` is mounted without an `interactive` prop
+- **THEN** the board behaves as interactive (piece moves are accepted as normal)
+
+#### Scenario: Non-interactive board rejects moves
+- **WHEN** `interactive={false}` is passed and the user attempts to drop a piece
+- **THEN** the piece returns to its original square and no move is recorded
+
+#### Scenario: Switching to interactive re-enables moves
+- **WHEN** `interactive` changes from `false` to `true`
+- **THEN** the board immediately accepts legal piece moves again

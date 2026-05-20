@@ -1,3 +1,5 @@
+## MODIFIED Requirements
+
 ### Requirement: Render move history in algebraic notation pairs
 The `MoveList` component SHALL accept a `moves` prop (array of `string`, where each string is a SAN token), a `selectedIndex` prop (`number | null`, default `null`), and an `onMoveClick` prop (`(index: number) => void`, optional). The component SHALL render moves grouped into move pairs: move number, white's move, black's move. Each move token SHALL be rendered as a `<button>` element; clicking a token SHALL call `onMoveClick` with the flat 0-based index of that token in the `moves` array. The component SHALL NOT depend on `MoveResult` or any move-object type; all move data is conveyed as plain strings.
 
@@ -31,17 +33,3 @@ The move token at `selectedIndex` SHALL be visually distinguished (background hi
 #### Scenario: No highlight when selectedIndex is null
 - **WHEN** `selectedIndex` is `null`
 - **THEN** no move token is highlighted
-
-### Requirement: Auto-scroll to latest move
-The list SHALL scroll automatically to bring the most recent move into view when a new move is added.
-
-#### Scenario: New move added below scroll viewport
-- **WHEN** move count exceeds the visible list height and a new move is added
-- **THEN** the list scrolls so the newest move is visible without user interaction
-
-### Requirement: Fixed height with internal scroll
-The `MoveList` SHALL have a fixed or max-height with `overflow-y: auto` so it does not push the board off-screen when the game is long.
-
-#### Scenario: Long game does not expand layout
-- **WHEN** `moves` contains 80+ entries (40 move pairs)
-- **THEN** the component's outer height does not grow beyond its max-height and internal scroll handles overflow

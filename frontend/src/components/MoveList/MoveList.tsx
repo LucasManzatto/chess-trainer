@@ -2,9 +2,11 @@ import { useRef, useEffect } from 'react'
 
 type MoveListProps = {
   moves: string[]
+  selectedIndex?: number | null
+  onMoveClick?: (index: number) => void
 }
 
-export function MoveList({ moves }: MoveListProps) {
+export function MoveList({ moves, selectedIndex = null, onMoveClick }: MoveListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -15,8 +17,6 @@ export function MoveList({ moves }: MoveListProps) {
     { length: Math.ceil(moves.length / 2) },
     (_, i) => [moves[i * 2], moves[i * 2 + 1]] as [string, string | undefined],
   )
-
-  const lastMoveIndex = moves.length - 1
 
   return (
     <div className="flex flex-col h-full">
@@ -38,23 +38,33 @@ export function MoveList({ moves }: MoveListProps) {
                     <td className="text-gray-500 px-3 py-1 w-8 select-none">
                       {pairIndex + 1}.
                     </td>
-                    <td
-                      className={`px-2 py-1 w-1/2 font-mono ${
-                        whiteIndex === lastMoveIndex
-                          ? 'bg-amber-500/25 text-amber-200 rounded'
-                          : 'text-gray-100'
-                      }`}
-                    >
-                      {white}
+                    <td className="px-2 py-1 w-1/2">
+                      <button
+                        onClick={() => onMoveClick?.(whiteIndex)}
+                        className={`font-mono w-full text-left px-1 rounded ${
+                          whiteIndex === selectedIndex
+                            ? 'bg-amber-500/25 text-amber-200'
+                            : 'text-gray-100'
+                        }`}
+                      >
+                        {white}
+                      </button>
                     </td>
-                    <td
-                      className={`px-2 py-1 w-1/2 font-mono ${
-                        black !== undefined && blackIndex === lastMoveIndex
-                          ? 'bg-amber-500/25 text-amber-200 rounded'
-                          : 'text-gray-100'
-                      }`}
-                    >
-                      {black ?? ''}
+                    <td className="px-2 py-1 w-1/2">
+                      {black !== undefined ? (
+                        <button
+                          onClick={() => onMoveClick?.(blackIndex)}
+                          className={`font-mono w-full text-left px-1 rounded ${
+                            blackIndex === selectedIndex
+                              ? 'bg-amber-500/25 text-amber-200'
+                              : 'text-gray-100'
+                          }`}
+                        >
+                          {black}
+                        </button>
+                      ) : (
+                        ''
+                      )}
                     </td>
                   </tr>
                 )
