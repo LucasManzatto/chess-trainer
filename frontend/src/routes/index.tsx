@@ -1,8 +1,13 @@
-import { useGameHistory } from './hooks/useGameHistory'
-import { ChessBoard } from './components/ChessBoard'
-import { MoveList } from './components/MoveList'
+import { createFileRoute } from '@tanstack/react-router'
+import { useGameHistory } from '../hooks/useGameHistory'
+import { ChessBoard } from '../components/ChessBoard'
+import { MoveList } from '../components/MoveList'
 
-function App() {
+export const Route = createFileRoute('/')({
+  component: FreePage,
+})
+
+function FreePage() {
   const { moves, handleMove, handleMoveClick, position, interactive, selectedIndex } = useGameHistory()
 
   return (
@@ -22,5 +27,3 @@ function App() {
     </main>
   )
 }
-
-export default App
