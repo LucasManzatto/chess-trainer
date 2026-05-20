@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useGameHistory } from '../hooks/useGameHistory'
 import { ChessBoard } from '../components/ChessBoard'
 import { MoveList } from '../components/MoveList'
+import { PgnImportPanel } from '../components/PgnImport/PgnImportPanel'
 
 export const Route = createFileRoute('/')({
   component: FreePage,
 })
 
 function FreePage() {
-  const { moves, handleMove, handleMoveClick, position, interactive, selectedIndex } = useGameHistory()
+  const { moves, handleMove, handleMoveClick, loadFromPgn, gameMetadata, position, interactive, selectedIndex } = useGameHistory()
+  const [showImport, setShowImport] = useState(false)
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
@@ -16,12 +19,35 @@ function FreePage() {
         <div className="w-full md:max-w-[560px]">
           <ChessBoard position={position} interactive={interactive} onMove={handleMove} />
         </div>
-        <div className="w-full md:w-64 md:min-h-[560px] bg-white/5 rounded-lg overflow-hidden">
-          <MoveList
-            moves={moves.map(m => m.san)}
-            selectedIndex={selectedIndex}
-            onMoveClick={handleMoveClick}
-          />
+        <div className="w-full md:w-64 md:min-h-[560px] flex flex-col gap-2">
+          <button
+            onClick={() => setShowImport(v => !v)}
+            className="self-start text-xs text-gray-400 hover:text-gray-200 border border-white/10 hover:border-white/20 px-2 py-1 rounded transition-colors"
+          >
+            {showImport ? 'Cancel' : 'Import PGN'}
+          </button>
+          {showImport && (
+            <PgnImportPanel
+              onImport={loadFromPgn}
+              onClose={() => setShowImport(false)}
+            />
+          )}
+          <div className="flex-1 bg-white/5 rounded-lg overflow-hidden flex flex-col">
+            {gameMetadata && (
+              <div className="px-3 py-2 border-b border-white/10 text-xs text-gray-400 leading-snug">
+                {gameMetadata.white && gameMetadata.black && (
+                  <p className="text-gray-200 font-medium">{gameMetadata.white} vs {gameMetadata.black}</p>
+                )}
+                {gameMetadata.event && <p>{gameMetadata.event}</p>}
+                {gameMetadata.date && <p>{gameMetadata.date}</p>}
+              </div>
+            )}
+            <MoveList
+              moves={moves.map(m => m.san)}
+              selectedIndex={selectedIndex}
+              onMoveClick={handleMoveClick}
+            />
+          </div>
         </div>
       </div>
     </main>
