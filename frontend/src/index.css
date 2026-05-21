@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@neondatabase/neon-js/ui/tailwind";
 
 :root {
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;

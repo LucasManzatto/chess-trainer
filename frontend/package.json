@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neondatabase/neon-js": "^0.6.1-beta",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-router": "^1.170.6",
     "chess.js": "^1.4.0",

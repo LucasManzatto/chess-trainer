@@ -17,9 +17,9 @@ function FreePage() {
   const { score, isLoading } = usePositionEvaluation(position)
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="flex flex-col md:flex-row gap-4 w-full max-w-4xl">
-        <div className="w-full md:flex-1 md:max-w-[560px] min-w-0 flex flex-row gap-2 self-start">
+    <main className="flex-1 flex items-center justify-center p-4">
+      <div className="flex flex-col md:flex-row gap-4 w-full max-w-6xl">
+        <div className="w-full md:flex-1 md:max-w-[min(calc(100vh-8rem),700px)] min-w-0 flex flex-row gap-2 self-start">
           <EvaluationBar score={score} isLoading={isLoading} />
           <div className="flex-1">
             <ChessBoard position={position} interactive={interactive} onMove={handleMove} />

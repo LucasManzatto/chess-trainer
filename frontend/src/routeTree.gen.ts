@@ -9,38 +9,158 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
+import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
+import { Route as PuzzlesPuzzleIdRouteImport } from './routes/puzzles/$puzzleId'
+import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
+import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
+import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
+import { Route as AuthGamesIndexRouteImport } from './routes/_auth/games/index'
+import { Route as AuthGamesGameIdRouteImport } from './routes/_auth/games/$gameId'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PuzzlesIndexRoute = PuzzlesIndexRouteImport.update({
+  id: '/puzzles/',
+  path: '/puzzles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpeningsIndexRoute = OpeningsIndexRouteImport.update({
+  id: '/openings/',
+  path: '/openings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PuzzlesPuzzleIdRoute = PuzzlesPuzzleIdRouteImport.update({
+  id: '/puzzles/$puzzleId',
+  path: '/puzzles/$puzzleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthPathnameRoute = AuthPathnameRouteImport.update({
+  id: '/auth/$pathname',
+  path: '/auth/$pathname',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountPathnameRoute = AccountPathnameRouteImport.update({
+  id: '/account/$pathname',
+  path: '/account/$pathname',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthDashboardRoute = AuthDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthGamesIndexRoute = AuthGamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthGamesGameIdRoute = AuthGamesGameIdRouteImport.update({
+  id: '/games/$gameId',
+  path: '/games/$gameId',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof AuthDashboardRoute
+  '/account/$pathname': typeof AccountPathnameRoute
+  '/auth/$pathname': typeof AuthPathnameRoute
+  '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
+  '/openings/': typeof OpeningsIndexRoute
+  '/puzzles/': typeof PuzzlesIndexRoute
+  '/games/$gameId': typeof AuthGamesGameIdRoute
+  '/games/': typeof AuthGamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof AuthDashboardRoute
+  '/account/$pathname': typeof AccountPathnameRoute
+  '/auth/$pathname': typeof AuthPathnameRoute
+  '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
+  '/openings': typeof OpeningsIndexRoute
+  '/puzzles': typeof PuzzlesIndexRoute
+  '/games/$gameId': typeof AuthGamesGameIdRoute
+  '/games': typeof AuthGamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/_auth/dashboard': typeof AuthDashboardRoute
+  '/account/$pathname': typeof AccountPathnameRoute
+  '/auth/$pathname': typeof AuthPathnameRoute
+  '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
+  '/openings/': typeof OpeningsIndexRoute
+  '/puzzles/': typeof PuzzlesIndexRoute
+  '/_auth/games/$gameId': typeof AuthGamesGameIdRoute
+  '/_auth/games/': typeof AuthGamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/account/$pathname'
+    | '/auth/$pathname'
+    | '/puzzles/$puzzleId'
+    | '/openings/'
+    | '/puzzles/'
+    | '/games/$gameId'
+    | '/games/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/account/$pathname'
+    | '/auth/$pathname'
+    | '/puzzles/$puzzleId'
+    | '/openings'
+    | '/puzzles'
+    | '/games/$gameId'
+    | '/games'
+  id:
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/_auth/dashboard'
+    | '/account/$pathname'
+    | '/auth/$pathname'
+    | '/puzzles/$puzzleId'
+    | '/openings/'
+    | '/puzzles/'
+    | '/_auth/games/$gameId'
+    | '/_auth/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  AccountPathnameRoute: typeof AccountPathnameRoute
+  AuthPathnameRoute: typeof AuthPathnameRoute
+  PuzzlesPuzzleIdRoute: typeof PuzzlesPuzzleIdRoute
+  OpeningsIndexRoute: typeof OpeningsIndexRoute
+  PuzzlesIndexRoute: typeof PuzzlesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +168,87 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/puzzles/': {
+      id: '/puzzles/'
+      path: '/puzzles'
+      fullPath: '/puzzles/'
+      preLoaderRoute: typeof PuzzlesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/openings/': {
+      id: '/openings/'
+      path: '/openings'
+      fullPath: '/openings/'
+      preLoaderRoute: typeof OpeningsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/puzzles/$puzzleId': {
+      id: '/puzzles/$puzzleId'
+      path: '/puzzles/$puzzleId'
+      fullPath: '/puzzles/$puzzleId'
+      preLoaderRoute: typeof PuzzlesPuzzleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/$pathname': {
+      id: '/auth/$pathname'
+      path: '/auth/$pathname'
+      fullPath: '/auth/$pathname'
+      preLoaderRoute: typeof AuthPathnameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/$pathname': {
+      id: '/account/$pathname'
+      path: '/account/$pathname'
+      fullPath: '/account/$pathname'
+      preLoaderRoute: typeof AccountPathnameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/dashboard': {
+      id: '/_auth/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboardRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/games/': {
+      id: '/_auth/games/'
+      path: '/games'
+      fullPath: '/games/'
+      preLoaderRoute: typeof AuthGamesIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/games/$gameId': {
+      id: '/_auth/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/games/$gameId'
+      preLoaderRoute: typeof AuthGamesGameIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthDashboardRoute: typeof AuthDashboardRoute
+  AuthGamesGameIdRoute: typeof AuthGamesGameIdRoute
+  AuthGamesIndexRoute: typeof AuthGamesIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthDashboardRoute: AuthDashboardRoute,
+  AuthGamesGameIdRoute: AuthGamesGameIdRoute,
+  AuthGamesIndexRoute: AuthGamesIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
+  AccountPathnameRoute: AccountPathnameRoute,
+  AuthPathnameRoute: AuthPathnameRoute,
+  PuzzlesPuzzleIdRoute: PuzzlesPuzzleIdRoute,
+  OpeningsIndexRoute: OpeningsIndexRoute,
+  PuzzlesIndexRoute: PuzzlesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
