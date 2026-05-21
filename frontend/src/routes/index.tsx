@@ -4,6 +4,8 @@ import { useGameHistory } from '../hooks/useGameHistory'
 import { ChessBoard } from '../components/ChessBoard'
 import { MoveList } from '../components/MoveList'
 import { PgnImportPanel } from '../components/PgnImport/PgnImportPanel'
+import { usePositionEvaluation } from '../features/evaluation/usePositionEvaluation'
+import { EvaluationBar } from '../features/evaluation/EvaluationBar'
 
 export const Route = createFileRoute('/')({
   component: FreePage,
@@ -12,14 +14,18 @@ export const Route = createFileRoute('/')({
 function FreePage() {
   const { moves, handleMove, handleMoveClick, loadFromPgn, gameMetadata, position, interactive, selectedIndex } = useGameHistory()
   const [showImport, setShowImport] = useState(false)
+  const { score, isLoading } = usePositionEvaluation(position)
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
       <div className="flex flex-col md:flex-row gap-4 w-full max-w-4xl">
-        <div className="w-full md:max-w-[560px]">
-          <ChessBoard position={position} interactive={interactive} onMove={handleMove} />
+        <div className="w-full md:flex-1 md:max-w-[560px] min-w-0 flex flex-row gap-2 self-start">
+          <EvaluationBar score={score} isLoading={isLoading} />
+          <div className="flex-1">
+            <ChessBoard position={position} interactive={interactive} onMove={handleMove} />
+          </div>
         </div>
-        <div className="w-full md:w-64 md:min-h-[560px] flex flex-col gap-2">
+        <div className="w-full md:w-64 md:shrink-0 flex flex-col gap-2">
           <button
             onClick={() => setShowImport(v => !v)}
             className="self-start text-xs text-gray-400 hover:text-gray-200 border border-white/10 hover:border-white/20 px-2 py-1 rounded transition-colors"

@@ -26,7 +26,7 @@ export function ChessBoard({
 }: ChessBoardProps) {
   const { game, squareStyles, handlePieceDrop, handleSquareClick, handleMouseOverSquare, handleMouseOutSquare } =
     useChessGame({ position, interactive, onMove, onGameOver })
-  const { containerRef, width } = useBoardSizing(boardWidth)
+  const { containerRef } = useBoardSizing(boardWidth)
 
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
@@ -34,7 +34,7 @@ export function ChessBoard({
         options={{
           position: game.fen(),
           boardOrientation: orientation,
-          boardStyle: { width },
+          boardStyle: boardWidth ? { width: boardWidth } : undefined,
           onPieceDrop: handlePieceDrop,
           onSquareClick: handleSquareClick,
           onMouseOverSquare: handleMouseOverSquare,

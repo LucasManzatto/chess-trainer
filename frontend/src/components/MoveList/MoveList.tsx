@@ -1,9 +1,53 @@
-import { useRef, useEffect } from 'react'
+import { useMoveList } from './useMoveList'
 
 type MoveListProps = {
   moves: string[]
   selectedIndex?: number | null
   onMoveClick?: (index: number) => void
+}
+
+type MovePairRowProps = {
+  pairIndex: number
+  white: string
+  black: string | undefined
+  selectedIndex: number | null
+  onMoveClick?: (index: number) => void
+  whiteRef: React.Ref<HTMLButtonElement>
+  blackRef: React.Ref<HTMLButtonElement>
+}
+
+function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef }: MovePairRowProps) {
+  const whiteIndex = pairIndex * 2
+  const blackIndex = pairIndex * 2 + 1
+  return (
+    <tr key={`${pairIndex}-${white}`} className="hover:bg-white/5">
+      <td className="text-gray-500 px-3 py-1 w-8 select-none">
+        {pairIndex + 1}.
+      </td>
+      <td className="px-2 py-1 w-1/2">
+        <MoveToken
+          san={white}
+          index={whiteIndex}
+          selectedIndex={selectedIndex}
+          onClick={onMoveClick}
+          ref={whiteRef}
+        />
+      </td>
+      <td className="px-2 py-1 w-1/2">
+        {black !== undefined ? (
+          <MoveToken
+            san={black}
+            index={blackIndex}
+            selectedIndex={selectedIndex}
+            onClick={onMoveClick}
+            ref={blackRef}
+          />
+        ) : (
+          ''
+        )}
+      </td>
+    </tr>
+  )
 }
 
 type MoveTokenProps = {
@@ -29,22 +73,7 @@ function MoveToken({ san, index, selectedIndex, onClick, ref }: MoveTokenProps) 
 }
 
 export function MoveList({ moves, selectedIndex = null, onMoveClick }: MoveListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const tokenRefs = useRef<(HTMLButtonElement | null)[]>([])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [moves.length])
-
-  useEffect(() => {
-    if (selectedIndex === null) return
-    tokenRefs.current[selectedIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [selectedIndex])
-
-  const pairs = Array.from(
-    { length: Math.ceil(moves.length / 2) },
-    (_, i) => [moves[i * 2], moves[i * 2 + 1]] as [string, string | undefined],
-  )
+  const { bottomRef, tokenRefs, pairs } = useMoveList(moves, selectedIndex)
 
   return (
     <div className="flex flex-col h-full">
@@ -58,39 +87,18 @@ export function MoveList({ moves, selectedIndex = null, onMoveClick }: MoveListP
         ) : (
           <table className="w-full text-sm">
             <tbody>
-              {pairs.map(([white, black], pairIndex) => {
-                const whiteIndex = pairIndex * 2
-                const blackIndex = pairIndex * 2 + 1
-                return (
-                  <tr key={`${pairIndex}-${white}`} className="hover:bg-white/5">
-                    <td className="text-gray-500 px-3 py-1 w-8 select-none">
-                      {pairIndex + 1}.
-                    </td>
-                    <td className="px-2 py-1 w-1/2">
-                      <MoveToken
-                        san={white}
-                        index={whiteIndex}
-                        selectedIndex={selectedIndex}
-                        onClick={onMoveClick}
-                        ref={el => { tokenRefs.current[whiteIndex] = el }}
-                      />
-                    </td>
-                    <td className="px-2 py-1 w-1/2">
-                      {black !== undefined ? (
-                        <MoveToken
-                          san={black}
-                          index={blackIndex}
-                          selectedIndex={selectedIndex}
-                          onClick={onMoveClick}
-                          ref={el => { tokenRefs.current[blackIndex] = el }}
-                        />
-                      ) : (
-                        ''
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
+              {pairs.map(([white, black], pairIndex) => (
+                <MovePairRow
+                  key={`${pairIndex}-${white}`}
+                  pairIndex={pairIndex}
+                  white={white}
+                  black={black}
+                  selectedIndex={selectedIndex}
+                  onMoveClick={onMoveClick}
+                  whiteRef={el => { tokenRefs.current[pairIndex * 2] = el }}
+                  blackRef={el => { tokenRefs.current[pairIndex * 2 + 1] = el }}
+                />
+              ))}
             </tbody>
           </table>
         )}
