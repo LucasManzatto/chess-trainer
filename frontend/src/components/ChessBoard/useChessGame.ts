@@ -1,8 +1,8 @@
-import { useState, useLayoutEffect, useRef, useCallback } from 'react'
-import type { CSSProperties } from 'react'
+import { useState, useLayoutEffect, useRef, useCallback, useMemo } from 'react'
 import { Chess } from 'chess.js'
 import type { Square, Move } from 'chess.js'
-import type { PieceDropHandlerArgs, SquareHandlerArgs } from 'react-chessboard'
+import type { Key, Dests } from '@lichess-org/chessground/types'
+import type { Config } from '@lichess-org/chessground/config'
 
 export type MoveResult = {
   from: string
@@ -17,19 +17,24 @@ export type GameOverResult = {
   winner?: 'w' | 'b'
 }
 
-const HINT_COLOR = 'rgba(0, 180, 80, 0.45)'
+function toDests(chess: Chess): Dests {
+  const dests: Dests = new Map()
+  for (const move of chess.moves({ verbose: true })) {
+    const from = move.from as Key
+    const to = move.to as Key
+    const list = dests.get(from) ?? []
+    list.push(to)
+    dests.set(from, list)
+  }
+  return dests
+}
 
-function executeMove(
-  fen: string,
-  from: string,
-  to: string,
-): { game: Chess; move: Move } | null {
+function executeMove(fen: string, from: string, to: string): { game: Chess; move: Move } | null {
   const gameCopy = new Chess(fen)
   const piece = gameCopy.get(from as Square)
   const isPromotion =
     piece?.type === 'p' &&
     ((piece.color === 'w' && to[1] === '8') || (piece.color === 'b' && to[1] === '1'))
-
   const move = gameCopy.move({ from, to, promotion: isPromotion ? 'q' : undefined })
   if (!move) return null
   return { game: gameCopy, move }
@@ -55,38 +60,29 @@ function notifyAfterMove(
 type UseChessGameProps = {
   position?: string
   interactive?: boolean
+  orientation?: 'white' | 'black'
+  animationDurationInMs?: number
   onMove?: (move: MoveResult) => void
   onGameOver?: (result: GameOverResult) => void
-}
-
-export type UseChessGameReturn = {
-  game: Chess
-  squareStyles: Record<string, CSSProperties>
-  handlePieceDrop: (args: PieceDropHandlerArgs) => boolean
-  handleSquareClick: (args: SquareHandlerArgs) => void
-  handleMouseOverSquare: (args: SquareHandlerArgs) => void
-  handleMouseOutSquare: (args: SquareHandlerArgs) => void
 }
 
 export function useChessGame({
   position,
   interactive = true,
+  orientation = 'white',
+  animationDurationInMs = 300,
   onMove,
   onGameOver,
-}: UseChessGameProps): UseChessGameReturn {
+}: UseChessGameProps): { config: Config } {
   const [game, setGame] = useState(() => {
     const g = new Chess()
     if (position) g.load(position)
     return g
   })
-  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
-  const [hoveredSquare, setHoveredSquare] = useState<string | null>(null)
-
-  // Track previous controlled position to detect prop changes during render
+  const [lastMove, setLastMove] = useState<[Key, Key] | undefined>(undefined)
   const [prevPosition, setPrevPosition] = useState<string | undefined>(position)
 
-  // Adjust state during render when controlled position prop changes (React pattern:
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  // Adjust state during render when controlled position prop changes
   if (position !== undefined && position !== prevPosition) {
     setPrevPosition(position)
     if (position !== game.fen()) {
@@ -94,94 +90,58 @@ export function useChessGame({
       g.load(position)
       setGame(g)
     }
+    setLastMove(undefined)
   }
 
-  // Latest ref pattern — sync after every render so callbacks are always up-to-date
+  // Latest-ref pattern — keep callbacks and game always current for event handlers
   const gameRef = useRef(game)
   const onMoveRef = useRef(onMove)
   const onGameOverRef = useRef(onGameOver)
-  const interactiveRef = useRef(interactive)
-  const selectedSquareRef = useRef(selectedSquare)
 
   useLayoutEffect(() => {
     gameRef.current = game
     onMoveRef.current = onMove
     onGameOverRef.current = onGameOver
-    interactiveRef.current = interactive
-    selectedSquareRef.current = selectedSquare
   })
 
-  const handlePieceDrop = useCallback(({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
-    if (!interactiveRef.current) return false
-    if (!targetSquare) return false
-
-    const result = executeMove(gameRef.current.fen(), sourceSquare, targetSquare)
-    if (!result) return false
-
+  // Stable callback — reads current state via refs so deps stay empty
+  const handleAfterMove = useCallback((orig: Key, dest: Key) => {
+    const result = executeMove(gameRef.current.fen(), orig, dest)
+    if (!result) return
     setGame(result.game)
-    setSelectedSquare(null)
+    setLastMove([orig, dest])
     notifyAfterMove(result.game, result.move, onMoveRef.current, onGameOverRef.current)
-    return true
   }, [])
 
-  const handleSquareClick = useCallback(({ square }: SquareHandlerArgs) => {
-    if (!interactiveRef.current) return
-    const sq = square as Square
-    const currentGame = gameRef.current
-    const currentSelected = selectedSquareRef.current
+  const dests = useMemo(() => toDests(game), [game])
+  const turn: 'white' | 'black' = game.turn() === 'w' ? 'white' : 'black'
 
-    if (currentSelected === sq) {
-      setSelectedSquare(null)
-      return
-    }
+  const config = useMemo((): Config => ({
+    fen: game.fen(),
+    orientation,
+    turnColor: turn,
+    check: game.inCheck(),
+    lastMove: lastMove ? [lastMove[0], lastMove[1]] : undefined,
+    viewOnly: !interactive,
+    movable: {
+      free: false,
+      color: interactive ? turn : undefined,
+      dests: interactive ? dests : undefined,
+      showDests: true,
+      events: {
+        after: handleAfterMove,
+      },
+    },
+    animation: {
+      enabled: true,
+      duration: animationDurationInMs,
+    },
+    highlight: {
+      lastMove: true,
+      check: true,
+    },
+    premovable: { enabled: false },
+  }), [game, orientation, interactive, turn, dests, handleAfterMove, lastMove, animationDurationInMs])
 
-    if (currentSelected) {
-      const legalMoves = currentGame.moves({ square: currentSelected, verbose: true })
-      if (legalMoves.some(m => m.to === sq)) {
-        const result = executeMove(currentGame.fen(), currentSelected, sq)
-        if (result) {
-          setGame(result.game)
-          setSelectedSquare(null)
-          notifyAfterMove(result.game, result.move, onMoveRef.current, onGameOverRef.current)
-        }
-        return
-      }
-    }
-
-    const piece = currentGame.get(sq)
-    if (piece && piece.color === currentGame.turn()) {
-      setSelectedSquare(sq)
-    } else {
-      setSelectedSquare(null)
-    }
-  }, [])
-
-  const handleMouseOverSquare = useCallback(({ square }: SquareHandlerArgs) => {
-    setHoveredSquare(square)
-  }, [])
-
-  const handleMouseOutSquare = useCallback((_: SquareHandlerArgs) => {
-    setHoveredSquare(null)
-  }, [])
-
-  // Derive hint squares in render (cheap — O(legal moves))
-  const legalMoves = selectedSquare ? game.moves({ square: selectedSquare, verbose: true }) : []
-  const hintSquares = new Set(legalMoves.filter(m => m.captured === undefined).map(m => m.to))
-  const captureSquares = new Set(legalMoves.filter(m => m.captured !== undefined).map(m => m.to))
-
-  const squareStyles: Record<string, CSSProperties> = {}
-  for (const sq of hintSquares) {
-    squareStyles[sq] =
-      hoveredSquare === sq
-        ? { backgroundColor: HINT_COLOR }
-        : { background: `radial-gradient(circle, ${HINT_COLOR} 28%, transparent 28%)` }
-  }
-  for (const sq of captureSquares) {
-    squareStyles[sq] =
-      hoveredSquare === sq
-        ? { backgroundColor: HINT_COLOR }
-        : { backgroundColor: 'rgba(0, 180, 80, 0.25)' }
-  }
-
-  return { game, squareStyles, handlePieceDrop, handleSquareClick, handleMouseOverSquare, handleMouseOutSquare }
+  return { config }
 }

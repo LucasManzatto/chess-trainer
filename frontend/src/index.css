@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "@neondatabase/neon-js/ui/tailwind";
+@import "@lichess-org/chessground/assets/chessground.base.css";
+@import "@lichess-org/chessground/assets/chessground.brown.css";
+@import "@lichess-org/chessground/assets/chessground.cburnett.css";
 
 :root {
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
