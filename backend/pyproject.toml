@@ -10,7 +10,3 @@ ignore = ["B008"]  # FastAPI requires Depends() in function defaults
 python_version = "3.11"
 strict = true
 exclude = ["scripts/"]
-
-[[tool.mypy.overrides]]
-module = "asyncpg.*"
-ignore_missing_imports = true

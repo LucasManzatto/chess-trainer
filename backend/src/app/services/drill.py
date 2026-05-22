@@ -1,6 +1,11 @@
-import asyncpg
-from fastapi import HTTPException, status
+from datetime import UTC, date, datetime, timedelta
 
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..models.openings import Opening, OpeningProgress
 from ..schemas.openings import DrillAddResponse, DrillQueueItem
 
 
@@ -26,77 +31,76 @@ def compute_sm2(
 
 
 async def get_queue(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
 ) -> list[DrillQueueItem]:
-    rows = await conn.fetch(
-        """
-        SELECT o.id AS opening_id, o.eco, o.name, o.pgn, o.fen, o.moves,
-               p.ease_factor, p.interval_days, p.due_date, p.repetitions
-        FROM opening_progress p
-        JOIN openings o ON o.id = p.opening_id
-        WHERE p.user_id = $1 AND p.due_date <= CURRENT_DATE
-        ORDER BY p.due_date ASC
-        """,
-        user_id,
+    result = await session.execute(
+        select(
+            Opening.id.label("opening_id"),
+            Opening.eco,
+            Opening.name,
+            Opening.pgn,
+            Opening.fen,
+            Opening.moves,
+            OpeningProgress.ease_factor,
+            OpeningProgress.interval_days,
+            OpeningProgress.due_date,
+            OpeningProgress.repetitions,
+        )
+        .select_from(OpeningProgress)
+        .join(Opening, Opening.id == OpeningProgress.opening_id)
+        .where(OpeningProgress.user_id == user_id, OpeningProgress.due_date <= date.today())
+        .order_by(OpeningProgress.due_date.asc())
     )
-    return [DrillQueueItem(**dict(r)) for r in rows]
+    return [DrillQueueItem(**dict(row)) for row in result.mappings()]
 
 
 async def add_to_drill(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     opening_id: int,
 ) -> DrillAddResponse:
-    row = await conn.fetchrow(
-        """
-        INSERT INTO opening_progress (user_id, opening_id)
-        VALUES ($1, $2)
-        ON CONFLICT (user_id, opening_id) DO UPDATE SET opening_id = EXCLUDED.opening_id
-        RETURNING opening_id, due_date
-        """,
-        user_id,
-        opening_id,
-    )
-    return DrillAddResponse(**dict(row))
+    ins = pg_insert(OpeningProgress).values(user_id=user_id, opening_id=opening_id)
+    stmt = ins.on_conflict_do_update(
+        index_elements=["user_id", "opening_id"],
+        set_={"opening_id": ins.excluded.opening_id},
+    ).returning(OpeningProgress.opening_id, OpeningProgress.due_date)
+    result = await session.execute(stmt)
+    row = result.one()
+    await session.commit()
+    return DrillAddResponse(opening_id=row.opening_id, due_date=row.due_date)
 
 
 async def review(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     opening_id: int,
     grade: int,
 ) -> DrillAddResponse:
-    row = await conn.fetchrow(
-        "SELECT ease_factor, interval_days, repetitions"
-        " FROM opening_progress WHERE user_id = $1 AND opening_id = $2",
-        user_id,
-        opening_id,
+    result = await session.execute(
+        select(OpeningProgress).where(
+            OpeningProgress.user_id == user_id,
+            OpeningProgress.opening_id == opening_id,
+        )
     )
-    if row is None:
+    progress = result.scalar_one_or_none()
+    if progress is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Opening not in drill queue"
         )
 
     new_ef, new_interval, new_reps = compute_sm2(
-        ease_factor=row["ease_factor"],
-        interval_days=row["interval_days"],
-        repetitions=row["repetitions"],
+        ease_factor=progress.ease_factor,
+        interval_days=progress.interval_days,
+        repetitions=progress.repetitions,
         grade=grade,
     )
 
-    result = await conn.fetchrow(
-        """
-        UPDATE opening_progress
-        SET ease_factor = $1, interval_days = $2, repetitions = $3,
-            due_date = CURRENT_DATE + $2, last_reviewed = NOW()
-        WHERE user_id = $4 AND opening_id = $5
-        RETURNING opening_id, due_date
-        """,
-        new_ef,
-        new_interval,
-        new_reps,
-        user_id,
-        opening_id,
-    )
-    return DrillAddResponse(**dict(result))
+    progress.ease_factor = new_ef
+    progress.interval_days = new_interval
+    progress.repetitions = new_reps
+    progress.due_date = date.today() + timedelta(days=new_interval)
+    progress.last_reviewed = datetime.now(UTC)
+
+    await session.commit()
+    return DrillAddResponse(opening_id=opening_id, due_date=progress.due_date)

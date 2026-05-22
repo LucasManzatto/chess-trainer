@@ -1,132 +1,132 @@
-import asyncpg
 from fastapi import HTTPException, status
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..schemas.openings import (
-    OpeningCommentResponse,
-    PositionCommentResponse,
-)
+from ..models.openings import OpeningComment, PositionComment
+from ..schemas.openings import OpeningCommentResponse, PositionCommentResponse
 
 
 async def list_opening_comments(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     opening_id: int,
 ) -> list[OpeningCommentResponse]:
-    rows = await conn.fetch(
-        "SELECT * FROM opening_comments WHERE user_id = $1 AND opening_id = $2 ORDER BY created_at",
-        user_id,
-        opening_id,
+    result = await session.execute(
+        select(OpeningComment)
+        .where(OpeningComment.user_id == user_id, OpeningComment.opening_id == opening_id)
+        .order_by(OpeningComment.created_at)
     )
-    return [OpeningCommentResponse(**dict(r)) for r in rows]
+    return [OpeningCommentResponse.model_validate(r) for r in result.scalars()]
 
 
 async def create_opening_comment(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     opening_id: int,
     content: str,
 ) -> OpeningCommentResponse:
-    row = await conn.fetchrow(
-        "INSERT INTO opening_comments (user_id, opening_id, content)"
-        " VALUES ($1, $2, $3) RETURNING *",
-        user_id,
-        opening_id,
-        content,
-    )
-    return OpeningCommentResponse(**dict(row))
+    comment = OpeningComment(user_id=user_id, opening_id=opening_id, content=content)
+    session.add(comment)
+    await session.commit()
+    return OpeningCommentResponse.model_validate(comment)
 
 
 async def update_opening_comment(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     comment_id: int,
     content: str,
 ) -> OpeningCommentResponse:
-    row = await conn.fetchrow(
-        "UPDATE opening_comments SET content = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
-        content,
-        comment_id,
-        user_id,
+    result = await session.execute(
+        select(OpeningComment).where(
+            OpeningComment.id == comment_id, OpeningComment.user_id == user_id
+        )
     )
-    if row is None:
+    comment = result.scalar_one_or_none()
+    if comment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
-    return OpeningCommentResponse(**dict(row))
+    comment.content = content
+    await session.commit()
+    return OpeningCommentResponse.model_validate(comment)
 
 
 async def delete_opening_comment(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     comment_id: int,
 ) -> None:
-    result = await conn.execute(
-        "DELETE FROM opening_comments WHERE id = $1 AND user_id = $2",
-        comment_id,
-        user_id,
+    result = await session.execute(
+        delete(OpeningComment)
+        .where(OpeningComment.id == comment_id, OpeningComment.user_id == user_id)
+        .returning(OpeningComment.id)
     )
-    if result == "DELETE 0":
+    if result.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    await session.commit()
 
 
 async def list_position_comments(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     opening_id: int,
 ) -> list[PositionCommentResponse]:
-    rows = await conn.fetch(
-        "SELECT * FROM position_comments WHERE user_id = $1 AND opening_id = $2"
-        " ORDER BY move_index, created_at",
-        user_id,
-        opening_id,
+    result = await session.execute(
+        select(PositionComment)
+        .where(PositionComment.user_id == user_id, PositionComment.opening_id == opening_id)
+        .order_by(PositionComment.move_index, PositionComment.created_at)
     )
-    return [PositionCommentResponse(**dict(r)) for r in rows]
+    return [PositionCommentResponse.model_validate(r) for r in result.scalars()]
 
 
 async def create_position_comment(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     opening_id: int,
     move_index: int,
     fen: str,
     content: str,
 ) -> PositionCommentResponse:
-    row = await conn.fetchrow(
-        "INSERT INTO position_comments (user_id, opening_id, move_index, fen, content)"
-        " VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        user_id,
-        opening_id,
-        move_index,
-        fen,
-        content,
+    comment = PositionComment(
+        user_id=user_id,
+        opening_id=opening_id,
+        move_index=move_index,
+        fen=fen,
+        content=content,
     )
-    return PositionCommentResponse(**dict(row))
+    session.add(comment)
+    await session.commit()
+    return PositionCommentResponse.model_validate(comment)
 
 
 async def update_position_comment(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     comment_id: int,
     content: str,
 ) -> PositionCommentResponse:
-    row = await conn.fetchrow(
-        "UPDATE position_comments SET content = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
-        content,
-        comment_id,
-        user_id,
+    result = await session.execute(
+        select(PositionComment).where(
+            PositionComment.id == comment_id, PositionComment.user_id == user_id
+        )
     )
-    if row is None:
+    comment = result.scalar_one_or_none()
+    if comment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
-    return PositionCommentResponse(**dict(row))
+    comment.content = content
+    await session.commit()
+    return PositionCommentResponse.model_validate(comment)
 
 
 async def delete_position_comment(
-    conn: asyncpg.Connection,
+    session: AsyncSession,
     user_id: str,
     comment_id: int,
 ) -> None:
-    result = await conn.execute(
-        "DELETE FROM position_comments WHERE id = $1 AND user_id = $2",
-        comment_id,
-        user_id,
+    result = await session.execute(
+        delete(PositionComment)
+        .where(PositionComment.id == comment_id, PositionComment.user_id == user_id)
+        .returning(PositionComment.id)
     )
-    if result == "DELETE 0":
+    if result.first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+    await session.commit()

@@ -1,26 +1,41 @@
 from collections.abc import AsyncGenerator
 
-import asyncpg
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from .config import settings
 
-_pool: asyncpg.Pool | None = None
+_engine: AsyncEngine | None = None
+_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-async def create_pool() -> None:
-    global _pool
-    _pool = await asyncpg.create_pool(settings.database_url)
+def _async_url() -> str:
+    url = settings.database_url
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
-async def close_pool() -> None:
-    global _pool
-    if _pool:
-        await _pool.close()
-        _pool = None
+async def init_db() -> None:
+    global _engine, _session_factory
+    _engine = create_async_engine(_async_url())
+    _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
 
 
-async def get_conn() -> AsyncGenerator[asyncpg.Connection, None]:
-    if _pool is None:
-        raise RuntimeError("DB pool not initialised — call create_pool() in lifespan")
-    async with _pool.acquire() as conn:
-        yield conn
+async def teardown_db() -> None:
+    global _engine, _session_factory
+    if _engine is not None:
+        await _engine.dispose()
+        _engine = None
+        _session_factory = None
+
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    if _session_factory is None:
+        raise RuntimeError("DB engine not initialised — call init_db() in lifespan")
+    async with _session_factory() as session:
+        yield session

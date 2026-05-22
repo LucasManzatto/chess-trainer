@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class OpeningCommentCreate(BaseModel):
@@ -12,6 +12,8 @@ class OpeningCommentUpdate(BaseModel):
 
 
 class OpeningCommentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: str
     opening_id: int
@@ -30,6 +32,8 @@ class PositionCommentUpdate(BaseModel):
 
 
 class PositionCommentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: str
     opening_id: int

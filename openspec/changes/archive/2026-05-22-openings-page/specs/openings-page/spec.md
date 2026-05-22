@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Openings route exists at /openings
 A route SHALL exist at `/openings` defined in `src/routes/openings/index.tsx`. The page SHALL be publicly accessible and render a three-tab interface: Browse, Explore, and Drill. The page SHALL retain the top nav and be accessible without login (Browse and Explore tabs do not require authentication).

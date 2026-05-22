@@ -7,16 +7,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.v1.openings import router as openings_router
 from .config import settings
-from .db import close_pool, create_pool
+from .db import init_db, teardown_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.http_client = httpx.AsyncClient()
-    await create_pool()
+    await init_db()
     yield
     await app.state.http_client.aclose()
-    await close_pool()
+    await teardown_db()
 
 
 app = FastAPI(title="Chess Trainer API", lifespan=lifespan)
