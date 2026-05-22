@@ -6,7 +6,7 @@ import { authClient } from '../../lib/auth'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { data: session } = await authClient.getSession()
-  const token = (session as { token?: string } | null)?.token ?? ''
+  const token = (session as { session?: { token?: string } } | null)?.session?.token ?? ''
 
   const resp = await fetch(`${API_BASE}${path}`, {
     ...init,
