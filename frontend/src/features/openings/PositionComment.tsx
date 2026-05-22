@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { positionCommentsApi } from './api'
 import { useAuthSession } from './useAuthSession'
-import type { PositionComment as PC } from './types'
+import { usePositionComments } from './usePositionComments'
 
 type Props = {
   openingId: number
@@ -17,30 +15,8 @@ type PopoverState =
 
 export function PositionComment({ openingId, moveIndex, fen }: Props) {
   const session = useAuthSession()
-  const qc = useQueryClient()
-  const queryKey = ['position-comments', openingId]
+  const { thisComment, hasComment, createMutation, updateMutation, deleteMutation } = usePositionComments(openingId, moveIndex, fen)
   const [popover, setPopover] = useState<PopoverState>({ mode: 'closed' })
-
-  const { data: allComments = [] } = useQuery<PC[]>({
-    queryKey,
-    queryFn: () => positionCommentsApi.list(openingId),
-    enabled: !!session,
-  })
-
-  const thisComment = allComments.find(c => c.move_index === moveIndex) ?? null
-
-  const createMutation = useMutation({
-    mutationFn: (content: string) => positionCommentsApi.create(openingId, moveIndex, fen, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
-  })
-  const updateMutation = useMutation({
-    mutationFn: ({ id, content }: { id: number; content: string }) => positionCommentsApi.update(id, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
-  })
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => positionCommentsApi.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey }); setPopover({ mode: 'closed' }) },
-  })
 
   if (!session) return null
 
@@ -67,8 +43,6 @@ export function PositionComment({ openingId, moveIndex, fen }: Props) {
     updateMutation.mutate({ id: popover.id, content: popover.text.trim() })
     setPopover({ mode: 'closed' })
   }
-
-  const hasComment = !!thisComment
 
   return (
     <div className="relative">

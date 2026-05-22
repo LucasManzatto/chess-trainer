@@ -1,81 +1,22 @@
-import { useState, useMemo, useCallback } from 'react'
-import { Chess } from 'chess.js'
-import type { Key } from '@lichess-org/chessground/types'
-import { useOpenings } from './useOpenings'
-import { useOpeningTrie, walkTrie, collectOpenings } from './useOpeningTrie'
+import { useOpeningExplorer } from './useOpeningExplorer'
 import { ChessBoard } from '../../components/ChessBoard/ChessBoard'
 import { OpeningComment } from './OpeningComment'
-import type { Opening } from './types'
-import type { MoveResult } from '../../components/ChessBoard/ChessBoard'
 
 export function ExploreTab() {
-  const { data: openings, isLoading } = useOpenings()
-  const trie = useOpeningTrie(openings)
-
-  const [moves, setMoves] = useState<string[]>([])
-  const [fen, setFen] = useState<string | undefined>(undefined)
-
-  const currentNode = useMemo(() => {
-    if (!trie) return null
-    return walkTrie(trie, moves)
-  }, [trie, moves])
-
-  const matchingOpenings = useMemo((): Opening[] => {
-    if (!currentNode) return []
-    return collectOpenings(currentNode)
-  }, [currentNode])
-
-  const exactMatch: Opening | null = currentNode?.openings[0] ?? null
-
-  // Candidate moves with counts for ChessBoard shapes overlay
-  const candidateMoves = useMemo((): Map<string, number> => {
-    if (!currentNode) return new Map()
-    const result = new Map<string, number>()
-    for (const [san, child] of currentNode.children.entries()) {
-      result.set(san, child.count)
-    }
-    return result
-  }, [currentNode])
-
-  // Convert SAN candidates to dest squares for highlighting
-  const highlightedSquares = useMemo((): Array<{ orig: Key; dest: Key; count: number }> => {
-    const chess = fen ? new Chess(fen) : new Chess()
-    const result: Array<{ orig: Key; dest: Key; count: number }> = []
-    for (const [san, count] of candidateMoves.entries()) {
-      const legal = chess.moves({ verbose: true }).find(m => m.san === san)
-      if (legal) {
-        result.push({ orig: legal.from as Key, dest: legal.to as Key, count })
-      }
-    }
-    return result
-  }, [candidateMoves, fen])
-
-  const handleMove = useCallback((move: MoveResult) => {
-    setFen(move.fen)
-    setMoves(prev => [...prev, move.san])
-  }, [])
-
-  function handleReset() {
-    setMoves([])
-    setFen(undefined)
-  }
-
-  function handleUndo() {
-    if (moves.length === 0) return
-    const newMoves = moves.slice(0, -1)
-    setMoves(newMoves)
-    if (newMoves.length === 0) {
-      setFen(undefined)
-    } else {
-      const chess = new Chess()
-      for (const m of newMoves) chess.move(m)
-      setFen(chess.fen())
-    }
-  }
-
-  const shapes = highlightedSquares.map(({ dest }) => ({ orig: dest, dest, brush: 'green' }))
-
-  const noOpenings = moves.length > 0 && currentNode === null
+  const {
+    isLoading,
+    moves,
+    fen,
+    currentNode,
+    matchingOpenings,
+    exactMatch,
+    candidateMoves,
+    shapes,
+    noOpenings,
+    handleMove,
+    handleReset,
+    handleUndo,
+  } = useOpeningExplorer()
 
   return (
     <div className="flex h-full overflow-hidden">

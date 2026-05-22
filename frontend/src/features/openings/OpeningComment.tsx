@@ -1,35 +1,12 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { openingCommentsApi } from './api'
 import { useAuthSession } from './useAuthSession'
-import type { OpeningComment as OC } from './types'
+import { useOpeningComments } from './useOpeningComments'
 
 type Props = { openingId: number }
 
 export function OpeningComment({ openingId }: Props) {
   const session = useAuthSession()
-  const qc = useQueryClient()
-  const queryKey = ['opening-comments', openingId]
-
-  const { data: comments = [] } = useQuery<OC[]>({
-    queryKey,
-    queryFn: () => openingCommentsApi.list(openingId),
-    enabled: !!session,
-  })
-
-  const createMutation = useMutation({
-    mutationFn: (content: string) => openingCommentsApi.create(openingId, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
-  })
-  const updateMutation = useMutation({
-    mutationFn: ({ id, content }: { id: number; content: string }) => openingCommentsApi.update(id, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
-  })
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => openingCommentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey }),
-  })
-
+  const { comments, createMutation, updateMutation, deleteMutation } = useOpeningComments(openingId)
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState<{ id: number; content: string } | null>(null)
 
