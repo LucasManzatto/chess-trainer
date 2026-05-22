@@ -18,9 +18,15 @@ context: |
   - API base URL from VITE_API_URL env var (src/config/env.ts)
 
   ## Backend (backend/)
-  - FastAPI, Python
+  - FastAPI, Python 3.11+ (Native type hint improvements)
   - OpenAPI schema auto-generated; frontend client regenerated via `npm run gen:api`
   - CORS controlled by ALLOWED_ORIGINS env var
+  - SQLModel / SQLAlchemy 2.0 (Async execution using asyncpg driver)
+  - Alembic (Database versioning and schema migrations)
+  - Pydantic v2 (Strict request validation, data serialization, and Settings)
+  - Redis + Arq (Async task background queues for heavy engine parsing)
+  - Native WebSockets (Real-time chess board state synchronization)
+  - Pytest-asyncio + Black/Ruff (Linting, formatting, and asynchronous endpoint testing)
 
   ## Conventions
   - Conventional commits
