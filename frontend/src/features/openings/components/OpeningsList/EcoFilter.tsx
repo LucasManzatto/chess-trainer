@@ -13,7 +13,7 @@ export function EcoFilter({ ecoGroup, onChange }: Props) {
         <button
           key={g}
           onClick={() => onChange(g)}
-          className={`flex-1 text-xs py-1 rounded transition-colors ${
+          className={`flex-1 text-xs py-1 rounded-md transition-colors ${
             ecoGroup === g
               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
               : 'text-gray-400 hover:text-white hover:bg-white/5'
