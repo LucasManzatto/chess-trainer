@@ -6,13 +6,13 @@ import { authClient } from '../../lib/auth'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const { data: session } = await authClient.getSession()
-  const token = (session as { session?: { token?: string } } | null)?.session?.token ?? ''
+  const userId = (session as { user?: { id?: string } } | null)?.user?.id ?? ''
 
   const resp = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(userId ? { 'X-User-Id': userId } : {}),
       ...init?.headers,
     },
   })
