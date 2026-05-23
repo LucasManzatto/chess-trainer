@@ -2,12 +2,12 @@ import { useState, useMemo, useCallback } from 'react'
 import { Chess } from 'chess.js'
 import type { Key } from '@lichess-org/chessground/types'
 import type { DrawShape } from '@lichess-org/chessground/draw'
-import { useOpenings } from './useOpenings'
-import { useOpeningTrie, walkTrie, collectOpenings } from './useOpeningTrie'
-import type { Opening } from './types'
-import type { MoveResult } from '../../components/ChessBoard/ChessBoard'
+import { useOpenings } from '../useOpenings'
+import { useOpeningTrie, walkTrie, collectOpenings } from '../useOpeningTrie'
+import type { Opening } from '../types'
+import type { MoveResult } from '../../../components/ChessBoard/ChessBoard'
 
-export function useOpeningExplorer() {
+export function useExploreTab() {
   const { data: openings, isLoading } = useOpenings()
   const trie = useOpeningTrie(openings)
 

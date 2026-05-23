@@ -1,6 +1,8 @@
-import { useOpeningExplorer } from './useOpeningExplorer'
-import { ChessBoard } from '../../components/ChessBoard/ChessBoard'
-import { OpeningComment } from './OpeningComment'
+import { ChessBoard } from '../../../components/ChessBoard/ChessBoard'
+import { NotesPanel } from '../NotesPanel'
+import { OpeningsList } from '../OpeningsList/OpeningsList'
+import { ContinuationsList } from './ContinuationsList'
+import { useExploreTab } from './useExploreTab'
 
 export function ExploreTab() {
   const {
@@ -16,7 +18,7 @@ export function ExploreTab() {
     handleMove,
     handleReset,
     handleUndo,
-  } = useOpeningExplorer()
+  } = useExploreTab()
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -70,7 +72,7 @@ export function ExploreTab() {
                   <div className="text-sm font-semibold text-white">{exactMatch.name}</div>
                 </div>
                 <div className="px-3 pb-3">
-                  <OpeningComment openingId={exactMatch.id} />
+                  <NotesPanel openingId={exactMatch.id} moveIndex={null} fen={undefined} moves={exactMatch.moves} />
                 </div>
               </div>
             )}
@@ -84,38 +86,9 @@ export function ExploreTab() {
               </span>
             </div>
 
-            {/* Candidate moves list */}
-            {candidateMoves.size > 0 && (
-              <div className="border-b border-white/10">
-                <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Continuations</div>
-                <div className="max-h-40 overflow-y-auto">
-                  {[...candidateMoves.entries()]
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([san, count]) => (
-                      <div key={san} className="flex items-center justify-between px-3 py-1 text-sm hover:bg-white/5">
-                        <span className="font-mono text-gray-200">{san}</span>
-                        <span className="text-gray-500 text-xs">{count}</span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
+            <ContinuationsList candidateMoves={candidateMoves} />
 
-            {/* Matching openings list */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">Openings</div>
-              {matchingOpenings.map(o => (
-                <div
-                  key={o.id}
-                  className={`px-3 py-1.5 text-sm border-b border-white/5 ${
-                    exactMatch?.id === o.id ? 'text-amber-300 font-semibold' : 'text-gray-400'
-                  }`}
-                >
-                  <span className="text-gray-500 font-mono text-xs mr-2">{o.eco}</span>
-                  {o.name}
-                </div>
-              ))}
-            </div>
+            <OpeningsList openings={matchingOpenings} selectedId={exactMatch?.id} />
           </>
         )}
       </div>

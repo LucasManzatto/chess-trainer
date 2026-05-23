@@ -1,9 +1,9 @@
 import { useReducer, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthSession } from './useAuthSession'
-import { drillApi } from './api'
-import type { DrillQueueItem, DrillGrade } from './types'
-import type { MoveResult } from '../../components/ChessBoard/ChessBoard'
+import { useAuthSession } from '../useAuthSession'
+import { drillApi } from '../api'
+import type { DrillQueueItem, DrillGrade } from '../types'
+import type { MoveResult } from '../../../components/ChessBoard/ChessBoard'
 
 export type DrillState =
   | { phase: 'queue' }
@@ -49,7 +49,7 @@ export const GRADE_BUTTONS = [
   { grade: 5 as DrillGrade, label: 'Easy', color: 'bg-green-500/20 text-green-300 hover:bg-green-500/30' },
 ] as const
 
-export function useDrill() {
+export function useDrillTab() {
   const isLoggedIn = !!useAuthSession()
   const qc = useQueryClient()
 

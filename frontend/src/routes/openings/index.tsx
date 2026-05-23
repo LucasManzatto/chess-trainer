@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
-import { BrowseTab } from '../../features/openings/BrowseTab'
-import { ExploreTab } from '../../features/openings/ExploreTab'
-import { DrillTab } from '../../features/openings/DrillTab'
+import { BrowseTab } from '../../features/openings/BrowseTab/BrowseTab'
+import { ExploreTab } from '../../features/openings/ExploreTab/ExploreTab'
+import { DrillTab } from '../../features/openings/DrillTab/DrillTab'
 
 const searchSchema = z.object({
   tab: z.enum(['browse', 'explore', 'drill']).default('browse').catch('browse'),
