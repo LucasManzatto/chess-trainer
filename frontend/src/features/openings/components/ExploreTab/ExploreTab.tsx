@@ -88,7 +88,7 @@ export function ExploreTab() {
 
             <ContinuationsList candidateMoves={candidateMoves} />
 
-            <OpeningsList openings={matchingOpenings} selectedId={exactMatch?.id} />
+            <OpeningsList openings={matchingOpenings} selectedId={exactMatch?.id} defaultViewMode="move" />
           </>
         )}
       </div>

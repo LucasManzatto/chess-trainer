@@ -48,6 +48,7 @@ export function BrowseTab() {
           search={search}
           onSearchChange={setSearch}
           onSelect={selectOpening}
+          defaultViewMode="name"
         />
       </section>
 
