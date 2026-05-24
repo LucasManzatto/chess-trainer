@@ -8,6 +8,7 @@ from ...db import get_session
 from ...schemas.openings import (
     DrillAddResponse,
     DrillQueueItem,
+    FavoriteResponse,
     OpeningCommentCreate,
     OpeningCommentResponse,
     OpeningCommentUpdate,
@@ -18,6 +19,7 @@ from ...schemas.openings import (
 )
 from ...services import comments
 from ...services import drill as drill_service
+from ...services import favorites as favorites_service
 
 router = APIRouter(prefix="/openings", tags=["openings"])
 
@@ -121,3 +123,20 @@ async def review_opening(
     opening_id: int, body: ReviewRequest, session: Session, user_id: UserId
 ) -> DrillAddResponse:
     return await drill_service.review(session, user_id, opening_id, body.grade)
+
+
+# ---------------------------------------------------------------------------
+# Favorites
+# ---------------------------------------------------------------------------
+
+
+@router.get("/favorites", response_model=list[int])
+async def get_favorites(session: Session, user_id: UserId) -> list[int]:
+    return await favorites_service.list_favorites(session, user_id)
+
+
+@router.post("/{opening_id}/favorite", response_model=FavoriteResponse)
+async def toggle_favorite(
+    opening_id: int, session: Session, user_id: UserId
+) -> FavoriteResponse:
+    return await favorites_service.toggle_favorite(session, user_id, opening_id)

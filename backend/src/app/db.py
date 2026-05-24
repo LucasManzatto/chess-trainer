@@ -1,6 +1,8 @@
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -36,11 +38,39 @@ def _async_url_and_connect_args() -> tuple[str, dict[str, object]]:
     return clean_url, connect_args
 
 
+async def _run_migrations(engine: AsyncEngine) -> None:
+    migrations_dir = Path(__file__).parent.parent.parent / "migrations"
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS _migrations ("
+                "filename TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+                ")"
+            )
+        )
+        result = await conn.execute(text("SELECT filename FROM _migrations"))
+        applied = {row[0] for row in result}
+
+    sql_files = sorted(migrations_dir.glob("*.sql"))
+    for sql_file in sql_files:
+        if sql_file.name in applied:
+            continue
+        statements = [s.strip() for s in sql_file.read_text().split(";") if s.strip()]
+        async with engine.begin() as conn:
+            for stmt in statements:
+                await conn.execute(text(stmt))
+            await conn.execute(
+                text("INSERT INTO _migrations (filename) VALUES (:f)"),
+                {"f": sql_file.name},
+            )
+
+
 async def init_db() -> None:
     global _engine, _session_factory
     url, connect_args = _async_url_and_connect_args()
     _engine = create_async_engine(url, connect_args=connect_args)
     _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
+    await _run_migrations(_engine)
 
 
 async def teardown_db() -> None:

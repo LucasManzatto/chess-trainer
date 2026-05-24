@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { BrowseTab } from '../../../features/openings/components/BrowseTab/BrowseTab'
 import { ExploreTab } from '../../../features/openings/components/ExploreTab/ExploreTab'
 import { DrillTab } from '../../../features/openings/components/DrillTab/DrillTab'
+import { useFavorites } from '../../../features/openings/hooks/useFavorites'
 
 const searchSchema = z.object({
   tab: z.enum(['browse', 'explore', 'drill']).default('browse').catch('browse'),
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
 function OpeningsPage() {
   const { tab } = useSearch({ from: '/openings/' })
   const navigate = useNavigate()
+  useFavorites()
 
   function setTab(t: Tab) {
     navigate({ to: '/openings/', search: { tab: t }, replace: true })

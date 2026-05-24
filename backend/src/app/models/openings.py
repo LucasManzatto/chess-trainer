@@ -43,6 +43,13 @@ class PositionComment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class OpeningFavorite(Base):
+    __tablename__ = "opening_favorites"
+
+    user_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    opening_id: Mapped[int] = mapped_column(Integer, ForeignKey("openings.id"), primary_key=True)
+
+
 class OpeningProgress(Base):
     __tablename__ = "opening_progress"
 

@@ -1,0 +1,131 @@
+import { useState, useMemo } from 'react'
+import type React from 'react'
+import type { Opening } from '../../types'
+
+export type NameNode = {
+  label: string
+  opening: Opening | null
+  children: NameNode[]
+}
+
+function parseNamePath(name: string): string[] {
+  const colonIdx = name.indexOf(': ')
+  if (colonIdx === -1) return [name]
+  const main = name.slice(0, colonIdx)
+  const rest = name.slice(colonIdx + 2)
+  const commaIdx = rest.indexOf(', ')
+  if (commaIdx === -1) return [main, rest]
+  return [main, rest.slice(0, commaIdx), rest.slice(commaIdx + 2)]
+}
+
+function buildNameTree(openings: Opening[]): NameNode[] {
+  type BuildNode = NameNode & { _m: Map<string, BuildNode> }
+  const rootList: BuildNode[] = []
+  const rootMap = new Map<string, BuildNode>()
+
+  for (const opening of openings) {
+    const path = parseNamePath(opening.name)
+    let list = rootList as BuildNode[]
+    let map = rootMap
+
+    for (let i = 0; i < path.length; i++) {
+      const label = path[i]
+      if (!map.has(label)) {
+        const node: BuildNode = { label, opening: null, children: [], _m: new Map() }
+        map.set(label, node)
+        list.push(node)
+      }
+      const node = map.get(label)!
+      if (i === path.length - 1) node.opening = opening
+      list = node.children as BuildNode[]
+      map = node._m
+    }
+  }
+
+  return rootList
+}
+
+export function collectDescendantIds(node: NameNode): number[] {
+  const ids: number[] = []
+  function walk(n: NameNode) {
+    if (n.opening) ids.push(n.opening.id)
+    for (const child of n.children) walk(child)
+  }
+  walk(node)
+  return ids
+}
+
+export function getNameFavoriteRatio(node: NameNode, favoriteIds: Set<number>): { count: number; total: number } {
+  let count = 0
+  let total = 0
+  function walk(n: NameNode) {
+    if (n.opening) { total++; if (favoriteIds.has(n.opening.id)) count++ }
+    for (const child of n.children) walk(child)
+  }
+  walk(node)
+  return { count, total }
+}
+
+type UseNameTreeNodeProps = {
+  node: NameNode
+  path: string
+  selectedId?: number
+  expanded: Set<string>
+  favoriteIds: Set<number>
+  onToggle: (path: string) => void
+  onSelect?: (o: Opening) => void
+  onToggleFavorite: (id: number) => void
+  onBulkToggle: (ids: number[]) => void
+}
+
+export function useNameTreeNode({
+  node, path, selectedId, expanded, favoriteIds,
+  onToggle, onSelect, onToggleFavorite, onBulkToggle,
+}: UseNameTreeNodeProps) {
+  const isExpanded = expanded.has(path)
+  const hasChildren = node.children.length > 0
+  const isSelected = node.opening != null && selectedId === node.opening.id
+
+  const starState = useMemo(() => {
+    if (!hasChildren) {
+      return node.opening ? (favoriteIds.has(node.opening.id) ? 'full' : 'empty') : 'empty'
+    }
+    const { count, total } = getNameFavoriteRatio(node, favoriteIds)
+    if (total === 0) return 'empty'
+    if (count === total) return 'full'
+    if (count > 0) return 'partial'
+    return 'empty'
+  }, [node, hasChildren, favoriteIds])
+
+  function handleStarClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (hasChildren) {
+      onBulkToggle(collectDescendantIds(node))
+    } else if (node.opening) {
+      onToggleFavorite(node.opening.id)
+    }
+  }
+
+  function handleClick() {
+    if (hasChildren) onToggle(path)
+    if (node.opening) onSelect?.(node.opening)
+  }
+
+  return { isExpanded, hasChildren, isSelected, starState, handleClick, handleStarClick }
+}
+
+export function useNameTree(openings: Opening[]) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const roots = useMemo(() => buildNameTree(openings), [openings])
+
+  function toggle(path: string) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }
+
+  return { roots, expanded, toggle }
+}

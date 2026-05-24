@@ -63,3 +63,8 @@ class ReviewRequest(BaseModel):
 class DrillAddResponse(BaseModel):
     opening_id: int
     due_date: date
+
+
+class FavoriteResponse(BaseModel):
+    opening_id: int
+    is_favorite: bool

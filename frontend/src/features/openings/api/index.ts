@@ -57,6 +57,15 @@ export const positionCommentsApi = {
     request<void>(`/api/v1/openings/position-comments/${commentId}`, { method: 'DELETE' }),
 }
 
+// Favorites
+export const openingFavoritesApi = {
+  list: () => request<number[]>('/api/v1/openings/favorites'),
+  toggle: (openingId: number) =>
+    request<{ opening_id: number; is_favorite: boolean }>(`/api/v1/openings/${openingId}/favorite`, {
+      method: 'POST',
+    }),
+}
+
 // Drill
 export const drillApi = {
   queue: () => request<DrillQueueItem[]>('/api/v1/openings/drill/queue'),

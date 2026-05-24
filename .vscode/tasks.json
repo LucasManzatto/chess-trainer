@@ -16,9 +16,19 @@
       "isBackground": true
     },
     {
+      "label": "Kill Port 8000",
+      "type": "shell",
+      "command": "kill $(lsof -ti:8000) 2>/dev/null || true",
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
       "label": "Backend Dev",
       "type": "shell",
       "command": "make dev",
+      "dependsOn": ["Kill Port 8000"],
       "options": {
         "cwd": "${workspaceFolder}/backend"
       },

@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import type { Opening } from '../../types'
+import { useOpeningsList, type ViewMode } from './useOpeningsList'
 import { OpeningsNameTree } from './OpeningsNameTree'
 import { OpeningsMoveTree } from './OpeningsMoveTree'
-
-type ViewMode = 'list' | 'name' | 'move'
 
 type Props = {
   openings: Opening[]
@@ -15,6 +13,14 @@ type Props = {
   defaultViewMode?: ViewMode
 }
 
+function StarIcon({ filled, dim }: { filled: boolean; dim?: boolean }) {
+  return (
+    <span className={`text-xs flex-shrink-0 ${filled ? (dim ? 'text-amber-400/40' : 'text-amber-400') : 'text-gray-600'}`}>
+      {filled ? '★' : '☆'}
+    </span>
+  )
+}
+
 export function OpeningsList({
   openings,
   isLoading,
@@ -24,14 +30,33 @@ export function OpeningsList({
   onSelect,
   defaultViewMode = 'list',
 }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode)
+  const {
+    viewMode,
+    setViewMode,
+    showFavoritesOnly,
+    toggleFavoritesFilter,
+    favoriteIds,
+    toggleFavorite,
+    bulkToggle,
+    displayed,
+  } = useOpeningsList(openings, defaultViewMode)
 
   return (
     <>
       <div className="border-b border-white/[0.06]">
         <div className="px-3 h-10 flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Openings</span>
-          <div className="flex gap-0.5">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleFavoritesFilter}
+              title="Show favorites only"
+              className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
+                showFavoritesOnly ? 'text-amber-400' : 'text-gray-600 hover:text-gray-300'
+              }`}
+            >
+              ★
+            </button>
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
             {(['list', 'name', 'move'] as ViewMode[]).map(mode => (
               <button
                 key={mode}
@@ -61,12 +86,12 @@ export function OpeningsList({
       </div>
       <div className="flex-1 overflow-y-auto">
         {isLoading && <p className="text-gray-500 text-sm p-3">Loading openings…</p>}
-        {!isLoading && openings.length === 0 && (
+        {!isLoading && displayed.length === 0 && (
           <p className="text-gray-500 text-sm p-3">No openings found</p>
         )}
-        {!isLoading && openings.length > 0 && viewMode === 'list' && (
+        {!isLoading && displayed.length > 0 && viewMode === 'list' && (
           <div className="py-1">
-            {openings.map(o =>
+            {displayed.map(o =>
               onSelect ? (
                 <button
                   key={o.id}
@@ -77,7 +102,14 @@ export function OpeningsList({
                       : 'border-l-2 border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <span className="truncate">{o.name}</span>
+                  <span className="truncate flex-1">{o.name}</span>
+                  <span
+                    role="button"
+                    onClick={e => { e.stopPropagation(); toggleFavorite(o.id) }}
+                    className="flex-shrink-0"
+                  >
+                    <StarIcon filled={favoriteIds.has(o.id)} />
+                  </span>
                 </button>
               ) : (
                 <div
@@ -86,17 +118,32 @@ export function OpeningsList({
                     selectedId === o.id ? 'border-amber-400 text-amber-300 font-semibold' : 'border-transparent text-gray-400'
                   }`}
                 >
-                  <span className="truncate">{o.name}</span>
+                  <span className="truncate flex-1">{o.name}</span>
+                  <StarIcon filled={favoriteIds.has(o.id)} />
                 </div>
               )
             )}
           </div>
         )}
-        {!isLoading && openings.length > 0 && viewMode === 'name' && (
-          <OpeningsNameTree openings={openings} selectedId={selectedId} onSelect={onSelect} />
+        {!isLoading && displayed.length > 0 && viewMode === 'name' && (
+          <OpeningsNameTree
+            openings={displayed}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            favoriteIds={favoriteIds}
+            onToggleFavorite={toggleFavorite}
+            onBulkToggle={bulkToggle}
+          />
         )}
-        {!isLoading && openings.length > 0 && viewMode === 'move' && (
-          <OpeningsMoveTree openings={openings} selectedId={selectedId} onSelect={onSelect} />
+        {!isLoading && displayed.length > 0 && viewMode === 'move' && (
+          <OpeningsMoveTree
+            openings={displayed}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            favoriteIds={favoriteIds}
+            onToggleFavorite={toggleFavorite}
+            onBulkToggle={bulkToggle}
+          />
         )}
       </div>
     </>

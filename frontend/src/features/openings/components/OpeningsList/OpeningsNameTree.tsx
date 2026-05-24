@@ -1,48 +1,5 @@
-import { useState, useMemo } from 'react'
 import type { Opening } from '../../types'
-
-type NameNode = {
-  label: string
-  opening: Opening | null
-  children: NameNode[]
-}
-
-function parseNamePath(name: string): string[] {
-  const colonIdx = name.indexOf(': ')
-  if (colonIdx === -1) return [name]
-  const main = name.slice(0, colonIdx)
-  const rest = name.slice(colonIdx + 2)
-  const commaIdx = rest.indexOf(', ')
-  if (commaIdx === -1) return [main, rest]
-  return [main, rest.slice(0, commaIdx), rest.slice(commaIdx + 2)]
-}
-
-function buildNameTree(openings: Opening[]): NameNode[] {
-  type BuildNode = NameNode & { _m: Map<string, BuildNode> }
-  const rootList: BuildNode[] = []
-  const rootMap = new Map<string, BuildNode>()
-
-  for (const opening of openings) {
-    const path = parseNamePath(opening.name)
-    let list = rootList as BuildNode[]
-    let map = rootMap
-
-    for (let i = 0; i < path.length; i++) {
-      const label = path[i]
-      if (!map.has(label)) {
-        const node: BuildNode = { label, opening: null, children: [], _m: new Map() }
-        map.set(label, node)
-        list.push(node)
-      }
-      const node = map.get(label)!
-      if (i === path.length - 1) node.opening = opening
-      list = node.children as BuildNode[]
-      map = node._m
-    }
-  }
-
-  return rootList
-}
+import { useNameTree, useNameTreeNode, type NameNode } from './useNameTree'
 
 type NodeProps = {
   node: NameNode
@@ -51,35 +8,50 @@ type NodeProps = {
   expanded: Set<string>
   onToggle: (path: string) => void
   onSelect?: (o: Opening) => void
+  favoriteIds: Set<number>
+  onToggleFavorite: (id: number) => void
+  onBulkToggle: (ids: number[]) => void
   path: string
 }
 
-function NameTreeNode({ node, depth, selectedId, expanded, onToggle, onSelect, path }: NodeProps) {
-  const isExpanded = expanded.has(path)
-  const hasChildren = node.children.length > 0
-  const isSelected = node.opening != null && selectedId === node.opening.id
-
-  function handleClick() {
-    if (hasChildren) onToggle(path)
-    if (node.opening) onSelect?.(node.opening)
-  }
+function NameTreeNode({
+  node, depth, selectedId, expanded, onToggle, onSelect,
+  favoriteIds, onToggleFavorite, onBulkToggle, path,
+}: NodeProps) {
+  const { isExpanded, hasChildren, isSelected, starState, handleClick, handleStarClick } =
+    useNameTreeNode({ node, path, selectedId, expanded, favoriteIds, onToggle, onSelect, onToggleFavorite, onBulkToggle })
 
   return (
     <div>
-      <button
-        onClick={handleClick}
-        className={`w-full text-left py-1 text-sm transition-colors flex items-center gap-1.5 min-w-0 ${
+      <div
+        className={`flex items-center min-w-0 ${
           isSelected
-            ? 'border-l-2 border-amber-400 bg-amber-500/10 text-amber-200'
-            : 'border-l-2 border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
+            ? 'border-l-2 border-amber-400 bg-amber-500/10'
+            : 'border-l-2 border-transparent hover:bg-white/5'
         }`}
-        style={{ paddingLeft: `${8 + depth * 12}px`, paddingRight: '12px' }}
+        style={{ paddingLeft: `${8 + depth * 12}px`, paddingRight: '8px' }}
       >
-        <span className="text-gray-600 flex-shrink-0 w-3 text-xs">
-          {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
-        </span>
-        <span className="truncate">{node.label}</span>
-      </button>
+        <button
+          onClick={handleClick}
+          className={`flex-1 text-left py-1 text-sm transition-colors flex items-center gap-1.5 min-w-0 ${
+            isSelected ? 'text-amber-200' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <span className="text-gray-600 flex-shrink-0 w-3 text-xs">
+            {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
+          </span>
+          <span className="truncate">{node.label}</span>
+        </button>
+        <button onClick={handleStarClick} className="flex-shrink-0 px-1 py-1">
+          <span className={`text-xs ${
+            starState === 'full' ? 'text-amber-400' :
+            starState === 'partial' ? 'text-amber-400/40' :
+            'text-gray-600 hover:text-gray-400'
+          }`}>
+            {starState === 'empty' ? '☆' : '★'}
+          </span>
+        </button>
+      </div>
       {isExpanded && (
         <div>
           {node.children.map(child => (
@@ -91,6 +63,9 @@ function NameTreeNode({ node, depth, selectedId, expanded, onToggle, onSelect, p
               expanded={expanded}
               onToggle={onToggle}
               onSelect={onSelect}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={onToggleFavorite}
+              onBulkToggle={onBulkToggle}
               path={`${path}/${child.label}`}
             />
           ))}
@@ -104,20 +79,13 @@ type Props = {
   openings: Opening[]
   selectedId?: number
   onSelect?: (o: Opening) => void
+  favoriteIds: Set<number>
+  onToggleFavorite: (id: number) => void
+  onBulkToggle: (ids: number[]) => void
 }
 
-export function OpeningsNameTree({ openings, selectedId, onSelect }: Props) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const roots = useMemo(() => buildNameTree(openings), [openings])
-
-  function toggle(path: string) {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      if (next.has(path)) next.delete(path)
-      else next.add(path)
-      return next
-    })
-  }
+export function OpeningsNameTree({ openings, selectedId, onSelect, favoriteIds, onToggleFavorite, onBulkToggle }: Props) {
+  const { roots, expanded, toggle } = useNameTree(openings)
 
   return (
     <div>
@@ -130,6 +98,9 @@ export function OpeningsNameTree({ openings, selectedId, onSelect }: Props) {
           expanded={expanded}
           onToggle={toggle}
           onSelect={onSelect}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={onToggleFavorite}
+          onBulkToggle={onBulkToggle}
           path={node.label}
         />
       ))}
