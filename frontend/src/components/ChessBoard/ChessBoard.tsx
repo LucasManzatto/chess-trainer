@@ -1,7 +1,7 @@
 import { useChessGame } from './useChessGame'
 import { useBoardSizing } from './useBoardSizing'
 import { ChessGround } from './ChessGround'
-import { useBoardSettingsStore } from './useBoardSettingsStore'
+import { useBoardSettingsStore } from '../../stores/useBoardSettingsStore'
 import type { MoveResult, GameOverResult } from './useChessGame'
 import type { Key } from '@lichess-org/chessground/types'
 import type { DrawShape } from '@lichess-org/chessground/draw'

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useAuthSession } from './useAuthSession'
+import { useAuthSession } from '../../../hooks/useAuthSession'
 import { useFavoritesStore } from '../stores/useFavoritesStore'
 import { openingFavoritesApi } from '../api'
 

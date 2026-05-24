@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { openingCommentsApi, positionCommentsApi } from '../api'
-import { useAuthSession } from '../hooks/useAuthSession'
+import { useAuthSession } from '../../../hooks/useAuthSession'
 import type { OpeningComment, PositionComment } from '../types'
 
 type Props = {

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { ChessBoard } from '../../../../components/ChessBoard/ChessBoard'
-import { useBoardSettingsStore } from '../../../../components/ChessBoard/useBoardSettingsStore'
+import { useBoardSettingsStore } from '../../../../stores/useBoardSettingsStore'
 import { openingColor } from '../../types'
 import type { Opening } from '../../types'
 import { NotesPanel } from '../NotesPanel'

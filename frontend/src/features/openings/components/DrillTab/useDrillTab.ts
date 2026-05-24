@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthSession } from '../../hooks/useAuthSession'
+import { useAuthSession } from '../../../../hooks/useAuthSession'
 import { drillApi } from '../../api'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'

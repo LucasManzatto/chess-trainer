@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Chess } from 'chess.js'
-import type { MoveResult } from '../components/ChessBoard'
+import type { MoveResult } from '../components/ChessBoard/ChessBoard'
 
 export type GameMetadata = {
   white?: string

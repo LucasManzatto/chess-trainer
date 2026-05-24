@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthSession } from '../../hooks/useAuthSession'
+import { useAuthSession } from '../../../../hooks/useAuthSession'
 import { drillApi } from '../../api'
 
 export function useAddToDrill(openingId: number) {

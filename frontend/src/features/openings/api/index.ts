@@ -1,7 +1,6 @@
 import type { OpeningComment, PositionComment, DrillQueueItem, DrillGrade } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-
+import { API_BASE } from '../../../config/env'
 import { authClient } from '../../../lib/auth'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
