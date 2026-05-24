@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { ChessBoard } from '../../../../components/ChessBoard/ChessBoard'
 import { useBoardSettingsStore } from '../../../../stores/useBoardSettingsStore'
 import { openingColor } from '../../types'
@@ -9,12 +9,71 @@ import { ContinuationsList } from '../ExploreTab/ContinuationsList'
 import { MoveList } from './MoveList'
 import { useBrowseTab } from './useBrowseTab'
 import { useAddToDrill } from './useAddToDrill'
+import { computeThreats } from './threatShapes'
+import type { ThreatSquares } from './threatShapes'
 import type { Key } from '@lichess-org/chessground/types'
 import { usePositionEvaluation } from '../../../evaluation/hooks/usePositionEvaluation'
 import { EvaluationBar } from '../../../evaluation/components/EvaluationBar'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
+const DOT_SIZE = 22
+
+function squareToPixel(square: string, boardSize: number, orientation: 'white' | 'black') {
+  const fileIdx = square.charCodeAt(0) - 97
+  const rankIdx = parseInt(square[1]) - 1
+  const sq = boardSize / 8
+  const col = orientation === 'white' ? fileIdx : 7 - fileIdx
+  const row = orientation === 'white' ? 7 - rankIdx : rankIdx
+  return { left: col * sq + sq - DOT_SIZE - 2, top: row * sq + 2 }
+}
+
+function HangingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+      <circle cx="12" cy="12" r="11" fill="#ef4444" />
+      <path d="M12 4.5L6 7v4.5c0 3.9 2.55 7.6 6 8.6 3.45-1 6-4.7 6-8.6V7L12 4.5z" fill="white" />
+      <line x1="9.5" y1="9.5" x2="14.5" y2="14.5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+      <line x1="14.5" y1="9.5" x2="9.5" y2="14.5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function PinnedIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+      <circle cx="12" cy="12" r="11" fill="#1f2937" />
+      <path d="M14.5 3.5c-.4-.4-1-.4-1.4 0L11 5.6l-.7-.7c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l.3.3-3.2 4c-.8-.1-1.6.2-2.1.8-.4.4-.4 1 0 1.4l2.8 2.8-2.5 4.2 4.2-2.5 2.8 2.8c.4.4 1 .4 1.4 0 .6-.6.9-1.4.8-2.1l4-3.2.3.3c.4.4 1 .4 1.4 0s.4-1 0-1.4l-.7-.7 2.1-2.1c.4-.4.4-1 0-1.4L14.5 3.5z" fill="white" />
+    </svg>
+  )
+}
+
+function ThreatOverlay({ threats, boardSize, orientation }: {
+  threats: ThreatSquares
+  boardSize: number
+  orientation: 'white' | 'black'
+}) {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {threats.hanging.map(sq => {
+        const { left, top } = squareToPixel(sq, boardSize, orientation)
+        return (
+          <div key={`h-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
+            <HangingIcon />
+          </div>
+        )
+      })}
+      {threats.pinned.map(sq => {
+        const { left, top } = squareToPixel(sq, boardSize, orientation)
+        return (
+          <div key={`p-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
+            <PinnedIcon />
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function AddToDrillButton({ openingId }: { openingId: number }) {
   const { isLoggedIn, inDrill, add, isPending } = useAddToDrill(openingId)
@@ -155,6 +214,11 @@ export function BrowseTab() {
   const closeSettings = useCallback(() => setShowSettings(false), [])
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
   const flipOrientation = useCallback(() => setOrientation(o => o === 'white' ? 'black' : 'white'), [])
+  const [showThreats, setShowThreats] = useState(false)
+  const threats = useMemo(
+    () => showThreats && boardFen ? computeThreats(boardFen) : { hanging: [], pinned: [] },
+    [showThreats, boardFen],
+  )
   const handleSelectOpening = useCallback((o: Opening) => {
     selectOpening(o)
     setOrientation(openingColor(o))
@@ -192,7 +256,7 @@ export function BrowseTab() {
         <div className="flex flex-row gap-2 flex-shrink-0" style={{ height: boardSize }}>
           <EvaluationBar score={score} isLoading={evalLoading} />
 
-          <div style={{ width: boardSize, height: boardSize, flexShrink: 0 }}>
+          <div style={{ width: boardSize, height: boardSize, flexShrink: 0, position: 'relative' }}>
             <ChessBoard
               boardWidth={boardSize}
               position={boardFen}
@@ -201,6 +265,9 @@ export function BrowseTab() {
               lastMove={lastMoveSquares}
               extraShapes={[...shapes, ...bestMoveShape]}
             />
+            {showThreats && (
+              <ThreatOverlay threats={threats} boardSize={boardSize} orientation={orientation} />
+            )}
           </div>
 
           {/* Controls column — gear + flip, top-right outside board */}
@@ -219,6 +286,19 @@ export function BrowseTab() {
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3L5 6.99h3V14h2V6.99h3L9 3z"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowThreats(v => !v)}
+              className={`p-1.5 rounded transition-colors ${
+                showThreats
+                  ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                  : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+              }`}
+              title="Toggle threat hints (red = unprotected, yellow = pinned)"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
               </svg>
             </button>
           </div>
