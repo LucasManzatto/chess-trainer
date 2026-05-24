@@ -39,3 +39,7 @@ export type DrillQueueItem = {
 }
 
 export type DrillGrade = 0 | 3 | 4 | 5
+
+export function openingColor(o: { moves: string[] }): 'white' | 'black' {
+  return o.moves.length % 2 === 1 ? 'white' : 'black'
+}

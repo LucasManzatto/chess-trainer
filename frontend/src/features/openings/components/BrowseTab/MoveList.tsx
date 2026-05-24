@@ -2,6 +2,7 @@ type Props = {
   moves: string[]
   moveIndex: number | null
   onMoveClick: (i: number | null) => void
+  onReset?: () => void
 }
 
 function MoveButton({ san, index, selected, onClick }: {
@@ -24,14 +25,14 @@ function MoveButton({ san, index, selected, onClick }: {
   )
 }
 
-export function MoveList({ moves, moveIndex, onMoveClick }: Props) {
+export function MoveList({ moves, moveIndex, onMoveClick, onReset }: Props) {
   const pairCount = Math.ceil(moves.length / 2)
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between px-3 h-10 border-b border-white/[0.06]">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</h2>
-        {moveIndex !== null && (
-          <button onClick={() => onMoveClick(null)} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+        {moves.length > 0 && onReset && (
+          <button onClick={onReset} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
             Reset
           </button>
         )}

@@ -1,4 +1,5 @@
 import type { Opening } from '../../types'
+import { openingColor } from '../../types'
 import { useNameTree, useNameTreeNode, type NameNode } from './useNameTree'
 
 type NodeProps = {
@@ -40,6 +41,13 @@ function NameTreeNode({
           <span className="text-gray-600 flex-shrink-0 w-3 text-xs">
             {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
           </span>
+          {node.opening && (
+            <span className={`text-[10px] font-bold px-1 py-0.5 rounded leading-none flex-shrink-0 ${
+              openingColor(node.opening) === 'white' ? 'bg-gray-200 text-gray-800' : 'bg-gray-700 text-gray-200'
+            }`}>
+              {openingColor(node.opening) === 'white' ? 'W' : 'B'}
+            </span>
+          )}
           <span className="truncate">{node.label}</span>
         </button>
         <button onClick={handleStarClick} className="flex-shrink-0 px-1 py-1">
@@ -78,14 +86,15 @@ function NameTreeNode({
 type Props = {
   openings: Opening[]
   selectedId?: number
+  selectedName?: string
   onSelect?: (o: Opening) => void
   favoriteIds: Set<number>
   onToggleFavorite: (id: number) => void
   onBulkToggle: (ids: number[]) => void
 }
 
-export function OpeningsNameTree({ openings, selectedId, onSelect, favoriteIds, onToggleFavorite, onBulkToggle }: Props) {
-  const { roots, expanded, toggle } = useNameTree(openings)
+export function OpeningsNameTree({ openings, selectedId, selectedName, onSelect, favoriteIds, onToggleFavorite, onBulkToggle }: Props) {
+  const { roots, expanded, toggle } = useNameTree(openings, selectedName)
 
   return (
     <div>

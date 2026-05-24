@@ -5,6 +5,7 @@ export type EvaluationScore = {
 
 export type EvaluationResult = {
   score?: EvaluationScore
+  bestMove?: string
   isLoading: boolean
   error: boolean
 }

@@ -24,6 +24,7 @@ function toWhitePerspective(score: EvaluationScore, fen: string): EvaluationScor
 
 type EngineState = {
   score: EvaluationScore | undefined
+  bestMove: string | undefined
   // FEN for which `score` is current; used to derive isLoading in render
   scoredFen: string
   error: boolean
@@ -32,6 +33,7 @@ type EngineState = {
 export function usePositionEvaluation(fen: string | undefined): EvaluationResult {
   const [engineState, setEngineState] = useState<EngineState>({
     score: undefined,
+    bestMove: undefined,
     scoredFen: '',
     error: false,
   })
@@ -49,12 +51,13 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
     const worker = workerRef.current
     if (!worker) return
     if (searchActiveRef.current) {
-      // Only stop if a search is genuinely in progress; stopping an idle engine
-      // may not produce a bestmove and would stall awaitingBestMoveRef forever.
+      // Queue the new FEN and stop; new search starts only after bestmove confirms stop.
+      // Sending position/go immediately after stop crashes Stockfish WASM.
+      pendingFenRef.current = targetFen
       worker.postMessage('stop')
       awaitingBestMoveRef.current = true
+      return
     }
-    searchActiveRef.current = false
     currentSearchFenRef.current = targetFen
     worker.postMessage(`position fen ${targetFen}`)
     worker.postMessage(`go depth ${TARGET_DEPTH}`)
@@ -68,13 +71,13 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
       worker = new Worker(`${sfUrl}#${sfWasmUrl}`)
     } catch {
       // queueMicrotask avoids synchronous setState in effect body
-      queueMicrotask(() => setEngineState({ score: undefined, scoredFen: '', error: true }))
+      queueMicrotask(() => setEngineState({ score: undefined, bestMove: undefined, scoredFen: '', error: true }))
       return
     }
     workerRef.current = worker
 
     worker.onerror = () => {
-      setEngineState({ score: undefined, scoredFen: '', error: true })
+      setEngineState({ score: undefined, bestMove: undefined, scoredFen: '', error: true })
     }
 
     worker.onmessage = (e: MessageEvent<string>) => {
@@ -98,6 +101,11 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
       if (line.startsWith('bestmove')) {
         awaitingBestMoveRef.current = false
         searchActiveRef.current = false
+        const pending = pendingFenRef.current
+        if (pending !== null) {
+          pendingFenRef.current = null
+          beginSearch(pending)
+        }
         return
       }
 
@@ -109,7 +117,9 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
           if (raw) {
             const score = toWhitePerspective(raw, currentSearchFenRef.current)
             const scoredFen = currentSearchFenRef.current
-            setEngineState({ score, scoredFen, error: false })
+            const pvMatch = line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/)
+            const bestMove = pvMatch?.[1]
+            setEngineState({ score, bestMove, scoredFen, error: false })
           }
         }
       }
@@ -127,7 +137,10 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
   }, [beginSearch])
 
   useEffect(() => {
-    if (fen === undefined) return
+    if (fen === undefined) {
+      setEngineState(s => s.score === undefined && s.bestMove === undefined ? s : { score: undefined, bestMove: undefined, scoredFen: '', error: false })
+      return
+    }
 
     // Debounce: wait 300ms after last FEN change before sending to engine.
     // Rapid navigation would otherwise spam stop/go and crash Stockfish WASM.
@@ -146,5 +159,5 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
   // Derive isLoading during render — no setState needed in the FEN effect
   const isLoading = fen !== undefined && engineState.scoredFen !== fen && !engineState.error
 
-  return { score: engineState.score, isLoading, error: engineState.error }
+  return { score: engineState.score, bestMove: engineState.bestMove, isLoading, error: engineState.error }
 }

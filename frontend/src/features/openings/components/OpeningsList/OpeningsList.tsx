@@ -1,4 +1,5 @@
 import type { Opening } from '../../types'
+import { openingColor } from '../../types'
 import { useOpeningsList, type ViewMode } from './useOpeningsList'
 import { OpeningsNameTree } from './OpeningsNameTree'
 import { OpeningsMoveTree } from './OpeningsMoveTree'
@@ -7,10 +8,22 @@ type Props = {
   openings: Opening[]
   isLoading?: boolean
   selectedId?: number
+  selectedName?: string
   search?: string
   onSearchChange?: (s: string) => void
   onSelect?: (o: Opening) => void
   defaultViewMode?: ViewMode
+}
+
+function ColorBadge({ opening }: { opening: Opening }) {
+  const color = openingColor(opening)
+  return (
+    <span className={`text-[10px] font-bold px-1 py-0.5 rounded leading-none flex-shrink-0 ${
+      color === 'white' ? 'bg-gray-200 text-gray-800' : 'bg-gray-700 text-gray-200'
+    }`}>
+      {color === 'white' ? 'W' : 'B'}
+    </span>
+  )
 }
 
 function StarIcon({ filled, dim }: { filled: boolean; dim?: boolean }) {
@@ -25,6 +38,7 @@ export function OpeningsList({
   openings,
   isLoading,
   selectedId,
+  selectedName,
   search,
   onSearchChange,
   onSelect,
@@ -102,6 +116,7 @@ export function OpeningsList({
                       : 'border-l-2 border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
                   }`}
                 >
+                  <ColorBadge opening={o} />
                   <span className="truncate flex-1">{o.name}</span>
                   <span
                     role="button"
@@ -118,6 +133,7 @@ export function OpeningsList({
                     selectedId === o.id ? 'border-amber-400 text-amber-300 font-semibold' : 'border-transparent text-gray-400'
                   }`}
                 >
+                  <ColorBadge opening={o} />
                   <span className="truncate flex-1">{o.name}</span>
                   <StarIcon filled={favoriteIds.has(o.id)} />
                 </div>
@@ -129,6 +145,7 @@ export function OpeningsList({
           <OpeningsNameTree
             openings={displayed}
             selectedId={selectedId}
+            selectedName={selectedName}
             onSelect={onSelect}
             favoriteIds={favoriteIds}
             onToggleFavorite={toggleFavorite}

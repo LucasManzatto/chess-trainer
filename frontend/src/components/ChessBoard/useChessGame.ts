@@ -62,6 +62,7 @@ type UseChessGameProps = {
   interactive?: boolean
   orientation?: 'white' | 'black'
   animationDurationInMs?: number
+  lastMove?: [Key, Key]
   onMove?: (move: MoveResult) => void
   onGameOver?: (result: GameOverResult) => void
 }
@@ -71,6 +72,7 @@ export function useChessGame({
   interactive = true,
   orientation = 'white',
   animationDurationInMs = 300,
+  lastMove: externalLastMove,
   onMove,
   onGameOver,
 }: UseChessGameProps): { config: Config } {
@@ -83,9 +85,11 @@ export function useChessGame({
   const [prevPosition, setPrevPosition] = useState<string | undefined>(position)
 
   // Adjust state during render when controlled position prop changes
-  if (position !== undefined && position !== prevPosition) {
+  if (position !== prevPosition) {
     setPrevPosition(position)
-    if (position !== game.fen()) {
+    if (position === undefined) {
+      setGame(new Chess())
+    } else if (position !== game.fen()) {
       const g = new Chess()
       g.load(position)
       setGame(g)
@@ -121,7 +125,7 @@ export function useChessGame({
     orientation,
     turnColor: turn,
     check: game.inCheck(),
-    lastMove: lastMove ? [lastMove[0], lastMove[1]] : undefined,
+    lastMove: externalLastMove ?? lastMove,
     viewOnly: !interactive,
     movable: {
       free: false,

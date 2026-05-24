@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type React from 'react'
 import type { Opening } from '../../types'
 
@@ -114,9 +114,26 @@ export function useNameTreeNode({
   return { isExpanded, hasChildren, isSelected, starState, handleClick, handleStarClick }
 }
 
-export function useNameTree(openings: Opening[]) {
+export function useNameTree(openings: Opening[], selectedName?: string) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const roots = useMemo(() => buildNameTree(openings), [openings])
+
+  useEffect(() => {
+    if (!selectedName) return
+    const segments = parseNamePath(selectedName)
+    // Build ancestor paths (all but the leaf) to expand
+    const toExpand: string[] = []
+    for (let i = 0; i < segments.length - 1; i++) {
+      toExpand.push(segments.slice(0, i + 1).join('/'))
+    }
+    if (toExpand.length === 0) return
+    setExpanded(prev => {
+      if (toExpand.every(p => prev.has(p))) return prev
+      const next = new Set(prev)
+      for (const p of toExpand) next.add(p)
+      return next
+    })
+  }, [selectedName])
 
   function toggle(path: string) {
     setExpanded(prev => {

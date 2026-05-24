@@ -1,4 +1,5 @@
 import type { Opening } from '../../types'
+import { openingColor } from '../../types'
 import { type TrieNode } from '../../hooks/useOpeningTrie'
 import { useMoveTree, useMoveTreeNode } from './useMoveTree'
 
@@ -69,6 +70,11 @@ function MoveTreeNode({
                 }`}
               >
                 <span className="text-xs font-mono text-amber-400/60 flex-shrink-0">{opening.eco}</span>
+                <span className={`text-[10px] font-bold px-1 py-0.5 rounded leading-none flex-shrink-0 ${
+                  openingColor(opening) === 'white' ? 'bg-gray-200 text-gray-800' : 'bg-gray-700 text-gray-200'
+                }`}>
+                  {openingColor(opening) === 'white' ? 'W' : 'B'}
+                </span>
                 <span className="truncate">{opening.name}</span>
               </button>
               <button
