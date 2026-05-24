@@ -1,29 +1,18 @@
-import type { OpeningComment, PositionComment, DrillQueueItem, DrillGrade } from '../types'
+import type {
+  OpeningComment,
+  PositionComment,
+  DrillQueueItem,
+  DrillGrade,
+  FavoriteToggleResponse,
+  DrillActionResponse,
+} from '../types'
 
-import { API_BASE } from '../../../config/env'
-import { authClient } from '../../../lib/auth'
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const { data: session } = await authClient.getSession()
-  const userId = (session as { user?: { id?: string } } | null)?.user?.id ?? ''
-
-  const resp = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(userId ? { 'X-User-Id': userId } : {}),
-      ...init?.headers,
-    },
-  })
-  if (resp.status === 204) return undefined as T
-  if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`)
-  return resp.json()
-}
+import { request } from '../../../lib/api'
 
 // Opening comments
 export const openingCommentsApi = {
-  list: (openingId: number) =>
-    request<OpeningComment[]>(`/api/v1/openings/${openingId}/comments`),
+  list: (openingId: number, signal?: AbortSignal) =>
+    request<OpeningComment[]>(`/api/v1/openings/${openingId}/comments`, { signal }),
   create: (openingId: number, content: string) =>
     request<OpeningComment>(`/api/v1/openings/${openingId}/comments`, {
       method: 'POST',
@@ -40,8 +29,8 @@ export const openingCommentsApi = {
 
 // Position comments
 export const positionCommentsApi = {
-  list: (openingId: number) =>
-    request<PositionComment[]>(`/api/v1/openings/${openingId}/position-comments`),
+  list: (openingId: number, signal?: AbortSignal) =>
+    request<PositionComment[]>(`/api/v1/openings/${openingId}/position-comments`, { signal }),
   create: (openingId: number, moveIndex: number, fen: string, content: string) =>
     request<PositionComment>(`/api/v1/openings/${openingId}/position-comments`, {
       method: 'POST',
@@ -58,22 +47,24 @@ export const positionCommentsApi = {
 
 // Favorites
 export const openingFavoritesApi = {
-  list: () => request<number[]>('/api/v1/openings/favorites'),
+  list: (signal?: AbortSignal) =>
+    request<number[]>('/api/v1/openings/favorites', { signal }),
   toggle: (openingId: number) =>
-    request<{ opening_id: number; is_favorite: boolean }>(`/api/v1/openings/${openingId}/favorite`, {
+    request<FavoriteToggleResponse>(`/api/v1/openings/${openingId}/favorite`, {
       method: 'POST',
     }),
 }
 
 // Drill
 export const drillApi = {
-  queue: () => request<DrillQueueItem[]>('/api/v1/openings/drill/queue'),
+  queue: (signal?: AbortSignal) =>
+    request<DrillQueueItem[]>('/api/v1/openings/drill/queue', { signal }),
   addToDrill: (openingId: number) =>
-    request<{ opening_id: number; due_date: string }>(`/api/v1/openings/${openingId}/drill`, {
+    request<DrillActionResponse>(`/api/v1/openings/${openingId}/drill`, {
       method: 'POST',
     }),
   review: (openingId: number, grade: DrillGrade) =>
-    request<{ opening_id: number; due_date: string }>(`/api/v1/openings/${openingId}/review`, {
+    request<DrillActionResponse>(`/api/v1/openings/${openingId}/review`, {
       method: 'POST',
       body: JSON.stringify({ grade }),
     }),

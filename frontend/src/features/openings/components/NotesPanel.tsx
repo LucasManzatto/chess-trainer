@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { openingCommentsApi, positionCommentsApi } from '../api'
+import { openingsKeys } from '../api/queryKeys'
 import { useAuthSession } from '../../../hooks/useAuthSession'
 import type { OpeningComment, PositionComment } from '../types'
 
@@ -85,18 +86,18 @@ export function NotesPanel({ openingId, moveIndex, fen, moves }: Props) {
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState<EditingState | null>(null)
 
-  const openingQK = ['opening-comments', openingId]
-  const positionQK = ['position-comments', openingId]
+  const openingQK = openingsKeys.comments(openingId)
+  const positionQK = openingsKeys.positionComments(openingId)
 
   const { data: openingComments = [] } = useQuery<OpeningComment[]>({
     queryKey: openingQK,
-    queryFn: () => openingCommentsApi.list(openingId),
+    queryFn: ({ signal }) => openingCommentsApi.list(openingId, signal),
     enabled: !!session,
   })
 
   const { data: positionComments = [] } = useQuery<PositionComment[]>({
     queryKey: positionQK,
-    queryFn: () => positionCommentsApi.list(openingId),
+    queryFn: ({ signal }) => positionCommentsApi.list(openingId, signal),
     enabled: !!session,
   })
 

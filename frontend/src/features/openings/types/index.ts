@@ -40,6 +40,9 @@ export type DrillQueueItem = {
 
 export type DrillGrade = 0 | 3 | 4 | 5
 
+export type FavoriteToggleResponse = { opening_id: number; is_favorite: boolean }
+export type DrillActionResponse    = { opening_id: number; due_date: string }
+
 export function openingColor(o: { moves: string[] }): 'white' | 'black' {
   return o.moves.length % 2 === 1 ? 'white' : 'black'
 }

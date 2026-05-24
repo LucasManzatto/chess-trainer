@@ -2,6 +2,7 @@ import { useReducer, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthSession } from '../../../../hooks/useAuthSession'
 import { drillApi } from '../../api'
+import { openingsKeys } from '../../api/queryKeys'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
 
@@ -54,15 +55,15 @@ export function useDrillTab() {
   const qc = useQueryClient()
 
   const { data: queue = [], isLoading } = useQuery({
-    queryKey: ['drill-queue'],
-    queryFn: drillApi.queue,
+    queryKey: openingsKeys.drillQueue(),
+    queryFn: ({ signal }) => drillApi.queue(signal),
     enabled: isLoggedIn,
   })
 
   const reviewMutation = useMutation({
     mutationFn: ({ openingId, grade }: { openingId: number; grade: DrillGrade }) =>
       drillApi.review(openingId, grade),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['drill-queue'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: openingsKeys.drillQueue() }),
   })
 
   const [state, dispatch] = useReducer(drillReducer, { phase: 'queue' })
