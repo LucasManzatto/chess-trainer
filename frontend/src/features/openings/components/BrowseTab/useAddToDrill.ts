@@ -1,11 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthSession } from '../../../../hooks/useAuthSession'
+import { useMutationWithInvalidation } from '../../../../hooks/useMutationWithInvalidation'
 import { drillApi } from '../../api'
 import { openingsKeys } from '../../api/queryKeys'
 
 export function useAddToDrill(openingId: number) {
   const session = useAuthSession()
-  const qc = useQueryClient()
 
   const { data: queue = [] } = useQuery({
     queryKey: openingsKeys.drillQueue(),
@@ -13,10 +13,10 @@ export function useAddToDrill(openingId: number) {
     enabled: !!session,
   })
 
-  const mutation = useMutation({
-    mutationFn: () => drillApi.addToDrill(openingId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingsKeys.drillQueue() }),
-  })
+  const mutation = useMutationWithInvalidation(
+    () => drillApi.addToDrill(openingId),
+    openingsKeys.drillQueue(),
+  )
 
   const inDrill = queue.some(i => i.opening_id === openingId)
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Chess } from 'chess.js'
 import type { Key } from '@lichess-org/chessground/types'
 import type { DrawShape } from '@lichess-org/chessground/draw'
@@ -6,6 +6,7 @@ import { useOpenings } from '../../hooks/useOpenings'
 import { useOpeningTrie, walkTrie, collectOpenings } from '../../hooks/useOpeningTrie'
 import type { Opening } from '../../types'
 import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
+import { useArrowKeyNavigation } from '../../../../hooks/useArrowKeyNavigation'
 
 function computeAllMovesData(moves: string[]): { fens: string[]; froms: string[]; tos: string[] } {
   const chess = new Chess()
@@ -95,14 +96,7 @@ export function useBrowseTab() {
     setCurrentMoveIndex(prev => Math.min(allMoves.length - 1, prev + 1))
   }, [allMoves.length])
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'ArrowLeft') { e.preventDefault(); navigateBack() }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); navigateForward() }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [navigateBack, navigateForward])
+  useArrowKeyNavigation(navigateBack, navigateForward)
 
   // Clicking an opening sets board state — selection follows board, not vice-versa
   function handleOpeningSelect(o: Opening) {

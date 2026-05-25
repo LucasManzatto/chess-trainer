@@ -1,5 +1,6 @@
 import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
 import { MoveList } from '../../../../components/MoveList/MoveList'
+import { PanelSection } from '../../../../components/PanelSection'
 import { useGamesTab } from '../../hooks/useGamesTab'
 import { GamesList } from '../GamesList/GamesList'
 import { SyncControls } from './SyncControls'
@@ -68,10 +69,7 @@ export function GamesTab() {
       </section>
 
       {/* Col 3: Move list */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-        <div className="px-3 h-10 flex items-center border-b border-white/[0.06] flex-shrink-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</span>
-        </div>
+      <PanelSection title="Moves">
         <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
             moves={moveSans}
@@ -80,17 +78,14 @@ export function GamesTab() {
             showHeader={false}
           />
         </div>
-      </section>
+      </PanelSection>
 
       {/* Col 4: Analysis placeholder */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-        <div className="px-3 h-10 flex items-center border-b border-white/[0.06] flex-shrink-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Analysis</span>
-        </div>
+      <PanelSection title="Analysis">
         <div className="flex-1 flex items-center justify-center text-gray-600 text-sm text-center px-4">
           Engine analysis coming soon
         </div>
-      </section>
+      </PanelSection>
     </div>
   )
 }

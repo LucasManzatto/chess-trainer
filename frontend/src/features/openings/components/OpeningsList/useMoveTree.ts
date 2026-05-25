@@ -2,26 +2,17 @@ import { useState, useMemo } from 'react'
 import type React from 'react'
 import type { Opening } from '../../types'
 import { useOpeningTrie, type TrieNode } from '../../hooks/useOpeningTrie'
+import { collectOpeningIds, getFavoriteRatio } from '../../utils/treeUtils'
+
+const trieOpenings = (n: TrieNode) => n.openings
+const trieChildren = (n: TrieNode) => [...n.children.values()]
 
 export function collectTrieOpeningIds(node: TrieNode): number[] {
-  const ids: number[] = []
-  function walk(n: TrieNode) {
-    for (const o of n.openings) ids.push(o.id)
-    for (const child of n.children.values()) walk(child)
-  }
-  walk(node)
-  return ids
+  return collectOpeningIds(node, trieOpenings, trieChildren)
 }
 
 export function getTrieFavoriteRatio(node: TrieNode, favoriteIds: Set<number>): { count: number; total: number } {
-  let count = 0
-  let total = 0
-  function walk(n: TrieNode) {
-    for (const o of n.openings) { total++; if (favoriteIds.has(o.id)) count++ }
-    for (const child of n.children.values()) walk(child)
-  }
-  walk(node)
-  return { count, total }
+  return getFavoriteRatio(node, favoriteIds, trieOpenings, trieChildren)
 }
 
 type UseMoveTreeNodeProps = {

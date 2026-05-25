@@ -1,6 +1,7 @@
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { Chess } from 'chess.js'
 import type { MoveResult } from '../components/ChessBoard/ChessBoard'
+import { useArrowKeyNavigation } from './useArrowKeyNavigation'
 
 export type GameMetadata = {
   white?: string
@@ -14,38 +15,28 @@ export function useGameHistory() {
   const [viewIndex, setViewIndex] = useState<number | null>(null)
   const [gameMetadata, setGameMetadata] = useState<GameMetadata | null>(null)
 
-  const movesRef = useRef(moves)
-  const viewIndexRef = useRef(viewIndex)
   useEffect(() => {
-    movesRef.current = moves
-    viewIndexRef.current = viewIndex
-  })
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      const currentMoves = movesRef.current
-      const currentView = viewIndexRef.current
-
-      if (currentMoves.length === 0) return
-
-      if (e.key === 'ArrowLeft') {
-        if (currentView === null) {
-          setViewIndex(Math.max(0, currentMoves.length - 2))
-        } else {
-          setViewIndex(Math.max(0, currentView - 1))
-        }
-      } else if (e.key === 'ArrowRight') {
-        if (currentView === null) return
-        const next = currentView + 1
-        setViewIndex(next >= currentMoves.length - 1 ? null : next)
-      } else if (e.key === 'Escape') {
-        setViewIndex(null)
-      }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setViewIndex(null)
     }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
+
+  useArrowKeyNavigation(
+    () => {
+      if (moves.length === 0) return
+      setViewIndex(v => v === null ? Math.max(0, moves.length - 2) : Math.max(0, v - 1))
+    },
+    () => {
+      if (moves.length === 0) return
+      setViewIndex(v => {
+        if (v === null) return null
+        const next = v + 1
+        return next >= moves.length - 1 ? null : next
+      })
+    },
+  )
 
   const handleMove = useCallback((move: MoveResult) => {
     setMoves(prev => [...prev, move])

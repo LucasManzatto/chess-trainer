@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { openingCommentsApi, positionCommentsApi } from '../api'
 import { openingsKeys } from '../api/queryKeys'
 import { useAuthSession } from '../../../hooks/useAuthSession'
+import { useMutationWithInvalidation } from '../../../hooks/useMutationWithInvalidation'
 import type { OpeningComment, PositionComment } from '../types'
 
 type EditingState = { id: number; content: string; type: 'opening' | 'position' }
@@ -15,7 +16,6 @@ type UseNotesPanelProps = {
 
 export function useNotesPanel({ openingId, moveIndex, fen }: UseNotesPanelProps) {
   const session = useAuthSession()
-  const qc = useQueryClient()
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState<EditingState | null>(null)
 
@@ -34,34 +34,34 @@ export function useNotesPanel({ openingId, moveIndex, fen }: UseNotesPanelProps)
     enabled: !!session,
   })
 
-  const createOpening = useMutation({
-    mutationFn: (content: string) => openingCommentsApi.create(openingId, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingQK }),
-  })
-  const updateOpening = useMutation({
-    mutationFn: ({ id, content }: { id: number; content: string }) => openingCommentsApi.update(id, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingQK }),
-  })
-  const deleteOpening = useMutation({
-    mutationFn: (id: number) => openingCommentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingQK }),
-  })
+  const createOpening = useMutationWithInvalidation(
+    (content: string) => openingCommentsApi.create(openingId, content),
+    openingQK,
+  )
+  const updateOpening = useMutationWithInvalidation(
+    ({ id, content }: { id: number; content: string }) => openingCommentsApi.update(id, content),
+    openingQK,
+  )
+  const deleteOpening = useMutationWithInvalidation(
+    (id: number) => openingCommentsApi.delete(id),
+    openingQK,
+  )
 
-  const createPosition = useMutation({
-    mutationFn: (content: string) => {
+  const createPosition = useMutationWithInvalidation(
+    (content: string) => {
       if (moveIndex === null || fen === undefined) return Promise.reject(new Error('No position selected'))
       return positionCommentsApi.create(openingId, moveIndex, fen, content)
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: positionQK }),
-  })
-  const updatePosition = useMutation({
-    mutationFn: ({ id, content }: { id: number; content: string }) => positionCommentsApi.update(id, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: positionQK }),
-  })
-  const deletePosition = useMutation({
-    mutationFn: (id: number) => positionCommentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: positionQK }),
-  })
+    positionQK,
+  )
+  const updatePosition = useMutationWithInvalidation(
+    ({ id, content }: { id: number; content: string }) => positionCommentsApi.update(id, content),
+    positionQK,
+  )
+  const deletePosition = useMutationWithInvalidation(
+    (id: number) => positionCommentsApi.delete(id),
+    positionQK,
+  )
 
   const canSaveToOpening = draft.trim().length > 0
   const canSaveToMove = draft.trim().length > 0 && moveIndex !== null && fen !== undefined

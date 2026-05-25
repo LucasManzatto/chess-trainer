@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import type React from 'react'
 import type { Opening } from '../../types'
+import { collectOpeningIds, getFavoriteRatio } from '../../utils/treeUtils'
 
 export type NameNode = {
   label: string
@@ -45,25 +46,15 @@ function buildNameTree(openings: Opening[]): NameNode[] {
   return rootList
 }
 
+const nameOpenings = (n: NameNode) => n.opening ? [n.opening] : []
+const nameChildren = (n: NameNode) => n.children
+
 export function collectDescendantIds(node: NameNode): number[] {
-  const ids: number[] = []
-  function walk(n: NameNode) {
-    if (n.opening) ids.push(n.opening.id)
-    for (const child of n.children) walk(child)
-  }
-  walk(node)
-  return ids
+  return collectOpeningIds(node, nameOpenings, nameChildren)
 }
 
 export function getNameFavoriteRatio(node: NameNode, favoriteIds: Set<number>): { count: number; total: number } {
-  let count = 0
-  let total = 0
-  function walk(n: NameNode) {
-    if (n.opening) { total++; if (favoriteIds.has(n.opening.id)) count++ }
-    for (const child of n.children) walk(child)
-  }
-  walk(node)
-  return { count, total }
+  return getFavoriteRatio(node, favoriteIds, nameOpenings, nameChildren)
 }
 
 type UseNameTreeNodeProps = {

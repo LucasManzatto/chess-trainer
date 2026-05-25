@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
+import { PanelSection } from '../../../../components/PanelSection'
 import { openingColor } from '../../types'
 import type { Opening } from '../../types'
 import { NotesPanel } from '../NotesPanel'
@@ -95,7 +96,7 @@ export function BrowseTab() {
       </section>
 
       {/* Moves */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
+      <PanelSection>
         <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
             moves={allMoves}
@@ -105,13 +106,10 @@ export function BrowseTab() {
           />
         </div>
         <ContinuationsList candidateMoves={candidateMoves} />
-      </section>
+      </PanelSection>
 
       {/* Notes */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-        <div className="px-3 h-10 flex items-center border-b border-white/[0.06] flex-shrink-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Notes</span>
-        </div>
+      <PanelSection title="Notes">
         <div className="flex-1 min-h-0 overflow-y-auto p-3">
           {selected ? (
             <NotesPanel
@@ -126,7 +124,7 @@ export function BrowseTab() {
             </div>
           )}
         </div>
-      </section>
+      </PanelSection>
     </div>
   )
 }
