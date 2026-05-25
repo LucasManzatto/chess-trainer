@@ -5,7 +5,7 @@ import { openingFavoritesApi } from '../api'
 
 export function useFavorites() {
   const session = useAuthSession()
-  const { setAll, toggle, ids, isLoaded } = useFavoritesStore()
+  const { setAll, toggle, ids } = useFavoritesStore()
 
   useEffect(() => {
     if (!session) return
@@ -13,7 +13,6 @@ export function useFavorites() {
   }, [session, setAll])
 
   async function toggleFavorite(id: number) {
-    const wasOn = ids.has(id)
     toggle(id)
     try {
       await openingFavoritesApi.toggle(id)
@@ -34,5 +33,5 @@ export function useFavorites() {
     }
   }
 
-  return { ids, isLoaded, toggleFavorite, bulkToggle }
+  return { ids, toggleFavorite, bulkToggle }
 }

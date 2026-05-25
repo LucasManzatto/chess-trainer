@@ -18,7 +18,7 @@ export function useAddToDrill(openingId: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: openingsKeys.drillQueue() }),
   })
 
-  const inDrill = (queue as Array<{ opening_id: number }>).some(i => i.opening_id === openingId)
+  const inDrill = queue.some(i => i.opening_id === openingId)
 
   return {
     isLoggedIn: !!session,

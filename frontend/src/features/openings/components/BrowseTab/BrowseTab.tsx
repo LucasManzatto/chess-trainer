@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { ChessBoard } from '../../../../components/ChessBoard/ChessBoard'
 import { useBoardSettingsStore } from '../../../../stores/useBoardSettingsStore'
+import { GearIcon, FlipIcon, EyeIcon, CloseIcon, HangingPieceIcon, PinnedPieceIcon } from '../../../../components/icons'
 import { openingColor } from '../../types'
 import type { Opening } from '../../types'
 import { NotesPanel } from '../NotesPanel'
@@ -15,6 +16,9 @@ import type { Key } from '@lichess-org/chessground/types'
 import { usePositionEvaluation } from '../../../evaluation/hooks/usePositionEvaluation'
 import { EvaluationBar } from '../../../evaluation/components/EvaluationBar'
 
+const BOARD_PRESETS = [350, 450, 550, 700] as const
+const BOARD_PRESET_LABELS = ['S', 'M', 'L', 'XL'] as const
+
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
 const DOT_SIZE = 22
@@ -28,25 +32,6 @@ function squareToPixel(square: string, boardSize: number, orientation: 'white' |
   return { left: col * sq + sq - DOT_SIZE - 2, top: row * sq + 2 }
 }
 
-function HangingIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-      <circle cx="12" cy="12" r="11" fill="#ef4444" />
-      <path d="M12 4.5L6 7v4.5c0 3.9 2.55 7.6 6 8.6 3.45-1 6-4.7 6-8.6V7L12 4.5z" fill="white" />
-      <line x1="9.5" y1="9.5" x2="14.5" y2="14.5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
-      <line x1="14.5" y1="9.5" x2="9.5" y2="14.5" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function PinnedIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-      <circle cx="12" cy="12" r="11" fill="#1f2937" />
-      <path d="M14.5 3.5c-.4-.4-1-.4-1.4 0L11 5.6l-.7-.7c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l.3.3-3.2 4c-.8-.1-1.6.2-2.1.8-.4.4-.4 1 0 1.4l2.8 2.8-2.5 4.2 4.2-2.5 2.8 2.8c.4.4 1 .4 1.4 0 .6-.6.9-1.4.8-2.1l4-3.2.3.3c.4.4 1 .4 1.4 0s.4-1 0-1.4l-.7-.7 2.1-2.1c.4-.4.4-1 0-1.4L14.5 3.5z" fill="white" />
-    </svg>
-  )
-}
 
 function ThreatOverlay({ threats, boardSize, orientation }: {
   threats: ThreatSquares
@@ -59,7 +44,7 @@ function ThreatOverlay({ threats, boardSize, orientation }: {
         const { left, top } = squareToPixel(sq, boardSize, orientation)
         return (
           <div key={`h-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
-            <HangingIcon />
+            <HangingPieceIcon />
           </div>
         )
       })}
@@ -67,7 +52,7 @@ function ThreatOverlay({ threats, boardSize, orientation }: {
         const { left, top } = squareToPixel(sq, boardSize, orientation)
         return (
           <div key={`p-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
-            <PinnedIcon />
+            <PinnedPieceIcon />
           </div>
         )
       })}
@@ -93,13 +78,6 @@ function AddToDrillButton({ openingId }: { openingId: number }) {
   )
 }
 
-function GearIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.3.07-.62.07-.94s-.03-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.3-.07.63-.07.94s.03.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/>
-    </svg>
-  )
-}
 
 function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { size, setSize } = useBoardSettingsStore()
@@ -127,9 +105,7 @@ function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => 
             onClick={onClose}
             className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
+            <CloseIcon />
           </button>
         </div>
 
@@ -160,7 +136,7 @@ function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => 
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Presets</div>
             <div className="grid grid-cols-4 gap-2">
-              {([350, 450, 550, 700] as const).map((preset, i) => (
+              {BOARD_PRESETS.map((preset, i) => (
                 <button
                   key={preset}
                   onClick={() => setSize(preset)}
@@ -170,7 +146,7 @@ function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => 
                       : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
                   }`}
                 >
-                  {(['S', 'M', 'L', 'XL'] as const)[i]}
+                  {BOARD_PRESET_LABELS[i]}
                 </button>
               ))}
             </div>
@@ -284,9 +260,7 @@ export function BrowseTab() {
               className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               title={`Flip board (${orientation === 'white' ? 'White' : 'Black'} on bottom)`}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3L5 6.99h3V14h2V6.99h3L9 3z"/>
-              </svg>
+              <FlipIcon />
             </button>
             <button
               onClick={() => setShowThreats(v => !v)}
@@ -297,9 +271,7 @@ export function BrowseTab() {
               }`}
               title="Toggle threat hints (red = unprotected, yellow = pinned)"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-              </svg>
+              <EyeIcon />
             </button>
           </div>
         </div>

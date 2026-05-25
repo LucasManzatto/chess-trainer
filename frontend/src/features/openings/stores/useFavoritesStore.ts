@@ -2,16 +2,14 @@ import { create } from 'zustand'
 
 type FavoritesStore = {
   ids: Set<number>
-  isLoaded: boolean
   setAll: (ids: number[]) => void
   toggle: (id: number) => void
 }
 
 export const useFavoritesStore = create<FavoritesStore>((set) => ({
   ids: new Set(),
-  isLoaded: false,
 
-  setAll: (ids) => set({ ids: new Set(ids), isLoaded: true }),
+  setAll: (ids) => set({ ids: new Set(ids) }),
 
   toggle: (id) =>
     set((state) => {

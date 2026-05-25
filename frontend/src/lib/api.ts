@@ -28,9 +28,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     err.status = resp.status
 
     if (resp.status === 401) {
-      const url = new URL(window.location.href)
-      url.search = '?modal=login'
-      window.location.assign(url.toString())
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
     } else {
       toast.error(message)
     }

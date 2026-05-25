@@ -1,9 +1,4 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { openingCommentsApi, positionCommentsApi } from '../api'
-import { openingsKeys } from '../api/queryKeys'
-import { useAuthSession } from '../../../hooks/useAuthSession'
-import type { OpeningComment, PositionComment } from '../types'
+import { useNotesPanel } from './useNotesPanel'
 
 type Props = {
   openingId: number
@@ -81,86 +76,30 @@ function NoteCard({
 }
 
 export function NotesPanel({ openingId, moveIndex, fen, moves }: Props) {
-  const session = useAuthSession()
-  const qc = useQueryClient()
-  const [draft, setDraft] = useState('')
-  const [editing, setEditing] = useState<EditingState | null>(null)
-
-  const openingQK = openingsKeys.comments(openingId)
-  const positionQK = openingsKeys.positionComments(openingId)
-
-  const { data: openingComments = [] } = useQuery<OpeningComment[]>({
-    queryKey: openingQK,
-    queryFn: ({ signal }) => openingCommentsApi.list(openingId, signal),
-    enabled: !!session,
-  })
-
-  const { data: positionComments = [] } = useQuery<PositionComment[]>({
-    queryKey: positionQK,
-    queryFn: ({ signal }) => positionCommentsApi.list(openingId, signal),
-    enabled: !!session,
-  })
-
-  const createOpening = useMutation({
-    mutationFn: (content: string) => openingCommentsApi.create(openingId, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingQK }),
-  })
-  const updateOpening = useMutation({
-    mutationFn: ({ id, content }: { id: number; content: string }) => openingCommentsApi.update(id, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingQK }),
-  })
-  const deleteOpening = useMutation({
-    mutationFn: (id: number) => openingCommentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingQK }),
-  })
-
-  const createPosition = useMutation({
-    mutationFn: (content: string) => positionCommentsApi.create(openingId, moveIndex!, fen!, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: positionQK }),
-  })
-  const updatePosition = useMutation({
-    mutationFn: ({ id, content }: { id: number; content: string }) => positionCommentsApi.update(id, content),
-    onSuccess: () => qc.invalidateQueries({ queryKey: positionQK }),
-  })
-  const deletePosition = useMutation({
-    mutationFn: (id: number) => positionCommentsApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: positionQK }),
-  })
+  const {
+    session,
+    draft,
+    setDraft,
+    editing,
+    setEditing,
+    openingComments,
+    positionComments,
+    canSaveToOpening,
+    canSaveToMove,
+    saveToOpening,
+    saveToMove,
+    submitEdit,
+    deleteOpening,
+    deletePosition,
+  } = useNotesPanel({ openingId, moveIndex, fen })
 
   if (!session) return null
-
-  const canSaveToOpening = draft.trim().length > 0
-  const canSaveToMove = draft.trim().length > 0 && moveIndex !== null && fen !== undefined
 
   const sortedPositionComments = [...positionComments].sort((a, b) => a.move_index - b.move_index)
   const hasAnyNotes = openingComments.length > 0 || positionComments.length > 0
 
-  function saveToOpening() {
-    if (!canSaveToOpening) return
-    createOpening.mutate(draft.trim())
-    setDraft('')
-  }
-
-  function saveToMove() {
-    if (!canSaveToMove) return
-    createPosition.mutate(draft.trim())
-    setDraft('')
-  }
-
-  function submitEdit() {
-    if (!editing || !editing.content.trim()) return
-    if (editing.type === 'opening') {
-      updateOpening.mutate({ id: editing.id, content: editing.content.trim() })
-    } else {
-      updatePosition.mutate({ id: editing.id, content: editing.content.trim() })
-    }
-    setEditing(null)
-  }
-
   return (
     <div className="space-y-4">
-
-
       {hasAnyNotes ? (
         <div className="space-y-2">
           {openingComments.map(c => (
@@ -171,8 +110,8 @@ export function NotesPanel({ openingId, moveIndex, fen, moves }: Props) {
               highlighted={moveIndex === null}
               editing={editing?.id === c.id && editing.type === 'opening'}
               onEdit={() => setEditing({ id: c.id, content: c.content, type: 'opening' })}
-              onDelete={() => deleteOpening.mutate(c.id)}
-              onEditChange={v => setEditing(e => e ? { ...e, content: v } : e)}
+              onDelete={() => deleteOpening(c.id)}
+              onEditChange={v => setEditing((e: EditingState | null) => e ? { ...e, content: v } : e)}
               onEditSave={submitEdit}
               onEditCancel={() => setEditing(null)}
             />
@@ -186,8 +125,8 @@ export function NotesPanel({ openingId, moveIndex, fen, moves }: Props) {
               highlighted={c.move_index === moveIndex}
               editing={editing?.id === c.id && editing.type === 'position'}
               onEdit={() => setEditing({ id: c.id, content: c.content, type: 'position' })}
-              onDelete={() => deletePosition.mutate(c.id)}
-              onEditChange={v => setEditing(e => e ? { ...e, content: v } : e)}
+              onDelete={() => deletePosition(c.id)}
+              onEditChange={v => setEditing((e: EditingState | null) => e ? { ...e, content: v } : e)}
               onEditSave={submitEdit}
               onEditCancel={() => setEditing(null)}
             />
