@@ -36,6 +36,7 @@ export type MoveAnalysis = {
   cp_loss: number
   best_move: string
   classification: MoveClassification
+  score?: number
 }
 
 export type GameAnalysis = {
@@ -44,6 +45,7 @@ export type GameAnalysis = {
   black_accuracy: number
   depth: number
   analyzed_at: string
+  initial_score?: number
 }
 
 export type UseChessGameProps = {

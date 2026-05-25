@@ -107,6 +107,7 @@ export function useGameAnalysis(
   allFens: string[],
   gameId: number | null,
   depth = 18,
+  onComplete?: () => void,
 ): UseGameAnalysisResult {
   const [status, setStatus] = useState<AnalyzeStatus>('idle')
   const [progress, setProgress] = useState({ current: 0, total: 0 })
@@ -184,6 +185,7 @@ export function useGameAnalysis(
           cp_loss: cpLoss,
           best_move: bestMoves[i],
           classification,
+          score: scores[i + 1],
         })
 
         if (isWhiteMove) whiteWinLosses.push(winLoss)
@@ -196,18 +198,20 @@ export function useGameAnalysis(
         black_accuracy: computeAccuracy(blackWinLosses),
         depth,
         analyzed_at: new Date().toISOString(),
+        initial_score: scores[0],
       }
 
       const savedGame = await gamesApi.saveAnalysis(gameId, result)
       const saved = savedGame.analysis ?? result
       setAnalysis(saved)
       setStatus('done')
+      onComplete?.()
     } catch {
       if (!abortRef.current) setStatus('error')
     } finally {
       worker.terminate()
     }
-  }, [allFens, gameId, depth, status])
+  }, [allFens, gameId, depth, status, onComplete])
 
   return { analyze, status, progress, analysis }
 }

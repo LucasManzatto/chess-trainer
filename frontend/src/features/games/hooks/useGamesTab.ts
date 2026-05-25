@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useGameHistory } from '../../../hooks/useGameHistory'
 import { useGamesList } from '../components/GamesList/useGamesList'
 import { useGames } from './useGames'
@@ -6,6 +7,7 @@ import { useGamesSync } from './useGamesSync'
 import { useProfile } from './useProfile'
 import { useGameAnalysis } from '../../../components/ChessBoard/hooks/useGameAnalysis'
 import { useOpenings } from '../../openings/hooks/useOpenings'
+import { gamesKeys } from '../api/queryKeys'
 import type { Game, MoveClassification } from '../types'
 
 export function useGamesTab() {
@@ -13,13 +15,18 @@ export function useGamesTab() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
 
+  const queryClient = useQueryClient()
   const { filters, setResult, setColor, setTimeClass, setEco } = useGamesList()
   const { data: gamesData, isLoading: gamesLoading } = useGames(filters)
   const { syncStatus, isRunning, triggerSync } = useGamesSync()
   const gameHistory = useGameHistory({ orientation })
 
+  const onAnalysisComplete = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: gamesKeys.list(filters) })
+  }, [queryClient, filters])
+
   const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
-    useGameAnalysis(gameHistory.allFens, selectedGame?.id ?? null)
+    useGameAnalysis(gameHistory.allFens, selectedGame?.id ?? null, 18, onAnalysisComplete)
 
   const { data: openings } = useOpenings()
 

@@ -7,7 +7,7 @@ import { useBoardSettingsStore } from './stores/boardSettingsStore'
 import { CloseIcon, EyeIcon, FlipIcon, GearIcon, HangingPieceIcon, PinnedPieceIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
 import { squareToPixel } from './utils'
-import type { ThreatSquares } from './types'
+import type { EvaluationScore, ThreatSquares } from './types'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
@@ -107,6 +107,11 @@ function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => 
   )
 }
 
+export type PrecomputedEval = {
+  score: EvaluationScore | undefined
+  bestMove: string | undefined
+}
+
 export type BoardPanelProps = {
   config: Config
   onFlipOrientation: () => void
@@ -116,6 +121,7 @@ export type BoardPanelProps = {
   showThreatsControl?: boolean
   defaultShowThreats?: boolean
   onToggleThreats?: () => void
+  precomputedEval?: PrecomputedEval
 }
 
 export function BoardPanel({
@@ -127,6 +133,7 @@ export function BoardPanel({
   showThreatsControl = false,
   defaultShowThreats = false,
   onToggleThreats,
+  precomputedEval,
 }: BoardPanelProps) {
   const { size: boardSize } = useBoardSettingsStore()
   const [showSettings, setShowSettings] = useState(false)
@@ -135,7 +142,13 @@ export function BoardPanel({
   const fen = config.fen
   const orientation = config.orientation ?? 'white'
 
-  const { score, isLoading: evalLoading, bestMove } = usePositionEvaluation(fen)
+  // Skip live eval only when we have an actual stored score; fall back to live otherwise
+  const hasPrecomputedScore = precomputedEval?.score !== undefined
+  const { score: liveScore, isLoading: evalLoading, bestMove: liveBestMove } = usePositionEvaluation(
+    hasPrecomputedScore ? undefined : fen,
+  )
+  const score = hasPrecomputedScore ? precomputedEval!.score : liveScore
+  const bestMove = precomputedEval?.bestMove ?? liveBestMove
   const bestMoveShape = useMemo<DrawShape[]>(
     () => bestMove
       ? [{ orig: bestMove.slice(0, 2) as import('@lichess-org/chessground/types').Key, dest: bestMove.slice(2, 4) as import('@lichess-org/chessground/types').Key, brush: 'blue' }]

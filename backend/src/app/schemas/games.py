@@ -11,6 +11,7 @@ class MoveAnalysis(BaseModel):
     cp_loss: int
     best_move: str
     classification: MoveClassification
+    score: float | None = None
 
 
 class GameAnalysisCreate(BaseModel):
