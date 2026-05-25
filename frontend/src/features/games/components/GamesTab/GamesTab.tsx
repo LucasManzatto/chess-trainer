@@ -3,8 +3,13 @@ import { MoveList } from '../../../../components/MoveList/MoveList'
 import { PanelSection } from '../../../../components/PanelSection'
 import { useGamesTab } from '../../hooks/useGamesTab'
 import { GamesList } from '../GamesList/GamesList'
+import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
 
 export function GamesTab() {
+  return <ChessStoreProvider><GamesTabInner /></ChessStoreProvider>
+}
+
+function GamesTabInner() {
   const {
     username,
     games,
@@ -16,15 +21,20 @@ export function GamesTab() {
     setResult,
     setColor,
     setTimeClass,
-    setEco,
     syncStatus,
     isRunning,
     triggerSync,
     config,
     allMoves,
     selectedMoveIndex,
+    threats,
     flipOrientation,
     onMoveClick,
+    analyze,
+    analyzeStatus,
+    analyzeProgress,
+    moveClassifications,
+    openingMoveCount,
   } = useGamesTab()
 
   return (
@@ -44,7 +54,6 @@ export function GamesTab() {
           onResultChange={setResult}
           onColorChange={setColor}
           onTimeClassChange={setTimeClass}
-          onEcoChange={setEco}
           onSync={triggerSync}
         />
       </section>
@@ -54,10 +63,37 @@ export function GamesTab() {
         <BoardPanel
           config={config}
           onFlipOrientation={flipOrientation}
+          threats={threats}
+          showThreatsControl
+          defaultShowThreats
           title={
             selectedGame ? (
-              <div className="text-sm text-gray-400 truncate">
-                {selectedGame.white_username} vs {selectedGame.black_username}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="text-sm text-gray-400 truncate">
+                  {selectedGame.white_username} vs {selectedGame.black_username}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {analyzeStatus === 'running' ? (
+                    <span className="text-xs text-gray-400">
+                      {analyzeProgress.current} / {analyzeProgress.total}
+                    </span>
+                  ) : null}
+                  <button
+                    onClick={analyze}
+                    disabled={analyzeStatus === 'running'}
+                    className={`text-xs px-3 py-1 rounded transition-colors ${
+                      analyzeStatus === 'running'
+                        ? 'bg-white/5 text-gray-600 cursor-not-allowed'
+                        : 'bg-blue-500/15 text-blue-300 hover:bg-blue-500/25'
+                    }`}
+                  >
+                    {analyzeStatus === 'running'
+                      ? 'Analyzing…'
+                      : (selectedGame.analysis || analyzeStatus === 'done')
+                        ? 'Re-analyze'
+                        : 'Analyze'}
+                  </button>
+                </div>
               </div>
             ) : undefined
           }
@@ -72,6 +108,8 @@ export function GamesTab() {
             selectedIndex={selectedMoveIndex < allMoves.length ? selectedMoveIndex : null}
             onMoveClick={onMoveClick}
             showHeader={false}
+            moveClassifications={moveClassifications}
+            openingMoveCount={openingMoveCount}
           />
         </div>
       </PanelSection>

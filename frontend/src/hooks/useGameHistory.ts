@@ -17,6 +17,7 @@ type UseGameHistoryOptions = {
 export function useGameHistory({ interactiveAtEnd = false, orientation = 'white' }: UseGameHistoryOptions = {}) {
   const board = useChessGame({ interactiveAtEnd, orientation })
   const [gameMetadata, setGameMetadata] = useState<GameMetadata | null>(null)
+  const [allFens, setAllFens] = useState<string[]>([])
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -38,6 +39,16 @@ export function useGameHistory({ interactiveAtEnd = false, orientation = 'white'
       const history = chess.history({ verbose: true })
       if (history.length === 0) return { ok: false, error: 'PGN contains no moves.' }
       const headers = chess.header()
+
+      // Collect all FENs: initial + after each move
+      const replay = new Chess()
+      const fens: string[] = [replay.fen()]
+      for (const move of history) {
+        replay.move(move.san)
+        fens.push(replay.fen())
+      }
+      setAllFens(fens)
+
       board.loadMoves(history.map(m => m.san))
       setGameMetadata({
         white: headers['White'] ?? undefined,
@@ -57,6 +68,8 @@ export function useGameHistory({ interactiveAtEnd = false, orientation = 'white'
     currentMoveIndex: board.currentMoveIndex,
     boardFen: board.boardFen,
     lastMoveSquares: board.lastMoveSquares,
+    threats: board.threats,
+    allFens,
     loadFromPgn,
     gameMetadata,
     handleMoveClick,

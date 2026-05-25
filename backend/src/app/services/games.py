@@ -3,9 +3,9 @@ from fastapi import BackgroundTasks
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..exceptions import BadRequestError, ConflictError
+from ..exceptions import BadRequestError, ConflictError, NotFoundError
 from ..models.games import Game
-from ..schemas.games import GamesListResponse, GameResponse, SyncStatusResponse
+from ..schemas.games import GamesListResponse, GameResponse, GameAnalysisCreate, SyncStatusResponse
 from .games_sync import run_sync
 from .profile import get_or_create_profile
 
@@ -73,3 +73,22 @@ async def list_games(
         items=[GameResponse.model_validate(g) for g in games],
         total=total,
     )
+
+
+async def save_game_analysis(
+    session: AsyncSession,
+    game_id: int,
+    user_id: str,
+    analysis: GameAnalysisCreate,
+) -> GameResponse:
+    result = await session.execute(
+        select(Game).where(Game.id == game_id, Game.user_id == user_id)
+    )
+    game = result.scalar_one_or_none()
+    if game is None:
+        raise NotFoundError("Game not found")
+
+    game.analysis = analysis.model_dump(mode="json")
+    await session.commit()
+    await session.refresh(game)
+    return GameResponse.model_validate(game)

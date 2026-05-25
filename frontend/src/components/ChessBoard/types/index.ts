@@ -29,6 +29,23 @@ export type EvaluationResult = {
 
 export type ThreatSquares = { hanging: string[]; pinned: string[] }
 
+export type MoveClassification = 'best' | 'excellent' | 'good' | 'inaccuracy' | 'mistake' | 'blunder'
+
+export type MoveAnalysis = {
+  san: string
+  cp_loss: number
+  best_move: string
+  classification: MoveClassification
+}
+
+export type GameAnalysis = {
+  moves: MoveAnalysis[]
+  white_accuracy: number
+  black_accuracy: number
+  depth: number
+  analyzed_at: string
+}
+
 export type UseChessGameProps = {
   interactive?: boolean
   interactiveAtEnd?: boolean

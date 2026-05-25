@@ -24,10 +24,10 @@ export function computeThreats(fen: string): ThreatSquares {
         hanging.push(square)
       }
 
-      // Pinned: removing this piece exposes own king to attack
-      // Reuse single Chess instance with remove/put to avoid N constructor calls
+      // Pinned: removing this piece exposes own king to attack (when it wasn't before)
+      const kingAlreadyAttacked = isKingAttacked(chess, piece.color, enemy)
       chess.remove(square)
-      if (isKingAttacked(chess, piece.color, enemy)) {
+      if (!kingAlreadyAttacked && isKingAttacked(chess, piece.color, enemy)) {
         pinned.push(square)
       }
       chess.put({ type: piece.type as PieceSymbol, color: piece.color as Color }, square)

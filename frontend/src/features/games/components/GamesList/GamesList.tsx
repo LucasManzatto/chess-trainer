@@ -69,7 +69,13 @@ function GameRow({ game, selected, username, onSelect }: GameRowProps) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-          <span className="text-xs text-gray-600">{timeControlLabel(game.time_control)}</span>
+          {game.analysis ? (
+            <span className="text-xs text-blue-400 font-mono">
+              {game.analysis.white_accuracy.toFixed(0)}% / {game.analysis.black_accuracy.toFixed(0)}%
+            </span>
+          ) : (
+            <span className="text-xs text-gray-600">{timeControlLabel(game.time_control)}</span>
+          )}
           <span className="text-xs text-gray-600">{formatDate(game.played_at)}</span>
         </div>
       </div>
@@ -116,7 +122,6 @@ type GamesListProps = {
   onResultChange: (v: GamesFilters['result']) => void
   onColorChange: (v: GamesFilters['color']) => void
   onTimeClassChange: (v: GamesFilters['time_class']) => void
-  onEcoChange: (v: string) => void
   onSync: () => void
 }
 
@@ -133,7 +138,6 @@ export const GamesList = memo(function GamesList({
   onResultChange,
   onColorChange,
   onTimeClassChange,
-  onEcoChange,
   onSync,
 }: GamesListProps) {
   return (
@@ -174,13 +178,6 @@ export const GamesList = memo(function GamesList({
             { label: 'Rapid', value: 'rapid' as const },
           ]}
           onChange={onTimeClassChange}
-        />
-        <input
-          type="text"
-          placeholder="ECO (e.g. B)"
-          value={filters.eco}
-          onChange={e => onEcoChange(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-amber-500/40"
         />
       </div>
 

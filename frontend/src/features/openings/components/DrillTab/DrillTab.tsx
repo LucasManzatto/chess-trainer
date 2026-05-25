@@ -2,8 +2,13 @@ import { useDrillTab } from './useDrillTab'
 import { DrillQueue } from './DrillQueue'
 import { DrillBoard } from './DrillBoard'
 import { DrillGrading } from './DrillGrading'
+import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
 
 export function DrillTab() {
+  return <ChessStoreProvider><DrillTabInner /></ChessStoreProvider>
+}
+
+function DrillTabInner() {
   const { isLoggedIn, queue, isLoading, state, dispatch, config, flash, handleGrade } = useDrillTab()
 
   if (!isLoggedIn) {

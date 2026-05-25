@@ -6,12 +6,17 @@ import { MoveList } from '../../components/MoveList/MoveList'
 import { PgnImportPanel } from '../../components/PgnImport/PgnImportPanel'
 import { usePositionEvaluation } from '../../components/ChessBoard/hooks/usePositionEvaluation'
 import { EvaluationBar } from '../../components/ChessBoard/EvaluationBar'
+import { ChessStoreProvider } from '../../components/ChessBoard/ChessStoreProvider'
 
 export const Route = createFileRoute('/')({
   component: FreePage,
 })
 
 function FreePage() {
+  return <ChessStoreProvider><FreePageInner /></ChessStoreProvider>
+}
+
+function FreePageInner() {
   const { config, allMoves, currentMoveIndex, boardFen, loadFromPgn, gameMetadata, handleMoveClick } =
     useGameHistory({ interactiveAtEnd: true })
   const [showImport, setShowImport] = useState(false)

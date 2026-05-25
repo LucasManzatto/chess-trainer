@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useChessStore } from '../stores/chessStore'
+import { useCallback, useMemo } from 'react'
+import { useChessStore, useChessStoreApi } from '../stores/chessStore'
 import { useArrowKeyNavigation } from '../../../hooks/useArrowKeyNavigation'
 import { computeThreats } from '../utils'
 import type { UseChessGameProps, ThreatSquares } from '../types'
@@ -18,18 +18,16 @@ export function useChessGame({
   onMove,
   onGameOver,
 }: UseChessGameProps = {}) {
-  const {
-    history,
-    currentMoveIndex,
-    chessEngine,
-    loadMoves,
-    navigateToIndex,
-    navigateBack,
-    navigateForward,
-    reset,
-    undo,
-    executeStepMove,
-  } = useChessStore()
+  const store = useChessStoreApi()
+  const history = useChessStore(s => s.history)
+  const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
+  const chessEngine = useChessStore(s => s.chessEngine)
+  const loadMoves = useChessStore(s => s.loadMoves)
+  const navigateToIndex = useChessStore(s => s.navigateToIndex)
+  const navigateBack = useChessStore(s => s.navigateBack)
+  const navigateForward = useChessStore(s => s.navigateForward)
+  const reset = useChessStore(s => s.reset)
+  const undo = useChessStore(s => s.undo)
 
   useArrowKeyNavigation(navigateBack, navigateForward)
 
@@ -49,6 +47,24 @@ export function useChessGame({
 
   const lastEntry = currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
 
+  const executeStepMove = useCallback((orig: string, dest: string) => {
+    const result = store.getState().applyMove(orig, dest)
+    if (!result) return
+
+    onMove?.(result)
+
+    const { chessEngine: nextEngine } = store.getState()
+    if (nextEngine.isGameOver()) {
+      if (nextEngine.isCheckmate()) {
+        onGameOver?.({ result: 'checkmate', winner: nextEngine.turn() === 'w' ? 'b' : 'w' })
+      } else if (nextEngine.isStalemate()) {
+        onGameOver?.({ result: 'stalemate' })
+      } else {
+        onGameOver?.({ result: 'draw' })
+      }
+    }
+  }, [store, onMove, onGameOver])
+
   const config = useMemo((): Config => ({
     fen: chessEngine.fen(),
     orientation,
@@ -62,13 +78,13 @@ export function useChessGame({
       dests: isInteractive ? dests : undefined,
       showDests: true,
       events: {
-        after: (orig, dest) => executeStepMove(orig, dest, onMove, onGameOver),
+        after: (orig, dest) => executeStepMove(orig, dest),
       },
     },
     animation: { enabled: true, duration: animationDurationInMs },
     highlight: { lastMove: true, check: true },
     premovable: { enabled: false },
-  }), [chessEngine, orientation, turn, isInteractive, dests, lastEntry, animationDurationInMs, onMove, onGameOver, executeStepMove])
+  }), [chessEngine, orientation, turn, isInteractive, dests, lastEntry, animationDurationInMs, executeStepMove])
 
   const allMoves = useMemo(() => history.map(e => e.san), [history])
   const currentMoves = useMemo(() => allMoves.slice(0, currentMoveIndex + 1), [allMoves, currentMoveIndex])

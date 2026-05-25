@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...auth import get_current_user_id
 from ...db import get_session
-from ...schemas.games import GamesListResponse, SyncStatusResponse
+from ...schemas.games import GameAnalysisCreate, GameResponse, GamesListResponse, SyncStatusResponse
 from ...services import games as games_service
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -43,3 +43,13 @@ async def list_games(
     offset: int = Query(default=0, ge=0),
 ) -> GamesListResponse:
     return await games_service.list_games(session, user_id, result, color, time_class, eco, limit, offset)
+
+
+@router.put("/{game_id}/analysis", response_model=GameResponse)
+async def save_game_analysis(
+    game_id: int,
+    analysis: GameAnalysisCreate,
+    session: Session,
+    user_id: UserId,
+) -> GameResponse:
+    return await games_service.save_game_analysis(session, game_id, user_id, analysis)

@@ -1,6 +1,24 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+MoveClassification = Literal['best', 'excellent', 'good', 'inaccuracy', 'mistake', 'blunder']
+
+
+class MoveAnalysis(BaseModel):
+    san: str
+    cp_loss: int
+    best_move: str
+    classification: MoveClassification
+
+
+class GameAnalysisCreate(BaseModel):
+    moves: list[MoveAnalysis]
+    white_accuracy: float
+    black_accuracy: float
+    depth: int
+    analyzed_at: datetime
 
 
 class UserProfileResponse(BaseModel):
@@ -36,6 +54,7 @@ class GameResponse(BaseModel):
     moves: list[str]
     pgn: str
     played_at: datetime | None
+    analysis: dict | None = None
 
 
 class GamesListResponse(BaseModel):

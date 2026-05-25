@@ -1,3 +1,7 @@
+import type { GameAnalysis, MoveAnalysis, MoveClassification } from '../../../components/ChessBoard/types'
+
+export type { GameAnalysis, MoveAnalysis, MoveClassification }
+
 export type UserProfile = {
   user_id: string
   chess_com_username: string | null
@@ -37,6 +41,7 @@ export type Game = {
   moves: string[]
   pgn: string
   played_at: string | null
+  analysis: GameAnalysis | null
 }
 
 export type GamesListResponse = {

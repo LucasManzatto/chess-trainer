@@ -6,6 +6,7 @@ import { ContinuationsList } from '../../../../components/ContinuationsList'
 import { MoveList } from '../../../../components/MoveList/MoveList'
 import { useBrowseTab } from './useBrowseTab'
 import { useAddToDrill } from './useAddToDrill'
+import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
 
 function AddToDrillButton({ openingId }: { openingId: number }) {
   const { isLoggedIn, inDrill, add, isPending } = useAddToDrill(openingId)
@@ -26,6 +27,10 @@ function AddToDrillButton({ openingId }: { openingId: number }) {
 }
 
 export function BrowseTab() {
+  return <ChessStoreProvider><BrowseTabInner /></ChessStoreProvider>
+}
+
+function BrowseTabInner() {
   const {
     openings,
     isLoading,

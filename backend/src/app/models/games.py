@@ -40,6 +40,7 @@ class Game(Base):
     moves: Mapped[list[str]] = mapped_column(ARRAY(Text))
     pgn: Mapped[str] = mapped_column(Text)
     played_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class SyncedMonth(Base):

@@ -1,10 +1,12 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useGameHistory } from '../../../hooks/useGameHistory'
 import { useGamesList } from '../components/GamesList/useGamesList'
 import { useGames } from './useGames'
 import { useGamesSync } from './useGamesSync'
 import { useProfile } from './useProfile'
-import type { Game } from '../types'
+import { useGameAnalysis } from '../../../components/ChessBoard/hooks/useGameAnalysis'
+import { useOpenings } from '../../openings/hooks/useOpenings'
+import type { Game, MoveClassification } from '../types'
 
 export function useGamesTab() {
   const { data: profile, isLoading: profileLoading } = useProfile()
@@ -15,6 +17,29 @@ export function useGamesTab() {
   const { data: gamesData, isLoading: gamesLoading } = useGames(filters)
   const { syncStatus, isRunning, triggerSync } = useGamesSync()
   const gameHistory = useGameHistory({ orientation })
+
+  const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
+    useGameAnalysis(gameHistory.allFens, selectedGame?.id ?? null)
+
+  const { data: openings } = useOpenings()
+
+  const openingMoveCount = useMemo(() => {
+    if (!selectedGame?.eco || !openings) return 0
+    let best = 0
+    for (const opening of openings) {
+      if (opening.eco !== selectedGame.eco) continue
+      const n = opening.moves.length
+      if (n <= best) continue
+      if (opening.moves.every((m, i) => selectedGame.moves[i] === m)) best = n
+    }
+    return best
+  }, [selectedGame, openings])
+
+  const moveClassifications = useMemo((): MoveClassification[] | undefined => {
+    const src = analysis ?? selectedGame?.analysis
+    if (!src || src.moves.length !== gameHistory.allMoves.length) return undefined
+    return src.moves.map(m => m.classification)
+  }, [analysis, selectedGame?.analysis, gameHistory.allMoves.length])
 
   const selectGame = useCallback((game: Game) => {
     setSelectedGame(game)
@@ -46,7 +71,13 @@ export function useGamesTab() {
     config: gameHistory.config,
     allMoves: gameHistory.allMoves,
     selectedMoveIndex: gameHistory.currentMoveIndex,
+    threats: gameHistory.threats,
     flipOrientation,
     onMoveClick: gameHistory.handleMoveClick,
+    analyze,
+    analyzeStatus,
+    analyzeProgress,
+    moveClassifications,
+    openingMoveCount,
   }
 }

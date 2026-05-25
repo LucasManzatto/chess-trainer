@@ -1,4 +1,5 @@
 import { useMoveList } from './useMoveList'
+import type { MoveClassification } from '../ChessBoard/types'
 
 type MoveListProps = {
   moves: string[]
@@ -6,6 +7,17 @@ type MoveListProps = {
   onMoveClick?: (index: number) => void
   onReset?: () => void
   showHeader?: boolean
+  moveClassifications?: MoveClassification[]
+  openingMoveCount?: number
+}
+
+const CLASSIFICATION_COLORS: Record<MoveClassification, string> = {
+  best: 'text-blue-400',
+  excellent: '',
+  good: '',
+  inaccuracy: '',
+  mistake: '',
+  blunder: 'text-red-400',
 }
 
 type MovePairRowProps = {
@@ -16,13 +28,16 @@ type MovePairRowProps = {
   onMoveClick?: (index: number) => void
   whiteRef: React.Ref<HTMLButtonElement>
   blackRef: React.Ref<HTMLButtonElement>
+  whiteClassification?: MoveClassification
+  blackClassification?: MoveClassification
+  openingMoveCount: number
 }
 
-function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef }: MovePairRowProps) {
+function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef, whiteClassification, blackClassification, openingMoveCount }: MovePairRowProps) {
   const whiteIndex = pairIndex * 2
   const blackIndex = pairIndex * 2 + 1
   return (
-    <tr key={`${pairIndex}-${white}`} className="hover:bg-white/5">
+    <tr key={`${pairIndex}-${white}`}>
       <td className="text-gray-500 px-3 py-1 w-8 select-none">
         {pairIndex + 1}.
       </td>
@@ -32,6 +47,8 @@ function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whit
           index={whiteIndex}
           selectedIndex={selectedIndex}
           onClick={onMoveClick}
+          classification={whiteClassification}
+          isOpening={whiteIndex < openingMoveCount}
           ref={whiteRef}
         />
       </td>
@@ -42,6 +59,8 @@ function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whit
             index={blackIndex}
             selectedIndex={selectedIndex}
             onClick={onMoveClick}
+            classification={blackClassification}
+            isOpening={blackIndex < openingMoveCount}
             ref={blackRef}
           />
         ) : (
@@ -57,25 +76,31 @@ type MoveTokenProps = {
   index: number
   selectedIndex: number | null
   onClick?: (index: number) => void
+  classification?: MoveClassification
+  isOpening?: boolean
   ref?: React.Ref<HTMLButtonElement>
 }
 
-function MoveToken({ san, index, selectedIndex, onClick, ref }: MoveTokenProps) {
+function MoveToken({ san, index, selectedIndex, onClick, classification, isOpening, ref }: MoveTokenProps) {
+  const classificationColor = classification ? CLASSIFICATION_COLORS[classification] : undefined
+  const colorClass = index === selectedIndex
+    ? 'bg-amber-500/25 text-amber-200'
+    : classificationColor || (isOpening ? 'text-amber-500' : 'text-gray-100')
+
   return (
     <button
       ref={ref}
       onClick={() => onClick?.(index)}
-      className={`font-mono w-full text-left px-1 rounded ${
-        index === selectedIndex ? 'bg-amber-500/25 text-amber-200' : 'text-gray-100'
-      }`}
+      className={`font-mono w-full text-left px-1 rounded hover:bg-white/10 ${colorClass}`}
     >
       {san}
     </button>
   )
 }
 
-export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true }: MoveListProps) {
+export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true, moveClassifications, openingMoveCount = 0 }: MoveListProps) {
   const { bottomRef, tokenRefs, pairs } = useMoveList(moves, selectedIndex)
+  const hasClassifications = moveClassifications && moveClassifications.length === moves.length
 
   return (
     <div className="flex flex-col h-full">
@@ -106,6 +131,9 @@ export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, sh
                   onMoveClick={onMoveClick}
                   whiteRef={el => { tokenRefs.current[pairIndex * 2] = el }}
                   blackRef={el => { tokenRefs.current[pairIndex * 2 + 1] = el }}
+                  whiteClassification={hasClassifications ? moveClassifications[pairIndex * 2] : undefined}
+                  blackClassification={hasClassifications ? moveClassifications[pairIndex * 2 + 1] : undefined}
+                  openingMoveCount={openingMoveCount}
                 />
               ))}
             </tbody>

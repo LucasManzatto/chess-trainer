@@ -114,6 +114,7 @@ export type BoardPanelProps = {
   extraShapes?: DrawShape[]
   threats?: ThreatSquares
   showThreatsControl?: boolean
+  defaultShowThreats?: boolean
   onToggleThreats?: () => void
 }
 
@@ -124,11 +125,12 @@ export function BoardPanel({
   extraShapes = [],
   threats,
   showThreatsControl = false,
+  defaultShowThreats = false,
   onToggleThreats,
 }: BoardPanelProps) {
   const { size: boardSize } = useBoardSettingsStore()
   const [showSettings, setShowSettings] = useState(false)
-  const [showThreats, setShowThreats] = useState(false)
+  const [showThreats, setShowThreats] = useState(defaultShowThreats)
 
   const fen = config.fen
   const orientation = config.orientation ?? 'white'

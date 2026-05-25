@@ -1,5 +1,5 @@
 import { request } from '../../../lib/api'
-import type { GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../types'
+import type { Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../types'
 
 export const profileApi = {
   get: (signal?: AbortSignal) =>
@@ -29,4 +29,9 @@ export const gamesApi = {
     params.set('offset', String(offset))
     return request<GamesListResponse>(`/api/v1/games?${params}`, { signal })
   },
+  saveAnalysis: (gameId: number, analysis: GameAnalysis) =>
+    request<Game>(`/api/v1/games/${gameId}/analysis`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...analysis, analyzed_at: analysis.analyzed_at }),
+    }),
 }
