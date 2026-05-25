@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { DEFAULT_BOARD_SIZE } from '../../stores/useBoardSettingsStore'
+import { DEFAULT_BOARD_SIZE } from '../stores/boardSettingsStore'
 
 export function useBoardSizing(boardWidth?: number) {
   const containerRef = useRef<HTMLDivElement>(null)

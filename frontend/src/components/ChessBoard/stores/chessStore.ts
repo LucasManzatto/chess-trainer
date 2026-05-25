@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Chess } from 'chess.js'
-import type { MoveResult, GameOverResult, HistoryEntry } from './types'
+import type { MoveResult, GameOverResult, HistoryEntry } from '../types'
 
 interface ChessState {
   history: HistoryEntry[]

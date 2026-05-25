@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
-import { useChessStore } from './chessStore'
-import { useArrowKeyNavigation } from '../../hooks/useArrowKeyNavigation'
-import type { UseChessGameProps } from './types'
+import { useChessStore } from '../stores/chessStore'
+import { useArrowKeyNavigation } from '../../../hooks/useArrowKeyNavigation'
+import { computeThreats } from '../utils'
+import type { UseChessGameProps, ThreatSquares } from '../types'
 import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { Config } from '@lichess-org/chessground/config'
 
-export type { MoveResult, GameOverResult, UseChessGameProps } from './types'
+const EMPTY_THREATS: ThreatSquares = { hanging: [], pinned: [] }
+
+export type { MoveResult, GameOverResult, UseChessGameProps } from '../types'
 
 export function useChessGame({
   interactive = true,
@@ -69,6 +72,7 @@ export function useChessGame({
 
   const allMoves = useMemo(() => history.map(e => e.san), [history])
   const currentMoves = useMemo(() => allMoves.slice(0, currentMoveIndex + 1), [allMoves, currentMoveIndex])
+  const threats = lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS
 
   return {
     config,
@@ -83,5 +87,6 @@ export function useChessGame({
     navigateForward,
     reset,
     undo,
+    threats,
   }
 }

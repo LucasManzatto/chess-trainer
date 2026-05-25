@@ -3,7 +3,6 @@ import { MoveList } from '../../../../components/MoveList/MoveList'
 import { PanelSection } from '../../../../components/PanelSection'
 import { useGamesTab } from '../../hooks/useGamesTab'
 import { GamesList } from '../GamesList/GamesList'
-import { SyncControls } from './SyncControls'
 
 export function GamesTab() {
   const {
@@ -39,11 +38,14 @@ export function GamesTab() {
           username={username}
           filters={filters}
           total={gamesTotal}
+          syncStatus={syncStatus}
+          isRunning={isRunning}
           onSelect={selectGame}
           onResultChange={setResult}
           onColorChange={setColor}
           onTimeClassChange={setTimeClass}
           onEcoChange={setEco}
+          onSync={triggerSync}
         />
       </section>
 
@@ -53,12 +55,11 @@ export function GamesTab() {
           config={config}
           onFlipOrientation={flipOrientation}
           title={
-            <div className="flex items-center justify-between w-full gap-2">
+            selectedGame ? (
               <div className="text-sm text-gray-400 truncate">
-                {selectedGame ? `${selectedGame.white_username} vs ${selectedGame.black_username}` : ''}
+                {selectedGame.white_username} vs {selectedGame.black_username}
               </div>
-              <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={triggerSync} />
-            </div>
+            ) : undefined
           }
         />
       </section>

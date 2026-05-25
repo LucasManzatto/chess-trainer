@@ -2,8 +2,8 @@ import { useState, useMemo, useCallback } from 'react'
 import { useOpenings } from '../../hooks/useOpenings'
 import type { Opening } from '../../types'
 import { openingColor } from '../../types'
-import { computeCandidateShapes } from '../../../../components/ChessBoard/candidateShapes'
-import { useChessGame } from '../../../../components/ChessBoard/useChessGame'
+import { computeCandidateShapes } from '../../../../components/ChessBoard/utils'
+import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
 import { useBrowseOpeningContext } from './useBrowseOpeningContext'
 
 export function useBrowseTab() {

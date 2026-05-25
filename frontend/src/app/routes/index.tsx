@@ -4,8 +4,8 @@ import { useGameHistory } from '../../hooks/useGameHistory'
 import { ChessBoard } from '../../components/ChessBoard/ChessBoard'
 import { MoveList } from '../../components/MoveList/MoveList'
 import { PgnImportPanel } from '../../components/PgnImport/PgnImportPanel'
-import { usePositionEvaluation } from '../../features/evaluation/hooks/usePositionEvaluation'
-import { EvaluationBar } from '../../features/evaluation/components/EvaluationBar'
+import { usePositionEvaluation } from '../../components/ChessBoard/hooks/usePositionEvaluation'
+import { EvaluationBar } from '../../components/ChessBoard/EvaluationBar'
 
 export const Route = createFileRoute('/')({
   component: FreePage,

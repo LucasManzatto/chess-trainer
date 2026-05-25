@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Chess } from 'chess.js'
-import { useChessGame } from '../components/ChessBoard/useChessGame'
+import { useChessGame } from '../components/ChessBoard/hooks/useChessGame'
 
 export type GameMetadata = {
   white?: string

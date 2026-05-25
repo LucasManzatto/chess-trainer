@@ -5,7 +5,7 @@ import { drillApi } from '../../api'
 import { openingsKeys } from '../../api/queryKeys'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
-import { useChessGame } from '../../../../components/ChessBoard/useChessGame'
+import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
 
 export type DrillState =
   | { phase: 'queue' }

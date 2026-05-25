@@ -1,6 +1,6 @@
-import { useBoardSizing } from './useBoardSizing'
+import { useBoardSizing } from './hooks/useBoardSizing'
 import { ChessGround } from './ChessGround'
-import { useBoardSettingsStore } from '../../stores/useBoardSettingsStore'
+import { useBoardSettingsStore } from './stores/boardSettingsStore'
 import type { MoveResult, GameOverResult } from './types'
 import type { Config } from '@lichess-org/chessground/config'
 import type { DrawShape } from '@lichess-org/chessground/draw'

@@ -18,6 +18,17 @@ export type HistoryEntry = {
   to: string
 }
 
+export type EvaluationScore = { type: 'cp' | 'mate'; value: number }
+
+export type EvaluationResult = {
+  score: EvaluationScore | undefined
+  isLoading: boolean
+  bestMove: string | undefined
+  error: boolean
+}
+
+export type ThreatSquares = { hanging: string[]; pinned: string[] }
+
 export type UseChessGameProps = {
   interactive?: boolean
   interactiveAtEnd?: boolean

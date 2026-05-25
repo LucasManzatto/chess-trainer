@@ -1,12 +1,13 @@
 import { type ReactNode, useMemo, useState } from 'react'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Config } from '@lichess-org/chessground/config'
-import { EvaluationBar } from '../../features/evaluation/components/EvaluationBar'
-import { usePositionEvaluation } from '../../features/evaluation/hooks/usePositionEvaluation'
-import { useBoardSettingsStore } from '../../stores/useBoardSettingsStore'
+import { EvaluationBar } from './EvaluationBar'
+import { usePositionEvaluation } from './hooks/usePositionEvaluation'
+import { useBoardSettingsStore } from './stores/boardSettingsStore'
 import { CloseIcon, EyeIcon, FlipIcon, GearIcon, HangingPieceIcon, PinnedPieceIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
-import { computeThreats } from './threatShapes'
+import { squareToPixel } from './utils'
+import type { ThreatSquares } from './types'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
@@ -14,16 +15,6 @@ const DOT_SIZE = 22
 const BOARD_PRESETS = [350, 450, 550, 700] as const
 const BOARD_PRESET_LABELS = ['S', 'M', 'L', 'XL'] as const
 
-function squareToPixel(square: string, boardSize: number, orientation: 'white' | 'black') {
-  const fileIdx = square.charCodeAt(0) - 97
-  const rankIdx = parseInt(square[1]) - 1
-  const sq = boardSize / 8
-  const col = orientation === 'white' ? fileIdx : 7 - fileIdx
-  const row = orientation === 'white' ? 7 - rankIdx : rankIdx
-  return { left: col * sq + sq - DOT_SIZE - 2, top: row * sq + 2 }
-}
-
-type ThreatSquares = { hanging: string[]; pinned: string[] }
 
 function ThreatOverlay({ threats, boardSize, orientation }: {
   threats: ThreatSquares
@@ -33,7 +24,7 @@ function ThreatOverlay({ threats, boardSize, orientation }: {
   return (
     <div className="absolute inset-0 pointer-events-none">
       {threats.hanging.map(sq => {
-        const { left, top } = squareToPixel(sq, boardSize, orientation)
+        const { left, top } = squareToPixel(sq, boardSize, orientation, DOT_SIZE)
         return (
           <div key={`h-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
             <HangingPieceIcon />
@@ -41,7 +32,7 @@ function ThreatOverlay({ threats, boardSize, orientation }: {
         )
       })}
       {threats.pinned.map(sq => {
-        const { left, top } = squareToPixel(sq, boardSize, orientation)
+        const { left, top } = squareToPixel(sq, boardSize, orientation, DOT_SIZE)
         return (
           <div key={`p-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
             <PinnedPieceIcon />
@@ -121,7 +112,9 @@ export type BoardPanelProps = {
   onFlipOrientation: () => void
   title?: ReactNode
   extraShapes?: DrawShape[]
+  threats?: ThreatSquares
   showThreatsControl?: boolean
+  onToggleThreats?: () => void
 }
 
 export function BoardPanel({
@@ -129,7 +122,9 @@ export function BoardPanel({
   onFlipOrientation,
   title,
   extraShapes = [],
+  threats,
   showThreatsControl = false,
+  onToggleThreats,
 }: BoardPanelProps) {
   const { size: boardSize } = useBoardSettingsStore()
   const [showSettings, setShowSettings] = useState(false)
@@ -144,11 +139,6 @@ export function BoardPanel({
       ? [{ orig: bestMove.slice(0, 2) as import('@lichess-org/chessground/types').Key, dest: bestMove.slice(2, 4) as import('@lichess-org/chessground/types').Key, brush: 'blue' }]
       : [],
     [bestMove],
-  )
-
-  const threats = useMemo(
-    () => showThreats && fen ? computeThreats(fen) : { hanging: [], pinned: [] },
-    [showThreats, fen],
   )
 
   const allShapes = useMemo(
@@ -175,7 +165,7 @@ export function BoardPanel({
             boardWidth={boardSize}
             extraShapes={allShapes}
           />
-          {showThreats && (
+          {threats && showThreats && (
             <ThreatOverlay threats={threats} boardSize={boardSize} orientation={orientation} />
           )}
         </div>
@@ -197,7 +187,7 @@ export function BoardPanel({
           </button>
           {showThreatsControl && (
             <button
-              onClick={() => setShowThreats(v => !v)}
+              onClick={() => { setShowThreats(v => !v); onToggleThreats?.() }}
               className={`p-1.5 rounded transition-colors ${
                 showThreats
                   ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'

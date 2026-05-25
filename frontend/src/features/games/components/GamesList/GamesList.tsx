@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import type { Game, GamesFilters } from '../../types'
+import type { Game, GamesFilters, SyncStatus } from '../../types'
+import { SyncControls } from '../GamesTab/SyncControls'
 
 type ResultBadgeProps = { result: Game['result'] }
 
@@ -29,7 +30,7 @@ function timeControlLabel(tc: string | null): string {
   if (isNaN(secs)) return tc
   if (secs < 180)  return '⚡'  // bullet
   if (secs < 600)  return '⏱'  // blitz
-  return '🕐'                    // rapid+
+  return ''                      // rapid+
 }
 
 type GameRowProps = {
@@ -109,11 +110,14 @@ type GamesListProps = {
   username: string
   filters: GamesFilters
   total: number
+  syncStatus: SyncStatus | null
+  isRunning: boolean
   onSelect: (game: Game) => void
   onResultChange: (v: GamesFilters['result']) => void
   onColorChange: (v: GamesFilters['color']) => void
   onTimeClassChange: (v: GamesFilters['time_class']) => void
   onEcoChange: (v: string) => void
+  onSync: () => void
 }
 
 export const GamesList = memo(function GamesList({
@@ -123,21 +127,27 @@ export const GamesList = memo(function GamesList({
   username,
   filters,
   total,
+  syncStatus,
+  isRunning,
   onSelect,
   onResultChange,
   onColorChange,
   onTimeClassChange,
   onEcoChange,
+  onSync,
 }: GamesListProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Filters header */}
       <div className="px-3 py-2 border-b border-white/[0.06] flex flex-col gap-2 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Games
-          </span>
-          <span className="text-xs text-gray-600">{total}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              Games
+            </span>
+            <span className="text-xs text-gray-600">{total}</span>
+          </div>
+          <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={onSync} />
         </div>
         <FilterToggle
           value={filters.result}

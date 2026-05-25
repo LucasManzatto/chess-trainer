@@ -1,4 +1,4 @@
-import type { EvaluationScore } from '../types'
+import type { EvaluationScore } from './types'
 
 type Props = {
   score?: EvaluationScore
