@@ -1,13 +1,12 @@
 import { type ReactNode, useMemo, useState } from 'react'
-import type { Key } from '@lichess-org/chessground/types'
 import type { DrawShape } from '@lichess-org/chessground/draw'
+import type { Config } from '@lichess-org/chessground/config'
 import { EvaluationBar } from '../../features/evaluation/components/EvaluationBar'
 import { usePositionEvaluation } from '../../features/evaluation/hooks/usePositionEvaluation'
 import { useBoardSettingsStore } from '../../stores/useBoardSettingsStore'
 import { CloseIcon, EyeIcon, FlipIcon, GearIcon, HangingPieceIcon, PinnedPieceIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
 import { computeThreats } from './threatShapes'
-import type { MoveResult } from './ChessBoard'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
@@ -118,36 +117,31 @@ function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => 
 }
 
 export type BoardPanelProps = {
-  fen: string | undefined
-  orientation: 'white' | 'black'
+  config: Config
   onFlipOrientation: () => void
   title?: ReactNode
-  lastMove?: [Key, Key]
   extraShapes?: DrawShape[]
-  onMove?: (move: MoveResult) => void
-  interactive?: boolean
   showThreatsControl?: boolean
 }
 
 export function BoardPanel({
-  fen,
-  orientation,
+  config,
   onFlipOrientation,
   title,
-  lastMove,
   extraShapes = [],
-  onMove,
-  interactive = true,
   showThreatsControl = false,
 }: BoardPanelProps) {
   const { size: boardSize } = useBoardSettingsStore()
   const [showSettings, setShowSettings] = useState(false)
   const [showThreats, setShowThreats] = useState(false)
 
+  const fen = config.fen
+  const orientation = config.orientation ?? 'white'
+
   const { score, isLoading: evalLoading, bestMove } = usePositionEvaluation(fen)
   const bestMoveShape = useMemo<DrawShape[]>(
     () => bestMove
-      ? [{ orig: bestMove.slice(0, 2) as Key, dest: bestMove.slice(2, 4) as Key, brush: 'blue' }]
+      ? [{ orig: bestMove.slice(0, 2) as import('@lichess-org/chessground/types').Key, dest: bestMove.slice(2, 4) as import('@lichess-org/chessground/types').Key, brush: 'blue' }]
       : [],
     [bestMove],
   )
@@ -177,12 +171,8 @@ export function BoardPanel({
 
         <div style={{ width: boardSize, height: boardSize, flexShrink: 0, position: 'relative' }}>
           <ChessBoard
+            config={config}
             boardWidth={boardSize}
-            position={fen}
-            orientation={orientation}
-            interactive={interactive}
-            onMove={onMove}
-            lastMove={lastMove}
             extraShapes={allShapes}
           />
           {showThreats && (

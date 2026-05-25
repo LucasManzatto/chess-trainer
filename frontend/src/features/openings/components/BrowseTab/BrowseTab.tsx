@@ -1,11 +1,8 @@
-import { useCallback, useState } from 'react'
 import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
 import { PanelSection } from '../../../../components/PanelSection'
-import { openingColor } from '../../types'
-import type { Opening } from '../../types'
 import { NotesPanel } from '../NotesPanel'
 import { OpeningsList } from '../OpeningsList/OpeningsList'
-import { ContinuationsList } from '../ExploreTab/ContinuationsList'
+import { ContinuationsList } from '../../../../components/ContinuationsList'
 import { MoveList } from '../../../../components/MoveList/MoveList'
 import { useBrowseTab } from './useBrowseTab'
 import { useAddToDrill } from './useAddToDrill'
@@ -37,26 +34,17 @@ export function BrowseTab() {
     search,
     allMoves,
     currentMoveIndex,
+    config,
     boardFen,
-    currentMoveFen,
     openingMoveIndex,
     shapes,
-    lastMoveSquares,
+    candidateMoves,
     setSearch,
     setMoveIndex,
     selectOpening,
-    handleMove,
+    flipOrientation,
     resetBoard,
-    candidateMoves,
   } = useBrowseTab()
-
-  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
-  const flipOrientation = useCallback(() => setOrientation(o => o === 'white' ? 'black' : 'white'), [])
-
-  const handleSelectOpening = useCallback((o: Opening) => {
-    selectOpening(o)
-    setOrientation(openingColor(o))
-  }, [selectOpening])
 
   return (
     <div className="grid grid-cols-[300px_1fr_220px_280px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
@@ -69,7 +57,7 @@ export function BrowseTab() {
           selectedName={selected?.name}
           search={search}
           onSearchChange={setSearch}
-          onSelect={handleSelectOpening}
+          onSelect={selectOpening}
           defaultViewMode="name"
         />
       </section>
@@ -77,11 +65,8 @@ export function BrowseTab() {
       {/* Center: board */}
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
-          fen={boardFen}
-          orientation={orientation}
+          config={config}
           onFlipOrientation={flipOrientation}
-          onMove={handleMove}
-          lastMove={lastMoveSquares}
           extraShapes={shapes}
           showThreatsControl={true}
           title={
@@ -115,7 +100,7 @@ export function BrowseTab() {
             <NotesPanel
               openingId={selected.id}
               moveIndex={openingMoveIndex}
-              fen={currentMoveFen}
+              fen={boardFen}
               moves={selected.moves}
             />
           ) : (

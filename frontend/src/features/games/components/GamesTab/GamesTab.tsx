@@ -21,11 +21,9 @@ export function GamesTab() {
     syncStatus,
     isRunning,
     triggerSync,
-    moveSans,
+    config,
+    allMoves,
     selectedMoveIndex,
-    lastMove,
-    currentFen,
-    boardOrientation,
     flipOrientation,
     onMoveClick,
   } = useGamesTab()
@@ -52,11 +50,8 @@ export function GamesTab() {
       {/* Col 2: Board */}
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
-          fen={currentFen}
-          orientation={boardOrientation}
+          config={config}
           onFlipOrientation={flipOrientation}
-          interactive={false}
-          lastMove={lastMove}
           title={
             <div className="flex items-center justify-between w-full gap-2">
               <div className="text-sm text-gray-400 truncate">
@@ -72,8 +67,8 @@ export function GamesTab() {
       <PanelSection title="Moves">
         <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
-            moves={moveSans}
-            selectedIndex={selectedMoveIndex < moveSans.length ? selectedMoveIndex : null}
+            moves={allMoves}
+            selectedIndex={selectedMoveIndex < allMoves.length ? selectedMoveIndex : null}
             onMoveClick={onMoveClick}
             showHeader={false}
           />

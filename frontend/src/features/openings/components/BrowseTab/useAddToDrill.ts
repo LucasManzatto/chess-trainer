@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthSession } from '../../../../hooks/useAuthSession'
-import { useMutationWithInvalidation } from '../../../../hooks/useMutationWithInvalidation'
+import { useMutationWithInvalidation } from '../../hooks/useMutationWithInvalidation'
 import { drillApi } from '../../api'
 import { openingsKeys } from '../../api/queryKeys'
 
@@ -13,7 +13,7 @@ export function useAddToDrill(openingId: number) {
     enabled: !!session,
   })
 
-  const mutation = useMutationWithInvalidation(
+  const mutation = useMutationWithInvalidation<void>(
     () => drillApi.addToDrill(openingId),
     openingsKeys.drillQueue(),
   )

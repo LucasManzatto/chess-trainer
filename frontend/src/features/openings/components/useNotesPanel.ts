@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { openingCommentsApi, positionCommentsApi } from '../api'
 import { openingsKeys } from '../api/queryKeys'
 import { useAuthSession } from '../../../hooks/useAuthSession'
-import { useMutationWithInvalidation } from '../../../hooks/useMutationWithInvalidation'
+import { useMutationWithInvalidation } from '../hooks/useMutationWithInvalidation'
 import type { OpeningComment, PositionComment } from '../types'
 
 type EditingState = { id: number; content: string; type: 'opening' | 'position' }

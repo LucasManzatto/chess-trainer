@@ -4,7 +4,7 @@ import { DrillBoard } from './DrillBoard'
 import { DrillGrading } from './DrillGrading'
 
 export function DrillTab() {
-  const { isLoggedIn, queue, isLoading, state, dispatch, handleMove, handleGrade } = useDrillTab()
+  const { isLoggedIn, queue, isLoading, state, dispatch, config, flash, handleGrade } = useDrillTab()
 
   if (!isLoggedIn) {
     return (
@@ -30,9 +30,8 @@ export function DrillTab() {
       <DrillBoard
         item={state.item}
         moveIndex={state.moveIndex}
-        fen={state.fen}
-        flash={state.flash}
-        onMove={handleMove}
+        config={config}
+        flash={flash}
         onBack={() => dispatch({ type: 'back_to_queue' })}
       />
     )

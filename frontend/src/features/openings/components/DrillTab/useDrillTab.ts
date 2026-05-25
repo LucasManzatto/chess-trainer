@@ -5,29 +5,28 @@ import { drillApi } from '../../api'
 import { openingsKeys } from '../../api/queryKeys'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
+import { useChessGame } from '../../../../components/ChessBoard/useChessGame'
 
 export type DrillState =
   | { phase: 'queue' }
-  | { phase: 'drilling'; item: DrillQueueItem; moveIndex: number; fen: string; flash: 'correct' | 'wrong' | null }
+  | { phase: 'drilling'; item: DrillQueueItem; moveIndex: number; flash: 'correct' | 'wrong' | null }
   | { phase: 'grading'; item: DrillQueueItem }
 
 type DrillAction =
   | { type: 'start'; item: DrillQueueItem }
-  | { type: 'correct_move'; fen: string; nextIndex: number }
+  | { type: 'correct_move'; nextIndex: number }
   | { type: 'complete'; item: DrillQueueItem }
   | { type: 'wrong_move' }
-  | { type: 'reset_flash'; fen: string; moveIndex: number; item: DrillQueueItem }
+  | { type: 'reset_flash'; moveIndex: number }
   | { type: 'back_to_queue' }
-
-const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 function drillReducer(state: DrillState, action: DrillAction): DrillState {
   switch (action.type) {
     case 'start':
-      return { phase: 'drilling', item: action.item, moveIndex: 0, fen: INITIAL_FEN, flash: null }
+      return { phase: 'drilling', item: action.item, moveIndex: 0, flash: null }
     case 'correct_move':
       if (state.phase !== 'drilling') return state
-      return { ...state, moveIndex: action.nextIndex, fen: action.fen, flash: 'correct' }
+      return { ...state, moveIndex: action.nextIndex, flash: 'correct' }
     case 'complete':
       return { phase: 'grading', item: action.item }
     case 'wrong_move':
@@ -35,7 +34,7 @@ function drillReducer(state: DrillState, action: DrillAction): DrillState {
       return { ...state, flash: 'wrong' }
     case 'reset_flash':
       if (state.phase !== 'drilling') return state
-      return { ...state, fen: action.fen, moveIndex: action.moveIndex, flash: null }
+      return { ...state, moveIndex: action.moveIndex, flash: null }
     case 'back_to_queue':
       return { phase: 'queue' }
     default:
@@ -68,16 +67,10 @@ export function useDrillTab() {
 
   const [state, dispatch] = useReducer(drillReducer, { phase: 'queue' })
 
-  useEffect(() => {
-    if (state.phase !== 'drilling' || state.flash !== 'wrong') return
-    const { fen, moveIndex, item } = state
-    const id = setTimeout(() => {
-      dispatch({ type: 'reset_flash', fen, moveIndex, item })
-    }, 600)
-    return () => clearTimeout(id)
-  }, [state])
+  const isDrilling = state.phase === 'drilling'
+  const flash = isDrilling ? state.flash : null
 
-  const handleMove = useCallback((move: MoveResult) => {
+  const handleMoveValidate = useCallback((move: MoveResult) => {
     if (state.phase !== 'drilling') return
     const { item, moveIndex } = state
     const expected = item.moves[moveIndex]
@@ -86,12 +79,34 @@ export function useDrillTab() {
       if (nextIndex >= item.moves.length) {
         dispatch({ type: 'complete', item })
       } else {
-        dispatch({ type: 'correct_move', fen: move.fen, nextIndex })
+        dispatch({ type: 'correct_move', nextIndex })
       }
     } else {
       dispatch({ type: 'wrong_move' })
     }
   }, [state])
+
+  const board = useChessGame({
+    interactive: isDrilling && flash !== 'wrong',
+    onMove: handleMoveValidate,
+  })
+
+  // Reset board when a new drill item starts
+  const drillItem = isDrilling ? state.item : null
+  useEffect(() => {
+    if (drillItem) board.reset()
+  }, [drillItem, board.reset])
+
+  // Undo wrong move after flash, then restore previous moveIndex
+  useEffect(() => {
+    if (state.phase !== 'drilling' || state.flash !== 'wrong') return
+    const { moveIndex } = state
+    const id = setTimeout(() => {
+      board.undo()
+      dispatch({ type: 'reset_flash', moveIndex })
+    }, 600)
+    return () => clearTimeout(id)
+  }, [state, board.undo])
 
   function handleGrade(grade: DrillGrade) {
     if (state.phase !== 'grading') return
@@ -99,5 +114,14 @@ export function useDrillTab() {
     dispatch({ type: 'back_to_queue' })
   }
 
-  return { isLoggedIn, queue, isLoading, state, dispatch, handleMove, handleGrade }
+  return {
+    isLoggedIn,
+    queue,
+    isLoading,
+    state,
+    dispatch,
+    config: board.config,
+    flash,
+    handleGrade,
+  }
 }

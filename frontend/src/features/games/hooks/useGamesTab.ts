@@ -1,5 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
-import type { Key } from '@lichess-org/chessground/types'
+import { useCallback, useState } from 'react'
 import { useGameHistory } from '../../../hooks/useGameHistory'
 import { useGamesList } from '../components/GamesList/useGamesList'
 import { useGames } from './useGames'
@@ -15,7 +14,7 @@ export function useGamesTab() {
   const { filters, setResult, setColor, setTimeClass, setEco } = useGamesList()
   const { data: gamesData, isLoading: gamesLoading } = useGames(filters)
   const { syncStatus, isRunning, triggerSync } = useGamesSync()
-  const gameHistory = useGameHistory()
+  const gameHistory = useGameHistory({ orientation })
 
   const selectGame = useCallback((game: Game) => {
     setSelectedGame(game)
@@ -26,15 +25,6 @@ export function useGamesTab() {
   const flipOrientation = useCallback(() => {
     setOrientation(o => o === 'white' ? 'black' : 'white')
   }, [])
-
-  const moves = gameHistory.moves
-  const selectedMoveIndex = gameHistory.selectedIndex
-
-  const moveSans = useMemo(() => moves.map(m => m.san), [moves])
-  const lastMove = useMemo<[Key, Key] | undefined>(() => {
-    const move = moves[selectedMoveIndex]
-    return move ? [move.from as Key, move.to as Key] : undefined
-  }, [moves, selectedMoveIndex])
 
   return {
     profile,
@@ -53,12 +43,9 @@ export function useGamesTab() {
     syncStatus,
     isRunning,
     triggerSync,
-    moves,
-    moveSans,
-    selectedMoveIndex,
-    lastMove,
-    currentFen: gameHistory.position,
-    boardOrientation: orientation,
+    config: gameHistory.config,
+    allMoves: gameHistory.allMoves,
+    selectedMoveIndex: gameHistory.currentMoveIndex,
     flipOrientation,
     onMoveClick: gameHistory.handleMoveClick,
   }

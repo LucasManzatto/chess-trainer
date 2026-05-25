@@ -1,12 +1,11 @@
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
 import { BrowseTab } from '../../../features/openings/components/BrowseTab/BrowseTab'
-import { ExploreTab } from '../../../features/openings/components/ExploreTab/ExploreTab'
 import { DrillTab } from '../../../features/openings/components/DrillTab/DrillTab'
 import { useFavorites } from '../../../features/openings/hooks/useFavorites'
 
 const searchSchema = z.object({
-  tab: z.enum(['browse', 'explore', 'drill']).default('browse').catch('browse'),
+  tab: z.enum(['browse', 'drill']).default('browse').catch('browse'),
 })
 
 export const Route = createFileRoute('/openings/')({
@@ -14,11 +13,10 @@ export const Route = createFileRoute('/openings/')({
   component: OpeningsPage,
 })
 
-type Tab = 'browse' | 'explore' | 'drill'
+type Tab = 'browse' | 'drill'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'browse', label: 'Browse' },
-  { id: 'explore', label: 'Explore' },
   { id: 'drill', label: 'Drill' },
 ]
 
@@ -51,7 +49,6 @@ function OpeningsPage() {
 
       <div className="flex-1 min-h-0">
         {tab === 'browse' && <BrowseTab />}
-        {tab === 'explore' && <ExploreTab />}
         {tab === 'drill' && <DrillTab />}
       </div>
     </main>

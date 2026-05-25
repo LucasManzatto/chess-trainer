@@ -12,9 +12,10 @@ export const Route = createFileRoute('/')({
 })
 
 function FreePage() {
-  const { moves, handleMove, handleMoveClick, loadFromPgn, gameMetadata, position, interactive, selectedIndex } = useGameHistory()
+  const { config, allMoves, currentMoveIndex, boardFen, loadFromPgn, gameMetadata, handleMoveClick } =
+    useGameHistory({ interactiveAtEnd: true })
   const [showImport, setShowImport] = useState(false)
-  const { score, isLoading } = usePositionEvaluation(position)
+  const { score, isLoading } = usePositionEvaluation(boardFen)
 
   return (
     <main className="flex-1 flex items-center justify-center p-4">
@@ -22,7 +23,7 @@ function FreePage() {
         <div className="w-full md:flex-1 md:max-w-[min(calc(100vh-8rem),700px)] min-w-0 flex flex-row gap-2 self-start">
           <EvaluationBar score={score} isLoading={isLoading} />
           <div className="flex-1">
-            <ChessBoard position={position} interactive={interactive} onMove={handleMove} />
+            <ChessBoard config={config} />
           </div>
         </div>
         <div className="w-full md:w-64 md:shrink-0 flex flex-col gap-2">
@@ -49,8 +50,8 @@ function FreePage() {
               </div>
             )}
             <MoveList
-              moves={moves.map(m => m.san)}
-              selectedIndex={selectedIndex}
+              moves={allMoves}
+              selectedIndex={currentMoveIndex >= 0 ? currentMoveIndex : null}
               onMoveClick={handleMoveClick}
             />
           </div>

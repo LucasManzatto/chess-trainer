@@ -1,37 +1,19 @@
-import { useChessGame } from './useChessGame'
 import { useBoardSizing } from './useBoardSizing'
 import { ChessGround } from './ChessGround'
 import { useBoardSettingsStore } from '../../stores/useBoardSettingsStore'
-import type { MoveResult, GameOverResult } from './useChessGame'
-import type { Key } from '@lichess-org/chessground/types'
+import type { MoveResult, GameOverResult } from './types'
+import type { Config } from '@lichess-org/chessground/config'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 
 export type { MoveResult, GameOverResult }
 
 export type ChessBoardProps = {
-  position?: string
-  orientation?: 'white' | 'black'
+  config: Config
   boardWidth?: number
-  interactive?: boolean
-  animationDurationInMs?: number
-  lastMove?: [Key, Key]
   extraShapes?: DrawShape[]
-  onMove?: (move: MoveResult) => void
-  onGameOver?: (result: GameOverResult) => void
 }
 
-export function ChessBoard({
-  position,
-  orientation = 'white',
-  boardWidth,
-  interactive = true,
-  animationDurationInMs = 300,
-  lastMove,
-  extraShapes,
-  onMove,
-  onGameOver,
-}: ChessBoardProps) {
-  const { config } = useChessGame({ position, interactive, orientation, animationDurationInMs, lastMove, onMove, onGameOver })
+export function ChessBoard({ config, boardWidth, extraShapes }: ChessBoardProps) {
   const { size: storedSize } = useBoardSettingsStore()
   const resolvedWidth = boardWidth ?? storedSize
   const { containerRef, width } = useBoardSizing(resolvedWidth)

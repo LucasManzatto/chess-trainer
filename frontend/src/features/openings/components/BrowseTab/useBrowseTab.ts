@@ -1,143 +1,64 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Chess } from 'chess.js'
-import type { Key } from '@lichess-org/chessground/types'
-import type { DrawShape } from '@lichess-org/chessground/draw'
 import { useOpenings } from '../../hooks/useOpenings'
-import { useOpeningTrie, walkTrie, collectOpenings } from '../../hooks/useOpeningTrie'
 import type { Opening } from '../../types'
-import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
-import { useArrowKeyNavigation } from '../../../../hooks/useArrowKeyNavigation'
-
-function computeAllMovesData(moves: string[]): { fens: string[]; froms: string[]; tos: string[] } {
-  const chess = new Chess()
-  const fens: string[] = [], froms: string[] = [], tos: string[] = []
-  for (const san of moves) {
-    const move = chess.move(san)
-    fens.push(chess.fen())
-    froms.push(move.from)
-    tos.push(move.to)
-  }
-  return { fens, froms, tos }
-}
+import { openingColor } from '../../types'
+import { computeCandidateShapes } from '../../../../components/ChessBoard/candidateShapes'
+import { useChessGame } from '../../../../components/ChessBoard/useChessGame'
+import { useBrowseOpeningContext } from './useBrowseOpeningContext'
 
 export function useBrowseTab() {
   const { data: openings, isLoading } = useOpenings()
-  const trie = useOpeningTrie(openings)
   const [search, setSearch] = useState('')
-  // Board state is source of truth
-  const [allMoves, setAllMoves] = useState<string[]>([])
-  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(-1)
+  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
 
-  const { fens: allMoveFens, froms: allFroms, tos: allTos } = useMemo(() => computeAllMovesData(allMoves), [allMoves])
-  const boardFen = currentMoveIndex === -1 ? undefined : allMoveFens[currentMoveIndex]
-  const lastMoveSquares: [Key, Key] | undefined = currentMoveIndex >= 0
-    ? [allFroms[currentMoveIndex] as Key, allTos[currentMoveIndex] as Key]
-    : undefined
+  const board = useChessGame({ orientation })
+  const context = useBrowseOpeningContext(openings, board.currentMoves)
 
-  const currentMoves = useMemo(
-    () => allMoves.slice(0, currentMoveIndex + 1),
-    [allMoves, currentMoveIndex],
+  const shapes = useMemo(
+    () => computeCandidateShapes(context.candidateMoves, board.boardFen),
+    [context.candidateMoves, board.boardFen],
   )
 
-  const currentNode = useMemo(() => {
-    if (!trie) return null
-    return walkTrie(trie, currentMoves)
-  }, [trie, currentMoves])
-
-  const matchingOpenings = useMemo((): Opening[] => {
-    if (!currentNode) return []
-    return collectOpenings(currentNode)
-  }, [currentNode])
-
-  // Derived: exact match first, else first matching opening for context
-  const exactMatch: Opening | null = currentNode?.openings[0] ?? null
-  const selected: Opening | null = exactMatch ?? matchingOpenings[0] ?? null
-
   const displayedOpenings = useMemo(() => {
-    const base = currentMoveIndex >= 0 && matchingOpenings.length > 0
-      ? matchingOpenings
+    const base = board.currentMoveIndex >= 0 && context.matchingOpenings.length > 0
+      ? context.matchingOpenings
       : (openings ?? [])
     return search
       ? base.filter(o => o.name.toLowerCase().includes(search.toLowerCase()))
       : base
-  }, [openings, matchingOpenings, currentMoveIndex, search])
+  }, [openings, context.matchingOpenings, board.currentMoveIndex, search])
 
-  const candidateMoves = useMemo((): Map<string, number> => {
-    if (!currentNode) return new Map()
-    const result = new Map<string, number>()
-    for (const [san, child] of currentNode.children.entries()) {
-      result.set(san, child.count)
-    }
-    return result
-  }, [currentNode])
+  function handleOpeningSelect(o: Opening) {
+    board.loadMoves(o.moves)
+    setOrientation(openingColor(o))
+  }
 
-  const shapes = useMemo((): DrawShape[] => {
-    if (candidateMoves.size === 0) return []
-    const chess = boardFen ? new Chess(boardFen) : new Chess()
-    const legal = chess.moves({ verbose: true })
-    const result: DrawShape[] = []
-    for (const [san] of candidateMoves.entries()) {
-      const move = legal.find(m => m.san === san)
-      if (move) result.push({ orig: move.from as Key, dest: move.to as Key, brush: 'green' })
-    }
-    return result
-  }, [candidateMoves, boardFen])
-
-  const handleMove = useCallback((move: MoveResult) => {
-    setAllMoves(prev => [...prev.slice(0, currentMoveIndex + 1), move.san])
-    setCurrentMoveIndex(prev => prev + 1)
-  }, [currentMoveIndex])
-
-  const navigateBack = useCallback(() => {
-    setCurrentMoveIndex(prev => Math.max(-1, prev - 1))
+  const flipOrientation = useCallback(() => {
+    setOrientation(o => o === 'white' ? 'black' : 'white')
   }, [])
 
-  const navigateForward = useCallback(() => {
-    setCurrentMoveIndex(prev => Math.min(allMoves.length - 1, prev + 1))
-  }, [allMoves.length])
-
-  useArrowKeyNavigation(navigateBack, navigateForward)
-
-  // Clicking an opening sets board state — selection follows board, not vice-versa
-  function handleOpeningSelect(o: Opening) {
-    setAllMoves(o.moves)
-    setCurrentMoveIndex(o.moves.length - 1)
-  }
-
-  function handleMoveListClick(index: number | null) {
-    setCurrentMoveIndex(index === null ? allMoves.length - 1 : index)
-  }
-
-  function resetBoard() {
-    setAllMoves([])
-    setCurrentMoveIndex(-1)
-  }
-
-  // Notes context: index within the current opening's moves
   const openingMoveIndex: number | null =
-    selected && currentMoveIndex >= 0 && currentMoveIndex < selected.moves.length
-      ? currentMoveIndex
+    context.selected && board.currentMoveIndex >= 0 && board.currentMoveIndex < context.selected.moves.length
+      ? board.currentMoveIndex
       : null
-  const currentMoveFen = currentMoveIndex >= 0 ? allMoveFens[currentMoveIndex] : undefined
 
   return {
     openings: displayedOpenings,
     isLoading,
-    selected,
-    exactMatch,
+    selected: context.selected,
+    exactMatch: context.exactMatch,
     search,
-    allMoves,
-    currentMoveIndex,
-    boardFen,
-    currentMoveFen,
+    allMoves: board.allMoves,
+    currentMoveIndex: board.currentMoveIndex,
+    config: board.config,
+    boardFen: board.boardFen,
     openingMoveIndex,
-    candidateMoves,
+    candidateMoves: context.candidateMoves,
     shapes,
-    lastMoveSquares,
     setSearch,
-    setMoveIndex: handleMoveListClick,
+    setMoveIndex: board.navigateToIndex,
     selectOpening: handleOpeningSelect,
-    handleMove,
-    resetBoard,
+    flipOrientation,
+    resetBoard: board.reset,
   }
 }
