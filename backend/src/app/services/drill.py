@@ -1,10 +1,10 @@
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..exceptions import NotFoundError
 from ..models.openings import Opening, OpeningProgress
 from ..schemas.openings import DrillAddResponse, DrillQueueItem
 
@@ -85,9 +85,7 @@ async def review(
     )
     progress = result.scalar_one_or_none()
     if progress is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Opening not in drill queue"
-        )
+        raise NotFoundError("Opening not in drill queue")
 
     new_ef, new_interval, new_reps = compute_sm2(
         ease_factor=progress.ease_factor,

@@ -32,7 +32,7 @@ function OpeningsPage() {
   }
 
   return (
-    <main className="flex flex-col h-full">
+    <main className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <div className="border-b border-white/10 px-4 flex gap-1 pt-2">
         {TABS.map(({ id, label }) => (
           <button

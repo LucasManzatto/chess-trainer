@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useNotesPanel } from './useNotesPanel'
 
 type Props = {
@@ -95,7 +96,10 @@ export function NotesPanel({ openingId, moveIndex, fen, moves }: Props) {
 
   if (!session) return null
 
-  const sortedPositionComments = [...positionComments].sort((a, b) => a.move_index - b.move_index)
+  const sortedPositionComments = useMemo(
+    () => [...positionComments].sort((a, b) => a.move_index - b.move_index),
+    [positionComments],
+  )
   const hasAnyNotes = openingComments.length > 0 || positionComments.length > 0
 
   return (

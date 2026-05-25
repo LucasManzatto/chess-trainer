@@ -1,7 +1,7 @@
-from fastapi import HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..exceptions import NotFoundError
 from ..models.openings import OpeningComment, PositionComment
 from ..schemas.openings import OpeningCommentResponse, PositionCommentResponse
 
@@ -44,7 +44,7 @@ async def update_opening_comment(
     )
     comment = result.scalar_one_or_none()
     if comment is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        raise NotFoundError("Comment not found")
     comment.content = content
     await session.commit()
     return OpeningCommentResponse.model_validate(comment)
@@ -61,7 +61,7 @@ async def delete_opening_comment(
         .returning(OpeningComment.id)
     )
     if result.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        raise NotFoundError("Comment not found")
     await session.commit()
 
 
@@ -111,7 +111,7 @@ async def update_position_comment(
     )
     comment = result.scalar_one_or_none()
     if comment is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        raise NotFoundError("Comment not found")
     comment.content = content
     await session.commit()
     return PositionCommentResponse.model_validate(comment)
@@ -128,5 +128,5 @@ async def delete_position_comment(
         .returning(PositionComment.id)
     )
     if result.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        raise NotFoundError("Comment not found")
     await session.commit()

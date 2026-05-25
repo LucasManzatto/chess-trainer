@@ -51,7 +51,8 @@ export function useGameHistory() {
     setMoves(prev => [...prev, move])
   }
 
-  function handleMoveClick(index: number) {
+  function handleMoveClick(index: number | null) {
+    if (index === null) { setViewIndex(null); return }
     setViewIndex(index === moves.length - 1 ? null : index)
   }
 

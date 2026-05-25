@@ -1,16 +1,12 @@
-import { ChessBoard } from '../../../../components/ChessBoard/ChessBoard'
-import { useBoardSettingsStore } from '../../../../stores/useBoardSettingsStore'
-import { EvaluationBar } from '../../../evaluation/components/EvaluationBar'
-import { usePositionEvaluation } from '../../../evaluation/hooks/usePositionEvaluation'
+import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
 import { MoveList } from '../../../openings/components/BrowseTab/MoveList'
-import { GamesList } from '../GamesList/GamesList'
 import { useGamesTab } from '../../hooks/useGamesTab'
-
-const EVAL_BAR_WIDTH = 16
+import { GamesList } from '../GamesList/GamesList'
+import { SyncControls } from './SyncControls'
 
 export function GamesTab() {
   const {
-    profile,
+    username,
     games,
     gamesTotal,
     gamesLoading,
@@ -24,17 +20,14 @@ export function GamesTab() {
     syncStatus,
     isRunning,
     triggerSync,
-    moves,
+    moveSans,
     selectedMoveIndex,
+    lastMove,
     currentFen,
     boardOrientation,
+    flipOrientation,
     onMoveClick,
   } = useGamesTab()
-
-  const { score, isLoading: evalLoading } = usePositionEvaluation(currentFen)
-  const { size: boardSize } = useBoardSettingsStore()
-
-  const username = profile?.chess_com_username ?? ''
 
   return (
     <div className="grid grid-cols-[300px_1fr_220px_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
@@ -56,68 +49,30 @@ export function GamesTab() {
       </section>
 
       {/* Col 2: Board */}
-      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden gap-3">
-        {/* Header: sync controls */}
-        <div style={{ width: EVAL_BAR_WIDTH + 8 + boardSize }} className="flex items-center justify-between gap-2 flex-shrink-0">
-          <div className="text-sm text-gray-400 truncate">
-            {selectedGame
-              ? `${selectedGame.white_username} vs ${selectedGame.black_username}`
-              : ''}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isRunning && syncStatus && (
-              <span className="text-xs text-gray-500">
-                {syncStatus.current_month ?? 0}/{syncStatus.total_months ?? '?'} months
-                {syncStatus.games_added != null ? ` · ${syncStatus.games_added} games` : ''}
-              </span>
-            )}
-            <button
-              onClick={triggerSync}
-              disabled={isRunning}
-              className="text-xs px-3 py-1.5 rounded bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRunning ? 'Syncing…' : 'Sync'}
-            </button>
-          </div>
-        </div>
-
-        {/* Board assembly */}
-        <div className="flex flex-row gap-2 flex-shrink-0" style={{ height: boardSize }}>
-          <EvaluationBar score={score} isLoading={evalLoading} />
-          <div style={{ width: boardSize, height: boardSize, flexShrink: 0 }}>
-            {selectedGame ? (
-              <ChessBoard
-                boardWidth={boardSize}
-                position={currentFen}
-                orientation={boardOrientation}
-                interactive={false}
-                lastMove={
-                  selectedMoveIndex != null && moves[selectedMoveIndex]
-                    ? [moves[selectedMoveIndex].from as never, moves[selectedMoveIndex].to as never]
-                    : undefined
-                }
-              />
-            ) : (
-              <div
-                className="flex items-center justify-center bg-white/[0.02] border border-white/[0.06] text-gray-600 text-sm text-center"
-                style={{ width: boardSize, height: boardSize }}
-              >
-                Select a game to replay
+      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
+        <BoardPanel
+          fen={currentFen}
+          orientation={boardOrientation}
+          onFlipOrientation={flipOrientation}
+          interactive={false}
+          lastMove={lastMove}
+          title={
+            <div className="flex items-center justify-between w-full gap-2">
+              <div className="text-sm text-gray-400 truncate">
+                {selectedGame ? `${selectedGame.white_username} vs ${selectedGame.black_username}` : ''}
               </div>
-            )}
-          </div>
-        </div>
+              <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={triggerSync} />
+            </div>
+          }
+        />
       </section>
 
       {/* Col 3: Move list */}
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-        <div className="px-3 h-10 flex items-center border-b border-white/[0.06] flex-shrink-0">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</span>
-        </div>
         <div className="flex-1 min-h-0 overflow-y-auto">
           <MoveList
-            moves={moves.map(m => m.san)}
-            moveIndex={selectedMoveIndex < moves.length ? selectedMoveIndex : null}
+            moves={moveSans}
+            moveIndex={selectedMoveIndex < moveSans.length ? selectedMoveIndex : null}
             onMoveClick={onMoveClick}
           />
         </div>

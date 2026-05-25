@@ -1,31 +1,11 @@
-import { useState } from 'react'
-import { useUpdateProfile } from '../hooks/useProfile'
+import { useChessComSetup } from '../hooks/useChessComSetup'
 
 type Props = {
   onComplete: () => void
 }
 
 export function ChessComSetup({ onComplete }: Props) {
-  const [username, setUsername] = useState('')
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { update } = useUpdateProfile()
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = username.trim()
-    if (!trimmed) return
-    setIsPending(true)
-    setError(null)
-    try {
-      await update(trimmed)
-      onComplete()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save username')
-    } finally {
-      setIsPending(false)
-    }
-  }
+  const { username, setUsername, isPending, error, handleSubmit } = useChessComSetup(onComplete)
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 gap-6 px-4">
