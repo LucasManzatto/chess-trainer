@@ -5,14 +5,18 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .api.v1.games import router as games_router
 from .api.v1.openings import router as openings_router
+from .api.v1.profile import router as profile_router
 from .config import settings
 from .db import init_db, teardown_db
+from .exception_handlers import app_error_handler
+from .exceptions import AppError
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    app.state.http_client = httpx.AsyncClient()
+    app.state.http_client = httpx.AsyncClient(follow_redirects=True)
     await init_db()
     yield
     await app.state.http_client.aclose()
@@ -20,6 +24,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="Chess Trainer API", lifespan=lifespan)
+app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +35,8 @@ app.add_middleware(
 )
 
 app.include_router(openings_router, prefix="/api/v1")
+app.include_router(profile_router, prefix="/api/v1")
+app.include_router(games_router, prefix="/api/v1")
 
 
 @app.get("/health")

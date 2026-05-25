@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Games index route exists at /games and requires auth
 A route SHALL exist at `/games` defined in `src/routes/_auth/games/index.tsx`, nested under the `_auth` layout. Unauthenticated users SHALL be redirected to `/?modal=login`. When the authenticated user has no `chess_com_username` set, the route SHALL render a first-run setup prompt instead of the games list. When the user has a username set, the route SHALL render the full Games tab with a 4-column layout: games list panel, board panel, move list panel, and analysis placeholder panel.
@@ -26,10 +26,3 @@ A route SHALL exist at `/games` defined in `src/routes/_auth/games/index.tsx`, n
 #### Scenario: Games tab shows game list after sync
 - **WHEN** sync completes and the user has games in the database
 - **THEN** the games list panel shows all synced games ordered by most recent first
-
-### Requirement: Game detail route exists at /games/:gameId and requires auth
-A route SHALL exist at `/games/:gameId` defined in `src/routes/_auth/games/$gameId.tsx`, nested under the `_auth` layout. The page SHALL have access to the `gameId` param.
-
-#### Scenario: /games/:gameId resolves for authenticated user
-- **WHEN** an authenticated user navigates to `/games/xyz`
-- **THEN** the game detail page renders with the gameId param accessible and no 404
