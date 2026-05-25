@@ -1,5 +1,5 @@
 import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
-import { MoveList } from '../../../openings/components/BrowseTab/MoveList'
+import { MoveList } from '../../../../components/MoveList/MoveList'
 import { useGamesTab } from '../../hooks/useGamesTab'
 import { GamesList } from '../GamesList/GamesList'
 import { SyncControls } from './SyncControls'
@@ -69,11 +69,15 @@ export function GamesTab() {
 
       {/* Col 3: Move list */}
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="px-3 h-10 flex items-center border-b border-white/[0.06] flex-shrink-0">
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</span>
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
             moves={moveSans}
-            moveIndex={selectedMoveIndex < moveSans.length ? selectedMoveIndex : null}
+            selectedIndex={selectedMoveIndex < moveSans.length ? selectedMoveIndex : null}
             onMoveClick={onMoveClick}
+            showHeader={false}
           />
         </div>
       </section>

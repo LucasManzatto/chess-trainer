@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { Chess } from 'chess.js'
 import type { MoveResult } from '../components/ChessBoard/ChessBoard'
 
@@ -47,16 +47,16 @@ export function useGameHistory() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  function handleMove(move: MoveResult) {
+  const handleMove = useCallback((move: MoveResult) => {
     setMoves(prev => [...prev, move])
-  }
+  }, [])
 
-  function handleMoveClick(index: number | null) {
+  const handleMoveClick = useCallback((index: number | null) => {
     if (index === null) { setViewIndex(null); return }
     setViewIndex(index === moves.length - 1 ? null : index)
-  }
+  }, [moves])
 
-  function loadFromPgn(pgn: string): { ok: true } | { ok: false; error: string } {
+  const loadFromPgn = useCallback((pgn: string): { ok: true } | { ok: false; error: string } => {
     if (!pgn.trim()) return { ok: false, error: 'PGN is empty.' }
     try {
       const chess = new Chess()
@@ -82,7 +82,7 @@ export function useGameHistory() {
     } catch {
       return { ok: false, error: 'Invalid PGN.' }
     }
-  }
+  }, [])
 
   const position = viewIndex !== null ? moves[viewIndex]?.fen : moves.at(-1)?.fen
   const interactive = viewIndex === null

@@ -5,7 +5,7 @@ import type { Opening } from '../../types'
 import { NotesPanel } from '../NotesPanel'
 import { OpeningsList } from '../OpeningsList/OpeningsList'
 import { ContinuationsList } from '../ExploreTab/ContinuationsList'
-import { MoveList } from './MoveList'
+import { MoveList } from '../../../../components/MoveList/MoveList'
 import { useBrowseTab } from './useBrowseTab'
 import { useAddToDrill } from './useAddToDrill'
 
@@ -96,10 +96,10 @@ export function BrowseTab() {
 
       {/* Moves */}
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06]">
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
             moves={allMoves}
-            moveIndex={currentMoveIndex >= 0 ? currentMoveIndex : null}
+            selectedIndex={currentMoveIndex >= 0 ? currentMoveIndex : null}
             onMoveClick={setMoveIndex}
             onReset={resetBoard}
           />

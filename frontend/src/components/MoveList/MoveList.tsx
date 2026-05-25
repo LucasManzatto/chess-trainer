@@ -4,6 +4,8 @@ type MoveListProps = {
   moves: string[]
   selectedIndex?: number | null
   onMoveClick?: (index: number) => void
+  onReset?: () => void
+  showHeader?: boolean
 }
 
 type MovePairRowProps = {
@@ -72,14 +74,21 @@ function MoveToken({ san, index, selectedIndex, onClick, ref }: MoveTokenProps) 
   )
 }
 
-export function MoveList({ moves, selectedIndex = null, onMoveClick }: MoveListProps) {
+export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true }: MoveListProps) {
   const { bottomRef, tokenRefs, pairs } = useMoveList(moves, selectedIndex)
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 px-3 py-2 border-b border-white/10">
-        Moves
-      </h2>
+      {showHeader && (
+        <div className="flex items-center justify-between px-3 h-10 border-b border-white/[0.06] flex-shrink-0">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</h2>
+          {moves.length > 0 && onReset && (
+            <button onClick={onReset} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Reset
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto min-h-0">
         {moves.length === 0 ? (

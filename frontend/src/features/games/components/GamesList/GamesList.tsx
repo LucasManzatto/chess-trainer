@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { Game, GamesFilters } from '../../types'
 
 type ResultBadgeProps = { result: Game['result'] }
@@ -115,7 +116,7 @@ type GamesListProps = {
   onEcoChange: (v: string) => void
 }
 
-export function GamesList({
+export const GamesList = memo(function GamesList({
   games,
   isLoading,
   selectedId,
@@ -197,4 +198,4 @@ export function GamesList({
       </div>
     </div>
   )
-}
+})
