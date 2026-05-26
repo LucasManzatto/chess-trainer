@@ -26,7 +26,7 @@ export function useGamesSync() {
         if (status.status !== 'running') {
           stopPolling()
           // Invalidate games list so new games appear
-          qc.invalidateQueries({ queryKey: gamesKeys.list({ result: null, color: null, time_class: null, eco: '' }) })
+          qc.invalidateQueries({ queryKey: ['games-list'] })
           qc.invalidateQueries({ queryKey: gamesKeys.profile() })
         }
       } catch {

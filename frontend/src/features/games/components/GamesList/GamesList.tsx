@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import type { Game, GamesFilters, SyncStatus } from '../../types'
 import { SyncControls } from '../GamesTab/SyncControls'
+import { formatDate, timeControlLabel } from '../../utils/gameFormatters'
 
 type ResultBadgeProps = { result: Game['result'] }
 
@@ -16,21 +17,6 @@ function ResultBadge({ result }: ResultBadgeProps) {
       {label}
     </span>
   )
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function timeControlLabel(tc: string | null): string {
-  if (!tc) return ''
-  const secs = parseInt(tc.split('+')[0] ?? tc)
-  if (isNaN(secs)) return tc
-  if (secs < 180)  return '⚡'  // bullet
-  if (secs < 600)  return '⏱'  // blitz
-  return ''                      // rapid+
 }
 
 type GameRowProps = {
