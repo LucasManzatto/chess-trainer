@@ -1,4 +1,4 @@
-# Game History Spec
+## MODIFIED Requirements
 
 ### Requirement: Hook exposes move history state
 `useChessGame()` SHALL maintain a list of played moves and expose it to consumers via `allMoves: string[]` and `currentMoveIndex: number`.

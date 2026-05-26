@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useOpenings } from '../../hooks/useOpenings'
 import type { Opening } from '../../types'
 import { openingColor } from '../../types'
-import { computeCandidateShapes } from '../../../../components/ChessBoard/utils'
+import { computeCandidateShapes } from '../../../../chess/analysis'
 import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
 import { useBrowseOpeningContext } from './useBrowseOpeningContext'
 

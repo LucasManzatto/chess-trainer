@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useGameHistory } from '../../hooks/useGameHistory'
+import { useChessGame } from '../../components/ChessBoard/hooks/useChessGame'
 import { ChessBoard } from '../../components/ChessBoard/ChessBoard'
 import { MoveList } from '../../components/MoveList/MoveList'
 import { PgnImportPanel } from '../../components/PgnImport/PgnImportPanel'
@@ -18,7 +18,7 @@ function FreePage() {
 
 function FreePageInner() {
   const { config, allMoves, currentMoveIndex, boardFen, loadFromPgn, gameMetadata, handleMoveClick } =
-    useGameHistory({ interactiveAtEnd: true })
+    useChessGame({ interactiveAtEnd: true })
   const [showImport, setShowImport] = useState(false)
   const { score, isLoading } = usePositionEvaluation(boardFen)
 

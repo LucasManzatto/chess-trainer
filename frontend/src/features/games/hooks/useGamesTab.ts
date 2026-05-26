@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useGameHistory } from '../../../hooks/useGameHistory'
+import { useChessGame } from '../../../components/ChessBoard/hooks/useChessGame'
 import { useGamesList } from '../components/GamesList/useGamesList'
 import { useGames } from './useGames'
 import { useGamesSync } from './useGamesSync'
@@ -19,7 +19,7 @@ export function useGamesTab() {
   const { filters, setResult, setColor, setTimeClass, setEco } = useGamesList()
   const { data: gamesData, isLoading: gamesLoading } = useGames(filters)
   const { syncStatus, isRunning, triggerSync } = useGamesSync()
-  const gameHistory = useGameHistory({ orientation })
+  const gameHistory = useChessGame({ interactiveAtEnd: false, orientation })
 
   const onAnalysisComplete = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: gamesKeys.list(filters) })

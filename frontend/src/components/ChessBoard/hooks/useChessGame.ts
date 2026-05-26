@@ -1,14 +1,20 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Chess } from 'chess.js'
 import { useChessStore, useChessStoreApi } from '../stores/chessStore'
 import { useArrowKeyNavigation } from '../../../hooks/useArrowKeyNavigation'
-import { computeThreats } from '../utils'
+import { computeThreats } from '../../../chess/analysis'
+import { parsePgn } from '../../../chess/pgn'
+import { getFenAtIndex } from '../../../chess/game'
 import type { UseChessGameProps, ThreatSquares } from '../types'
+import type { GameMetadata } from '../../../chess/types'
 import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { Config } from '@lichess-org/chessground/config'
 
-const EMPTY_THREATS: ThreatSquares = { hanging: [], pinned: [] }
-
+export type { GameMetadata } from '../../../chess/types'
 export type { MoveResult, GameOverResult, UseChessGameProps } from '../types'
+
+const EMPTY_THREATS: ThreatSquares = { hanging: [], pinned: [] }
+const INITIAL_FEN = new Chess().fen()
 
 export function useChessGame({
   interactive = true,
@@ -18,10 +24,11 @@ export function useChessGame({
   onMove,
   onGameOver,
 }: UseChessGameProps = {}) {
+  const [gameMetadata, setGameMetadata] = useState<GameMetadata | null>(null)
+
   const store = useChessStoreApi()
   const history = useChessStore(s => s.history)
   const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
-  const chessEngine = useChessStore(s => s.chessEngine)
   const loadMoves = useChessStore(s => s.loadMoves)
   const navigateToIndex = useChessStore(s => s.navigateToIndex)
   const navigateBack = useChessStore(s => s.navigateBack)
@@ -29,21 +36,35 @@ export function useChessGame({
   const reset = useChessStore(s => s.reset)
   const undo = useChessStore(s => s.undo)
 
+  // Reconstruct chess engine from current FEN — no mutable object in Zustand
+  const chess = useMemo(
+    () => new Chess(getFenAtIndex(history, currentMoveIndex)),
+    [history, currentMoveIndex],
+  )
+
   useArrowKeyNavigation(navigateBack, navigateForward)
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') navigateToIndex(null)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [navigateToIndex])
 
   const isAtEnd = currentMoveIndex === history.length - 1
   const isInteractive = interactive && (!interactiveAtEnd || isAtEnd)
-  const turn: 'white' | 'black' = chessEngine.turn() === 'w' ? 'white' : 'black'
+  const turn: 'white' | 'black' = chess.turn() === 'w' ? 'white' : 'black'
 
   const dests = useMemo(() => {
     const map: Dests = new Map()
-    for (const move of chessEngine.moves({ verbose: true })) {
+    for (const move of chess.moves({ verbose: true })) {
       const list = map.get(move.from as Key) ?? []
       list.push(move.to as Key)
       map.set(move.from as Key, list)
     }
     return map
-  }, [chessEngine])
+  }, [chess])
 
   const lastEntry = currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
 
@@ -53,7 +74,7 @@ export function useChessGame({
 
     onMove?.(result)
 
-    const { chessEngine: nextEngine } = store.getState()
+    const nextEngine = new Chess(result.fen)
     if (nextEngine.isGameOver()) {
       if (nextEngine.isCheckmate()) {
         onGameOver?.({ result: 'checkmate', winner: nextEngine.turn() === 'w' ? 'b' : 'w' })
@@ -66,10 +87,10 @@ export function useChessGame({
   }, [store, onMove, onGameOver])
 
   const config = useMemo((): Config => ({
-    fen: chessEngine.fen(),
+    fen: chess.fen(),
     orientation,
     turnColor: turn,
-    check: chessEngine.inCheck(),
+    check: chess.inCheck(),
     lastMove: lastEntry ? [lastEntry.from as Key, lastEntry.to as Key] : undefined,
     viewOnly: !isInteractive,
     movable: {
@@ -84,9 +105,22 @@ export function useChessGame({
     animation: { enabled: true, duration: animationDurationInMs },
     highlight: { lastMove: true, check: true },
     premovable: { enabled: false },
-  }), [chessEngine, orientation, turn, isInteractive, dests, lastEntry, animationDurationInMs, executeStepMove])
+  }), [chess, orientation, turn, isInteractive, dests, lastEntry, animationDurationInMs, executeStepMove])
+
+  const handleMoveClick = useCallback((index: number | null) => {
+    navigateToIndex(index)
+  }, [navigateToIndex])
+
+  const loadFromPgn = useCallback((pgn: string): { ok: true } | { ok: false; error: string } => {
+    const result = parsePgn(pgn)
+    if (!result.ok) return result
+    loadMoves(result.moves)
+    setGameMetadata(result.metadata)
+    return { ok: true }
+  }, [loadMoves])
 
   const allMoves = useMemo(() => history.map(e => e.san), [history])
+  const allFens = useMemo(() => [INITIAL_FEN, ...history.map(e => e.fen)], [history])
   const currentMoves = useMemo(() => allMoves.slice(0, currentMoveIndex + 1), [allMoves, currentMoveIndex])
   const threats = lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS
 
@@ -97,7 +131,11 @@ export function useChessGame({
     currentMoves,
     boardFen: lastEntry?.fen,
     lastMoveSquares: lastEntry ? [lastEntry.from as Key, lastEntry.to as Key] as [Key, Key] : undefined,
+    allFens,
+    gameMetadata,
+    handleMoveClick,
     loadMoves,
+    loadFromPgn,
     navigateToIndex,
     navigateBack,
     navigateForward,

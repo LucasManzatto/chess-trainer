@@ -12,4 +12,8 @@ export default defineConfig({
     tailwindcss(),
     react(),
   ],
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
 })
