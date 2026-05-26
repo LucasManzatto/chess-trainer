@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import type React from 'react'
 import type { Opening } from '../../types'
 import { collectOpeningIds, getFavoriteRatio } from '../../utils/treeUtils'
+import type { StarState } from './OpeningsListPrimitives'
 
 export type NameNode = {
   label: string
@@ -77,7 +78,7 @@ export function useNameTreeNode({
   const hasChildren = node.children.length > 0
   const isSelected = node.opening != null && selectedId === node.opening.id
 
-  const starState = useMemo(() => {
+  const starState = useMemo((): StarState => {
     if (!hasChildren) {
       return node.opening ? (favoriteIds.has(node.opening.id) ? 'full' : 'empty') : 'empty'
     }

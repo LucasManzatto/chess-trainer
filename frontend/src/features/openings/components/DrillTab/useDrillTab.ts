@@ -1,8 +1,5 @@
 import { useReducer, useEffect, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthSession } from '../../../../hooks/useAuthSession'
-import { drillApi } from '../../api'
-import { openingsKeys } from '../../api/queryKeys'
+import { useDrillQueue } from '../../hooks/useDrillQueue'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
 import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
@@ -12,7 +9,7 @@ export type DrillState =
   | { phase: 'drilling'; item: DrillQueueItem; moveIndex: number; flash: 'correct' | 'wrong' | null }
   | { phase: 'grading'; item: DrillQueueItem }
 
-type DrillAction =
+export type DrillAction =
   | { type: 'start'; item: DrillQueueItem }
   | { type: 'correct_move'; nextIndex: number }
   | { type: 'complete'; item: DrillQueueItem }
@@ -50,21 +47,7 @@ export const GRADE_BUTTONS = [
 ] as const
 
 export function useDrillTab() {
-  const isLoggedIn = !!useAuthSession()
-  const qc = useQueryClient()
-
-  const { data: queue = [], isLoading } = useQuery({
-    queryKey: openingsKeys.drillQueue(),
-    queryFn: ({ signal }) => drillApi.queue(signal),
-    enabled: isLoggedIn,
-  })
-
-  const reviewMutation = useMutation({
-    mutationFn: ({ openingId, grade }: { openingId: number; grade: DrillGrade }) =>
-      drillApi.review(openingId, grade),
-    onSuccess: () => qc.invalidateQueries({ queryKey: openingsKeys.drillQueue() }),
-  })
-
+  const { isLoggedIn, queue, isLoading, submitGrade } = useDrillQueue()
   const [state, dispatch] = useReducer(drillReducer, { phase: 'queue' })
 
   const isDrilling = state.phase === 'drilling'
@@ -91,13 +74,11 @@ export function useDrillTab() {
     onMove: handleMoveValidate,
   })
 
-  // Reset board when a new drill item starts
   const drillItem = isDrilling ? state.item : null
   useEffect(() => {
     if (drillItem) board.reset()
   }, [drillItem, board.reset])
 
-  // Undo wrong move after flash, then restore previous moveIndex
   useEffect(() => {
     if (state.phase !== 'drilling' || state.flash !== 'wrong') return
     const { moveIndex } = state
@@ -110,7 +91,7 @@ export function useDrillTab() {
 
   function handleGrade(grade: DrillGrade) {
     if (state.phase !== 'grading') return
-    reviewMutation.mutate({ openingId: state.item.opening_id, grade })
+    submitGrade({ openingId: state.item.opening_id, grade })
     dispatch({ type: 'back_to_queue' })
   }
 

@@ -1,6 +1,6 @@
 import type { Config } from '@lichess-org/chessground/config'
 import { ChessBoard } from '../../../../components/ChessBoard/ChessBoard'
-import { NotesPanel } from '../NotesPanel'
+import { DrillNotesPanel } from './DrillNotesPanel'
 import type { DrillQueueItem } from '../../types'
 
 type Props = {
@@ -39,9 +39,7 @@ export function DrillBoard({ item, moveIndex, config, flash, onBack }: Props) {
         </button>
       </div>
 
-      <div className="w-64 flex-shrink-0 border-l border-white/10 p-3 overflow-y-auto">
-        <NotesPanel openingId={item.opening_id} moveIndex={null} fen={undefined} moves={item.moves} />
-      </div>
+      <DrillNotesPanel openingId={item.opening_id} moves={item.moves} />
     </div>
   )
 }

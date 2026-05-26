@@ -1,6 +1,8 @@
+import { useState, useMemo } from 'react'
 import type { Opening } from '../../types'
-import { openingColor } from '../../types'
-import { useOpeningsList, type ViewMode } from './useOpeningsList'
+import type { ViewMode } from './useOpeningsList'
+import { useFavorites } from '../../hooks/useFavorites'
+import { ColorBadge, StarButton } from './OpeningsListPrimitives'
 import { OpeningsNameTree } from './OpeningsNameTree'
 import { OpeningsMoveTree } from './OpeningsMoveTree'
 
@@ -15,25 +17,6 @@ type Props = {
   defaultViewMode?: ViewMode
 }
 
-function ColorBadge({ opening }: { opening: Opening }) {
-  const color = openingColor(opening)
-  return (
-    <span className={`text-[10px] font-bold px-1 py-0.5 rounded leading-none flex-shrink-0 ${
-      color === 'white' ? 'bg-gray-200 text-gray-800' : 'bg-gray-700 text-gray-200'
-    }`}>
-      {color === 'white' ? 'W' : 'B'}
-    </span>
-  )
-}
-
-function StarIcon({ filled, dim }: { filled: boolean; dim?: boolean }) {
-  return (
-    <span className={`text-xs flex-shrink-0 ${filled ? (dim ? 'text-amber-400/40' : 'text-amber-400') : 'text-gray-600'}`}>
-      {filled ? '★' : '☆'}
-    </span>
-  )
-}
-
 export function OpeningsList({
   openings,
   isLoading,
@@ -44,16 +27,14 @@ export function OpeningsList({
   onSelect,
   defaultViewMode = 'list',
 }: Props) {
-  const {
-    viewMode,
-    setViewMode,
-    showFavoritesOnly,
-    toggleFavoritesFilter,
-    favoriteIds,
-    toggleFavorite,
-    bulkToggle,
-    displayed,
-  } = useOpeningsList(openings, defaultViewMode)
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const { ids: favoriteIds, toggleFavorite, bulkToggle } = useFavorites()
+
+  const displayed = useMemo(() => {
+    if (!showFavoritesOnly) return openings
+    return openings.filter(o => favoriteIds.has(o.id))
+  }, [openings, showFavoritesOnly, favoriteIds])
 
   return (
     <>
@@ -62,7 +43,7 @@ export function OpeningsList({
           <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Openings</span>
           <div className="flex items-center gap-1">
             <button
-              onClick={toggleFavoritesFilter}
+              onClick={() => setShowFavoritesOnly(v => !v)}
               title="Show favorites only"
               className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
                 showFavoritesOnly ? 'text-amber-400' : 'text-gray-600 hover:text-gray-300'
@@ -118,13 +99,10 @@ export function OpeningsList({
                 >
                   <ColorBadge opening={o} />
                   <span className="truncate flex-1">{o.name}</span>
-                  <span
-                    role="button"
+                  <StarButton
+                    state={favoriteIds.has(o.id) ? 'full' : 'empty'}
                     onClick={e => { e.stopPropagation(); toggleFavorite(o.id) }}
-                    className="flex-shrink-0"
-                  >
-                    <StarIcon filled={favoriteIds.has(o.id)} />
-                  </span>
+                  />
                 </button>
               ) : (
                 <div
@@ -135,7 +113,10 @@ export function OpeningsList({
                 >
                   <ColorBadge opening={o} />
                   <span className="truncate flex-1">{o.name}</span>
-                  <StarIcon filled={favoriteIds.has(o.id)} />
+                  <StarButton
+                    state={favoriteIds.has(o.id) ? 'full' : 'empty'}
+                    onClick={e => { e.stopPropagation(); toggleFavorite(o.id) }}
+                  />
                 </div>
               )
             )}

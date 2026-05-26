@@ -1,6 +1,6 @@
 import type { Opening } from '../../types'
-import { openingColor } from '../../types'
 import { useNameTree, useNameTreeNode, type NameNode } from './useNameTree'
+import { ColorBadge, StarButton } from './OpeningsListPrimitives'
 
 type NodeProps = {
   node: NameNode
@@ -41,24 +41,10 @@ function NameTreeNode({
           <span className="text-gray-600 flex-shrink-0 w-3 text-xs">
             {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
           </span>
-          {node.opening && (
-            <span className={`text-[10px] font-bold px-1 py-0.5 rounded leading-none flex-shrink-0 ${
-              openingColor(node.opening) === 'white' ? 'bg-gray-200 text-gray-800' : 'bg-gray-700 text-gray-200'
-            }`}>
-              {openingColor(node.opening) === 'white' ? 'W' : 'B'}
-            </span>
-          )}
+          {node.opening && <ColorBadge opening={node.opening} />}
           <span className="truncate">{node.label}</span>
         </button>
-        <button onClick={handleStarClick} className="flex-shrink-0 px-1 py-1">
-          <span className={`text-xs ${
-            starState === 'full' ? 'text-amber-400' :
-            starState === 'partial' ? 'text-amber-400/40' :
-            'text-gray-600 hover:text-gray-400'
-          }`}>
-            {starState === 'empty' ? '☆' : '★'}
-          </span>
-        </button>
+        <StarButton state={starState} onClick={handleStarClick} />
       </div>
       {isExpanded && (
         <div>

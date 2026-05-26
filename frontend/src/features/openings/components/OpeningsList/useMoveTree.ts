@@ -3,6 +3,7 @@ import type React from 'react'
 import type { Opening } from '../../types'
 import { useOpeningTrie, type TrieNode } from '../../hooks/useOpeningTrie'
 import { collectOpeningIds, getFavoriteRatio } from '../../utils/treeUtils'
+import type { StarState } from './OpeningsListPrimitives'
 
 const trieOpenings = (n: TrieNode) => n.openings
 const trieChildren = (n: TrieNode) => [...n.children.values()]
@@ -30,7 +31,7 @@ export function useMoveTreeNode({
   const isExpanded = expanded.has(path)
   const hasChildren = node.children.size > 0
 
-  const starState = useMemo(() => {
+  const starState = useMemo((): StarState => {
     const { count, total } = getTrieFavoriteRatio(node, favoriteIds)
     if (total === 0) return 'empty'
     if (count === total) return 'full'

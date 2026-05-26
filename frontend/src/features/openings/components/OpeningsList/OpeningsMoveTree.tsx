@@ -1,7 +1,7 @@
 import type { Opening } from '../../types'
-import { openingColor } from '../../types'
 import { type TrieNode } from '../../hooks/useOpeningTrie'
 import { useMoveTree, useMoveTreeNode } from './useMoveTree'
+import { ColorBadge, StarButton } from './OpeningsListPrimitives'
 
 type MoveNodeProps = {
   move: string
@@ -40,15 +40,7 @@ function MoveTreeNode({
           <span className="font-mono text-xs text-gray-300">{move}</span>
           <span className="text-xs text-gray-600 ml-auto pr-2">{node.count}</span>
         </button>
-        <button onClick={handleBulkStar as React.MouseEventHandler} className="flex-shrink-0 px-1 py-1">
-          <span className={`text-xs ${
-            starState === 'full' ? 'text-amber-400' :
-            starState === 'partial' ? 'text-amber-400/40' :
-            'text-gray-600 hover:text-gray-400'
-          }`}>
-            {starState === 'empty' ? '☆' : '★'}
-          </span>
-        </button>
+        <StarButton state={starState} onClick={handleBulkStar as React.MouseEventHandler} />
       </div>
 
       {isExpanded && (
@@ -70,21 +62,13 @@ function MoveTreeNode({
                 }`}
               >
                 <span className="text-xs font-mono text-amber-400/60 flex-shrink-0">{opening.eco}</span>
-                <span className={`text-[10px] font-bold px-1 py-0.5 rounded leading-none flex-shrink-0 ${
-                  openingColor(opening) === 'white' ? 'bg-gray-200 text-gray-800' : 'bg-gray-700 text-gray-200'
-                }`}>
-                  {openingColor(opening) === 'white' ? 'W' : 'B'}
-                </span>
+                <ColorBadge opening={opening} />
                 <span className="truncate">{opening.name}</span>
               </button>
-              <button
+              <StarButton
+                state={favoriteIds.has(opening.id) ? 'full' : 'empty'}
                 onClick={e => { e.stopPropagation(); onToggleFavorite(opening.id) }}
-                className="flex-shrink-0 px-1 py-1"
-              >
-                <span className={`text-xs ${favoriteIds.has(opening.id) ? 'text-amber-400' : 'text-gray-600 hover:text-gray-400'}`}>
-                  {favoriteIds.has(opening.id) ? '★' : '☆'}
-                </span>
-              </button>
+              />
             </div>
           ))}
           {Array.from(node.children.entries()).map(([childMove, childNode]) => (

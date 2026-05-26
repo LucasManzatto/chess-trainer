@@ -1,4 +1,4 @@
-import { NotesPanel } from '../NotesPanel'
+import { DrillNotesPanel } from './DrillNotesPanel'
 import { GRADE_BUTTONS } from './useDrillTab'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 
@@ -33,9 +33,7 @@ export function DrillGrading({ item, onGrade }: Props) {
         </div>
       </div>
 
-      <div className="w-64 flex-shrink-0 border-l border-white/10 p-3 overflow-y-auto">
-        <NotesPanel openingId={item.opening_id} moveIndex={null} fen={undefined} moves={item.moves} />
-      </div>
+      <DrillNotesPanel openingId={item.opening_id} moves={item.moves} />
     </div>
   )
 }
