@@ -4,6 +4,7 @@ import { PanelSection } from '../../../../components/PanelSection'
 import { useGamesTab } from '../../hooks/useGamesTab'
 import { GamesList } from '../GamesList/GamesList'
 import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
+import { AnalysisPanel } from './AnalysisPanel'
 
 export function GamesTab() {
   return <ChessStoreProvider><GamesTabInner /></ChessStoreProvider>
@@ -33,8 +34,10 @@ function GamesTabInner() {
     analyze,
     analyzeStatus,
     analyzeProgress,
+    analysis,
     moveClassifications,
     openingMoveCount,
+    criticalMoveIndices,
   } = useGamesTab()
 
   return (
@@ -68,33 +71,9 @@ function GamesTabInner() {
           defaultShowThreats
           title={
             selectedGame ? (
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="text-sm text-gray-400 truncate">
-                  {selectedGame.white_username} vs {selectedGame.black_username}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {analyzeStatus === 'running' ? (
-                    <span className="text-xs text-gray-400">
-                      {analyzeProgress.current} / {analyzeProgress.total}
-                    </span>
-                  ) : null}
-                  <button
-                    onClick={analyze}
-                    disabled={analyzeStatus === 'running'}
-                    className={`text-xs px-3 py-1 rounded transition-colors ${
-                      analyzeStatus === 'running'
-                        ? 'bg-white/5 text-gray-600 cursor-not-allowed'
-                        : 'bg-blue-500/15 text-blue-300 hover:bg-blue-500/25'
-                    }`}
-                  >
-                    {analyzeStatus === 'running'
-                      ? 'Analyzing…'
-                      : (selectedGame.analysis || analyzeStatus === 'done')
-                        ? 'Re-analyze'
-                        : 'Analyze'}
-                  </button>
-                </div>
-              </div>
+              <span className="text-sm text-gray-400 truncate">
+                {selectedGame.white_username} vs {selectedGame.black_username}
+              </span>
             ) : undefined
           }
         />
@@ -110,15 +89,22 @@ function GamesTabInner() {
             showHeader={false}
             moveClassifications={moveClassifications}
             openingMoveCount={openingMoveCount}
+            criticalMoveIndices={criticalMoveIndices}
           />
         </div>
       </PanelSection>
 
-      {/* Col 4: Analysis placeholder */}
+      {/* Col 4: Analysis */}
       <PanelSection title="Analysis">
-        <div className="flex-1 flex items-center justify-center text-gray-600 text-sm text-center px-4">
-          Engine analysis coming soon
-        </div>
+        <AnalysisPanel
+          game={selectedGame}
+          analysis={analysis}
+          criticalMoveIndices={criticalMoveIndices}
+          onMoveClick={onMoveClick}
+          onAnalyze={analyze}
+          analyzeStatus={analyzeStatus}
+          analyzeProgress={analyzeProgress}
+        />
       </PanelSection>
     </div>
   )

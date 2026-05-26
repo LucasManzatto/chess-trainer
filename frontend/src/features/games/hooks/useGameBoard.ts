@@ -3,6 +3,7 @@ import { useChessGame } from '../../../components/ChessBoard/hooks/useChessGame'
 import { useGameAnalysis } from '../../../components/ChessBoard/hooks/useGameAnalysis'
 import { useOpenings } from '../../openings/hooks/useOpenings'
 import { computeOpeningMoveCount } from '../utils/gameLogic'
+import { findCriticalMoves } from '../utils/analysisUtils'
 import type { Game, MoveClassification } from '../types'
 
 export function useGameBoard(onAnalysisComplete: () => void) {
@@ -12,7 +13,7 @@ export function useGameBoard(onAnalysisComplete: () => void) {
   const gameHistory = useChessGame({ interactiveAtEnd: false, orientation })
 
   const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
-    useGameAnalysis(gameHistory.allFens, selectedGame?.id ?? null, 18, onAnalysisComplete)
+    useGameAnalysis(gameHistory.allFens, gameHistory.allMoves, selectedGame?.id ?? null, 18, onAnalysisComplete)
 
   const { data: openings } = useOpenings()
 
@@ -26,6 +27,12 @@ export function useGameBoard(onAnalysisComplete: () => void) {
     if (!src || src.moves.length !== gameHistory.allMoves.length) return undefined
     return src.moves.map(m => m.classification)
   }, [analysis, selectedGame?.analysis, gameHistory.allMoves.length])
+
+  const criticalMoveIndices = useMemo(() => {
+    const src = analysis ?? selectedGame?.analysis
+    if (!src || !selectedGame) return []
+    return findCriticalMoves(src.moves, src.initial_score ?? 0, selectedGame.user_color)
+  }, [analysis, selectedGame?.analysis, selectedGame?.user_color, selectedGame])
 
   const selectGame = useCallback((game: Game) => {
     setSelectedGame(game)
@@ -49,7 +56,9 @@ export function useGameBoard(onAnalysisComplete: () => void) {
     analyze,
     analyzeStatus,
     analyzeProgress,
+    analysis,
     moveClassifications,
     openingMoveCount,
+    criticalMoveIndices,
   }
 }

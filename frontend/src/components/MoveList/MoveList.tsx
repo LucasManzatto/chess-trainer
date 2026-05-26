@@ -9,15 +9,25 @@ type MoveListProps = {
   showHeader?: boolean
   moveClassifications?: MoveClassification[]
   openingMoveCount?: number
+  criticalMoveIndices?: number[]
 }
 
 const CLASSIFICATION_COLORS: Record<MoveClassification, string> = {
   best: 'text-blue-400',
-  excellent: '',
+  excellent: 'text-emerald-400',
   good: '',
-  inaccuracy: '',
-  mistake: '',
+  inaccuracy: 'text-yellow-400',
+  mistake: 'text-orange-400',
   blunder: 'text-red-400',
+}
+
+const CLASSIFICATION_SYMBOLS: Record<MoveClassification, string> = {
+  best: '',
+  excellent: '!',
+  good: '',
+  inaccuracy: '?!',
+  mistake: '?',
+  blunder: '??',
 }
 
 type MovePairRowProps = {
@@ -31,9 +41,10 @@ type MovePairRowProps = {
   whiteClassification?: MoveClassification
   blackClassification?: MoveClassification
   openingMoveCount: number
+  criticalMoveIndices: number[]
 }
 
-function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef, whiteClassification, blackClassification, openingMoveCount }: MovePairRowProps) {
+function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef, whiteClassification, blackClassification, openingMoveCount, criticalMoveIndices }: MovePairRowProps) {
   const whiteIndex = pairIndex * 2
   const blackIndex = pairIndex * 2 + 1
   return (
@@ -49,6 +60,7 @@ function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whit
           onClick={onMoveClick}
           classification={whiteClassification}
           isOpening={whiteIndex < openingMoveCount}
+          isCritical={criticalMoveIndices.includes(whiteIndex)}
           ref={whiteRef}
         />
       </td>
@@ -61,6 +73,7 @@ function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whit
             onClick={onMoveClick}
             classification={blackClassification}
             isOpening={blackIndex < openingMoveCount}
+            isCritical={criticalMoveIndices.includes(blackIndex)}
             ref={blackRef}
           />
         ) : (
@@ -78,11 +91,13 @@ type MoveTokenProps = {
   onClick?: (index: number) => void
   classification?: MoveClassification
   isOpening?: boolean
+  isCritical?: boolean
   ref?: React.Ref<HTMLButtonElement>
 }
 
-function MoveToken({ san, index, selectedIndex, onClick, classification, isOpening, ref }: MoveTokenProps) {
+function MoveToken({ san, index, selectedIndex, onClick, classification, isOpening, isCritical, ref }: MoveTokenProps) {
   const classificationColor = classification ? CLASSIFICATION_COLORS[classification] : undefined
+  const symbol = classification ? CLASSIFICATION_SYMBOLS[classification] : ''
   const colorClass = index === selectedIndex
     ? 'bg-amber-500/25 text-amber-200'
     : classificationColor || (isOpening ? 'text-amber-500' : 'text-gray-100')
@@ -93,12 +108,14 @@ function MoveToken({ san, index, selectedIndex, onClick, classification, isOpeni
       onClick={() => onClick?.(index)}
       className={`font-mono w-full text-left px-1 rounded hover:bg-white/10 ${colorClass}`}
     >
+      {isCritical && <span className="text-amber-400/60 mr-0.5 text-xs">↓</span>}
       {san}
+      {symbol && <span className={`text-xs ml-0.5 ${classificationColor}`}>{symbol}</span>}
     </button>
   )
 }
 
-export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true, moveClassifications, openingMoveCount = 0 }: MoveListProps) {
+export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true, moveClassifications, openingMoveCount = 0, criticalMoveIndices = [] }: MoveListProps) {
   const { bottomRef, tokenRefs, pairs } = useMoveList(moves, selectedIndex)
   const hasClassifications = moveClassifications && moveClassifications.length === moves.length
 
@@ -134,6 +151,7 @@ export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, sh
                   whiteClassification={hasClassifications ? moveClassifications[pairIndex * 2] : undefined}
                   blackClassification={hasClassifications ? moveClassifications[pairIndex * 2 + 1] : undefined}
                   openingMoveCount={openingMoveCount}
+                  criticalMoveIndices={criticalMoveIndices}
                 />
               ))}
             </tbody>

@@ -5,7 +5,7 @@ import { classifyMove, cpToWinPercent, computeAccuracy, evalFen, createStockfish
 import sfUrl from 'stockfish/bin/stockfish-18-lite-single.js?url'
 import sfWasmUrl from 'stockfish/bin/stockfish-18-lite-single.wasm?url'
 
-type AnalyzeStatus = 'idle' | 'running' | 'done' | 'error'
+export type AnalyzeStatus = 'idle' | 'running' | 'done' | 'error'
 
 type UseGameAnalysisResult = {
   analyze: () => void
@@ -16,6 +16,7 @@ type UseGameAnalysisResult = {
 
 export function useGameAnalysis(
   allFens: string[],
+  allMoves: string[],
   gameId: number | null,
   depth = 18,
   onComplete?: () => void,
@@ -83,7 +84,7 @@ export function useGameAnalysis(
           : Math.max(0, cpToWinPercent(after) - cpToWinPercent(before))
 
         movesAnalysis.push({
-          san: '',
+          san: allMoves[i] ?? '',
           cp_loss: cpLoss,
           best_move: bestMoves[i],
           classification: classifyMove(cpLoss),
@@ -113,7 +114,7 @@ export function useGameAnalysis(
     } finally {
       worker.terminate()
     }
-  }, [allFens, gameId, depth, status, onComplete])
+  }, [allFens, allMoves, gameId, depth, status, onComplete])
 
   return { analyze, status, progress, analysis }
 }
