@@ -1,31 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { EvaluationResult, EvaluationScore } from '../types'
-// Vite ?url imports — copies files to /assets/ at build time and returns their URLs
+import { parseScore, toWhitePerspective, createStockfishWorker } from '../../../chess'
 import sfUrl from 'stockfish/bin/stockfish-18-lite-single.js?url'
 import sfWasmUrl from 'stockfish/bin/stockfish-18-lite-single.wasm?url'
 
 const TARGET_DEPTH = 18
 
-function parseScore(line: string): EvaluationScore | null {
-  const cpMatch = line.match(/\bscore cp (-?\d+)/)
-  if (cpMatch) return { type: 'cp', value: parseInt(cpMatch[1]) }
-  const mateMatch = line.match(/\bscore mate (-?\d+)/)
-  if (mateMatch) return { type: 'mate', value: parseInt(mateMatch[1]) }
-  return null
-}
-
-// Normalizes Stockfish's side-to-move score to white's perspective
-function toWhitePerspective(score: EvaluationScore, fen: string): EvaluationScore {
-  if (fen.split(' ')[1] === 'b') {
-    return { type: score.type, value: -score.value }
-  }
-  return score
-}
-
 type EngineState = {
   score: EvaluationScore | undefined
   bestMove: string | undefined
-  // FEN for which `score` is current; used to derive isLoading in render
   scoredFen: string
   error: boolean
 }
@@ -42,17 +25,13 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
   const readyRef = useRef(false)
   const pendingFenRef = useRef<string | null>(null)
   const currentSearchFenRef = useRef<string>('')
-  // True between sending `go` and receiving `bestmove` for that search
   const searchActiveRef = useRef(false)
-  // True after sending `stop`; discard info lines until bestmove confirms the stop
   const awaitingBestMoveRef = useRef(false)
 
   const beginSearch = useCallback((targetFen: string) => {
     const worker = workerRef.current
     if (!worker) return
     if (searchActiveRef.current) {
-      // Queue the new FEN and stop; new search starts only after bestmove confirms stop.
-      // Sending position/go immediately after stop crashes Stockfish WASM.
       pendingFenRef.current = targetFen
       worker.postMessage('stop')
       awaitingBestMoveRef.current = true
@@ -65,70 +44,65 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
   }, [])
 
   useEffect(() => {
-    let worker: Worker
-    try {
-      // Hash tells stockfish where the WASM lives (Vite renames assets on build)
-      worker = new Worker(`${sfUrl}#${sfWasmUrl}`)
-    } catch {
-      // queueMicrotask avoids synchronous setState in effect body
-      queueMicrotask(() => setEngineState({ score: undefined, bestMove: undefined, scoredFen: '', error: true }))
-      return
-    }
-    workerRef.current = worker
+    let cancelled = false
 
-    worker.onerror = () => {
-      setEngineState({ score: undefined, bestMove: undefined, scoredFen: '', error: true })
-    }
-
-    worker.onmessage = (e: MessageEvent<string>) => {
-      const line = e.data
-
-      if (line === 'uciok') {
-        worker.postMessage('isready')
+    createStockfishWorker(sfUrl, sfWasmUrl).then(worker => {
+      if (cancelled) {
+        worker.terminate()
         return
       }
 
-      if (line === 'readyok') {
-        readyRef.current = true
-        const pending = pendingFenRef.current
-        if (pending !== null) {
-          pendingFenRef.current = null
-          beginSearch(pending)
+      workerRef.current = worker
+      readyRef.current = true
+
+      worker.onerror = () => {
+        setEngineState({ score: undefined, bestMove: undefined, scoredFen: '', error: true })
+      }
+
+      worker.onmessage = (e: MessageEvent<string>) => {
+        const line = e.data
+
+        if (line.startsWith('bestmove')) {
+          awaitingBestMoveRef.current = false
+          searchActiveRef.current = false
+          const pending = pendingFenRef.current
+          if (pending !== null) {
+            pendingFenRef.current = null
+            beginSearch(pending)
+          }
+          return
         }
-        return
-      }
 
-      if (line.startsWith('bestmove')) {
-        awaitingBestMoveRef.current = false
-        searchActiveRef.current = false
-        const pending = pendingFenRef.current
-        if (pending !== null) {
-          pendingFenRef.current = null
-          beginSearch(pending)
-        }
-        return
-      }
-
-      if (!awaitingBestMoveRef.current && line.startsWith('info') && line.includes(' score ')) {
-        const depthMatch = line.match(/\bdepth (\d+)/)
-        const depth = depthMatch ? parseInt(depthMatch[1]) : 0
-        if (depth >= TARGET_DEPTH) {
-          const raw = parseScore(line)
-          if (raw) {
-            const score = toWhitePerspective(raw, currentSearchFenRef.current)
-            const scoredFen = currentSearchFenRef.current
-            const pvMatch = line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/)
-            const bestMove = pvMatch?.[1]
-            setEngineState({ score, bestMove, scoredFen, error: false })
+        if (!awaitingBestMoveRef.current && line.startsWith('info') && line.includes(' score ')) {
+          const depthMatch = line.match(/\bdepth (\d+)/)
+          const depth = depthMatch ? parseInt(depthMatch[1]) : 0
+          if (depth >= TARGET_DEPTH) {
+            const raw = parseScore(line)
+            if (raw) {
+              const score = toWhitePerspective(raw, currentSearchFenRef.current)
+              const scoredFen = currentSearchFenRef.current
+              const pvMatch = line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/)
+              const bestMove = pvMatch?.[1]
+              setEngineState({ score, bestMove, scoredFen, error: false })
+            }
           }
         }
       }
-    }
 
-    worker.postMessage('uci')
+      const pending = pendingFenRef.current
+      if (pending !== null) {
+        pendingFenRef.current = null
+        beginSearch(pending)
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        queueMicrotask(() => setEngineState({ score: undefined, bestMove: undefined, scoredFen: '', error: true }))
+      }
+    })
 
     return () => {
-      worker.terminate()
+      cancelled = true
+      workerRef.current?.terminate()
       workerRef.current = null
       readyRef.current = false
       searchActiveRef.current = false
@@ -142,8 +116,6 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
       return
     }
 
-    // Debounce: wait 300ms after last FEN change before sending to engine.
-    // Rapid navigation would otherwise spam stop/go and crash Stockfish WASM.
     const timer = setTimeout(() => {
       if (!readyRef.current) {
         pendingFenRef.current = fen
@@ -156,7 +128,6 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
     return () => clearTimeout(timer)
   }, [fen, beginSearch])
 
-  // Derive isLoading during render — no setState needed in the FEN effect
   const isLoading = fen !== undefined && engineState.scoredFen !== fen && !engineState.error
 
   return { score: engineState.score, bestMove: engineState.bestMove, isLoading, error: engineState.error }
