@@ -1,5 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { authClient } from '../../lib/auth'
+import { useRouteMemoryStore } from '../../stores/routeMemoryStore'
 
 const navLinks = [
   { to: '/' as const, label: 'Free Play', exact: true },
@@ -11,6 +12,7 @@ const navLinks = [
 export function TopNav() {
   const { data: session } = authClient.useSession()
   const navigate = useNavigate()
+  const routeMemory = useRouteMemoryStore((s) => s.routes)
 
   return (
     <header className="flex items-center justify-between px-4 h-12 border-b border-white/10 bg-[#12122a] shrink-0">
@@ -19,7 +21,7 @@ export function TopNav() {
           <Link
             key={to}
             to={to}
-            search={{ modal: undefined }}
+            search={(prev) => ({ ...routeMemory[to], modal: (prev as { modal?: 'login' }).modal })}
             activeProps={{ className: 'text-white bg-white/10' }}
             inactiveProps={{ className: 'text-gray-400 hover:text-gray-200 hover:bg-white/5' }}
             activeOptions={{ exact }}
