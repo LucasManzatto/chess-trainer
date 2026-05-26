@@ -20,6 +20,7 @@ class GameAnalysisCreate(BaseModel):
     black_accuracy: float
     depth: int
     analyzed_at: datetime
+    initial_score: float | None = None
 
 
 class UserProfileResponse(BaseModel):

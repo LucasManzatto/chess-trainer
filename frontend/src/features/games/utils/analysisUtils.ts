@@ -25,14 +25,7 @@ export function findCriticalMoves(
     const winAfter = userIsWhite ? timeline[i + 1] : 100 - timeline[i + 1]
     const drop = winBefore - winAfter
 
-    if (drop <= 15) continue
-
-    const recovers = timeline.slice(i + 2).some(t => {
-      const userWin = userIsWhite ? t : 100 - t
-      return userWin > 45
-    })
-
-    if (!recovers) critical.push(i)
+    if (drop > 15) critical.push(i)
   }
 
   return critical

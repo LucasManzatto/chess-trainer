@@ -10,6 +10,7 @@ type MoveListProps = {
   moveClassifications?: MoveClassification[]
   openingMoveCount?: number
   criticalMoveIndices?: number[]
+  showCriticalOnly?: boolean
 }
 
 const CLASSIFICATION_COLORS: Record<MoveClassification, string> = {
@@ -42,9 +43,10 @@ type MovePairRowProps = {
   blackClassification?: MoveClassification
   openingMoveCount: number
   criticalMoveIndices: number[]
+  showCriticalOnly: boolean
 }
 
-function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef, whiteClassification, blackClassification, openingMoveCount, criticalMoveIndices }: MovePairRowProps) {
+function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whiteRef, blackRef, whiteClassification, blackClassification, openingMoveCount, criticalMoveIndices, showCriticalOnly }: MovePairRowProps) {
   const whiteIndex = pairIndex * 2
   const blackIndex = pairIndex * 2 + 1
   return (
@@ -61,6 +63,7 @@ function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whit
           classification={whiteClassification}
           isOpening={whiteIndex < openingMoveCount}
           isCritical={criticalMoveIndices.includes(whiteIndex)}
+          showCriticalOnly={showCriticalOnly}
           ref={whiteRef}
         />
       </td>
@@ -74,6 +77,7 @@ function MovePairRow({ pairIndex, white, black, selectedIndex, onMoveClick, whit
             classification={blackClassification}
             isOpening={blackIndex < openingMoveCount}
             isCritical={criticalMoveIndices.includes(blackIndex)}
+            showCriticalOnly={showCriticalOnly}
             ref={blackRef}
           />
         ) : (
@@ -92,15 +96,20 @@ type MoveTokenProps = {
   classification?: MoveClassification
   isOpening?: boolean
   isCritical?: boolean
+  showCriticalOnly?: boolean
   ref?: React.Ref<HTMLButtonElement>
 }
 
-function MoveToken({ san, index, selectedIndex, onClick, classification, isOpening, isCritical, ref }: MoveTokenProps) {
+function MoveToken({ san, index, selectedIndex, onClick, classification, isOpening, isCritical, showCriticalOnly, ref }: MoveTokenProps) {
   const classificationColor = classification ? CLASSIFICATION_COLORS[classification] : undefined
   const symbol = classification ? CLASSIFICATION_SYMBOLS[classification] : ''
-  const colorClass = index === selectedIndex
+  const isSelected = index === selectedIndex
+  const dimmed = showCriticalOnly && !isCritical && !isSelected
+  const colorClass = isSelected
     ? 'bg-amber-500/25 text-amber-200'
-    : classificationColor || (isOpening ? 'text-amber-500' : 'text-gray-100')
+    : dimmed
+      ? 'text-gray-600'
+      : classificationColor || (isOpening ? 'text-amber-500' : 'text-gray-100')
 
   return (
     <button
@@ -110,12 +119,12 @@ function MoveToken({ san, index, selectedIndex, onClick, classification, isOpeni
     >
       {isCritical && <span className="text-amber-400/60 mr-0.5 text-xs">↓</span>}
       {san}
-      {symbol && <span className={`text-xs ml-0.5 ${classificationColor}`}>{symbol}</span>}
+      {symbol && !dimmed && <span className={`text-xs ml-0.5 ${classificationColor}`}>{symbol}</span>}
     </button>
   )
 }
 
-export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true, moveClassifications, openingMoveCount = 0, criticalMoveIndices = [] }: MoveListProps) {
+export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true, moveClassifications, openingMoveCount = 0, criticalMoveIndices = [], showCriticalOnly = false }: MoveListProps) {
   const { bottomRef, tokenRefs, pairs } = useMoveList(moves, selectedIndex)
   const hasClassifications = moveClassifications && moveClassifications.length === moves.length
 
@@ -152,6 +161,7 @@ export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, sh
                   blackClassification={hasClassifications ? moveClassifications[pairIndex * 2 + 1] : undefined}
                   openingMoveCount={openingMoveCount}
                   criticalMoveIndices={criticalMoveIndices}
+                  showCriticalOnly={showCriticalOnly}
                 />
               ))}
             </tbody>

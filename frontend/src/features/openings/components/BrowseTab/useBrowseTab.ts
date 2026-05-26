@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useOpenings } from '../../hooks/useOpenings'
 import type { Opening } from '../../types'
 import { openingColor } from '../../types'
@@ -10,9 +11,21 @@ export function useBrowseTab() {
   const { data: openings, isLoading } = useOpenings()
   const [search, setSearch] = useState('')
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
+  const navigate = useNavigate()
+  const { openingId } = useSearch({ from: '/openings/' })
+  const autoSelectedRef = useRef<number | null>(null)
 
   const board = useChessGame({ orientation })
   const context = useBrowseOpeningContext(openings, board.currentMoves)
+
+  useEffect(() => {
+    if (!openingId || !openings || autoSelectedRef.current === openingId) return
+    const target = openings.find(o => o.id === openingId)
+    if (!target) return
+    autoSelectedRef.current = openingId
+    board.loadMoves(target.moves)
+    setOrientation(openingColor(target))
+  }, [openingId, openings])
 
   const shapes = useMemo(
     () => computeCandidateShapes(context.candidateMoves, board.boardFen),
@@ -31,6 +44,7 @@ export function useBrowseTab() {
   function handleOpeningSelect(o: Opening) {
     board.loadMoves(o.moves)
     setOrientation(openingColor(o))
+    navigate({ to: '/openings', search: (prev) => ({ ...prev, openingId: o.id }), replace: true })
   }
 
   const flipOrientation = useCallback(() => {

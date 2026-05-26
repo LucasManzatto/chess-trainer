@@ -6,6 +6,11 @@ import { useProfile } from '../../../../features/games/hooks/useProfile'
 
 const searchSchema = z.object({
   tab: z.enum(['games', 'dashboard']).default('games').catch('games'),
+  result: z.enum(['win', 'loss', 'draw']).nullable().default(null).catch(null),
+  color: z.enum(['white', 'black']).nullable().default(null).catch(null),
+  time_class: z.enum(['bullet', 'blitz', 'rapid', 'daily']).nullable().default(null).catch(null),
+  eco: z.string().default('').catch(''),
+  gameId: z.number().optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_auth/games/')({
@@ -26,7 +31,7 @@ function GamesPage() {
   const { data: profile, isLoading } = useProfile()
 
   function setTab(t: Tab) {
-    navigate({ to: '/_auth/games/', search: { tab: t }, replace: true })
+    navigate({ to: '/games', search: (prev) => ({ ...prev, tab: t }), replace: true })
   }
 
   if (isLoading) {

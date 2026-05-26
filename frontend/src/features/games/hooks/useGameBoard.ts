@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useChessGame } from '../../../components/ChessBoard/hooks/useChessGame'
 import { useGameAnalysis } from '../../../components/ChessBoard/hooks/useGameAnalysis'
 import { useOpenings } from '../../openings/hooks/useOpenings'
-import { computeOpeningMoveCount } from '../utils/gameLogic'
+import { computeOpeningMatch } from '../utils/gameLogic'
+import type { OpeningMatch } from '../utils/gameLogic'
 import { findCriticalMoves } from '../utils/analysisUtils'
 import type { Game, MoveClassification } from '../types'
 
@@ -17,10 +18,11 @@ export function useGameBoard(onAnalysisComplete: () => void) {
 
   const { data: openings } = useOpenings()
 
-  const openingMoveCount = useMemo(
-    () => computeOpeningMoveCount(selectedGame?.moves ?? [], selectedGame?.eco ?? null, openings ?? []),
+  const openingMatch = useMemo(
+    () => computeOpeningMatch(selectedGame?.moves ?? [], selectedGame?.eco ?? null, openings ?? []),
     [selectedGame?.moves, selectedGame?.eco, openings],
   )
+  const openingMoveCount = openingMatch?.moveCount ?? 0
 
   const moveClassifications = useMemo((): MoveClassification[] | undefined => {
     const src = analysis ?? selectedGame?.analysis
@@ -58,6 +60,7 @@ export function useGameBoard(onAnalysisComplete: () => void) {
     analyzeProgress,
     analysis,
     moveClassifications,
+    openingMatch,
     openingMoveCount,
     criticalMoveIndices,
   }

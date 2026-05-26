@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import type { Game, GamesFilters, SyncStatus } from '../../types'
 import { SyncControls } from '../GamesTab/SyncControls'
-import { formatDate, timeControlLabel } from '../../utils/gameFormatters'
+import { timeControlLabel } from '../../utils/gameFormatters'
 
 type ResultBadgeProps = { result: Game['result'] }
 
@@ -55,14 +55,10 @@ function GameRow({ game, selected, username, onSelect }: GameRowProps) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-          {game.analysis ? (
-            <span className="text-xs text-blue-400 font-mono">
-              {game.analysis.white_accuracy.toFixed(0)}% / {game.analysis.black_accuracy.toFixed(0)}%
-            </span>
-          ) : (
-            <span className="text-xs text-gray-600">{timeControlLabel(game.time_control)}</span>
+          <span className="text-xs text-gray-600">{timeControlLabel(game.time_control)}</span>
+          {game.analysis && (
+            <span className="text-xs text-blue-400" title="Analysed">⬡</span>
           )}
-          <span className="text-xs text-gray-600">{formatDate(game.played_at)}</span>
         </div>
       </div>
     </button>

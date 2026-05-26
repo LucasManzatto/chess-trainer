@@ -6,6 +6,7 @@ import { useFavorites } from '../../../features/openings/hooks/useFavorites'
 
 const searchSchema = z.object({
   tab: z.enum(['browse', 'drill']).default('browse').catch('browse'),
+  openingId: z.number().optional(),
 })
 
 export const Route = createFileRoute('/openings/')({

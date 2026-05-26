@@ -1,10 +1,4 @@
-import type { MoveAnalysis, MoveClassification } from '../../../../components/ChessBoard/types'
-
-const SYMBOLS: Partial<Record<MoveClassification, string>> = {
-  blunder: '??',
-  mistake: '?',
-  inaccuracy: '?!',
-}
+import type { MoveAnalysis } from '../../../../components/ChessBoard/types'
 
 type CriticalMomentsListProps = {
   moves: MoveAnalysis[]
@@ -35,8 +29,6 @@ export function CriticalMomentsList({ moves, criticalMoveIndices, timeline, user
           const winAfter = userIsWhite ? timeline[idx + 1] : 100 - timeline[idx + 1]
           const drop = Math.round(winBefore - winAfter)
 
-          const symbol = move?.classification ? (SYMBOLS[move.classification] ?? '') : ''
-
           return (
             <button
               key={idx}
@@ -46,7 +38,6 @@ export function CriticalMomentsList({ moves, criticalMoveIndices, timeline, user
               <span className="text-xs text-gray-600 w-10 flex-shrink-0">{prefix}</span>
               <span className="text-xs font-mono text-gray-200 flex-1 min-w-0 truncate">
                 {move?.san || '—'}
-                {symbol && <span className="text-orange-400 ml-0.5">{symbol}</span>}
               </span>
               <span className="text-xs text-red-400 flex-shrink-0 tabular-nums">−{drop}%</span>
             </button>
