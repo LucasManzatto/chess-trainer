@@ -16,7 +16,6 @@ import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
 import { Route as PuzzlesPuzzleIdRouteImport } from './routes/puzzles/$puzzleId'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
-import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
 import { Route as AuthGamesIndexRouteImport } from './routes/_auth/games/index'
 import { Route as AuthGamesGameIdRouteImport } from './routes/_auth/games/$gameId'
 
@@ -54,11 +53,6 @@ const AccountPathnameRoute = AccountPathnameRouteImport.update({
   path: '/account/$pathname',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthDashboardRoute = AuthDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthGamesIndexRoute = AuthGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
@@ -72,7 +66,6 @@ const AuthGamesGameIdRoute = AuthGamesGameIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof AuthDashboardRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
@@ -83,7 +76,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof AuthDashboardRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
@@ -96,7 +88,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
-  '/_auth/dashboard': typeof AuthDashboardRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
@@ -109,7 +100,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/puzzles/$puzzleId'
@@ -120,7 +110,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/puzzles/$puzzleId'
@@ -132,7 +121,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
-    | '/_auth/dashboard'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/puzzles/$puzzleId'
@@ -203,13 +191,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountPathnameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/dashboard': {
-      id: '/_auth/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthDashboardRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_auth/games/': {
       id: '/_auth/games/'
       path: '/games'
@@ -228,13 +209,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteChildren {
-  AuthDashboardRoute: typeof AuthDashboardRoute
   AuthGamesGameIdRoute: typeof AuthGamesGameIdRoute
   AuthGamesIndexRoute: typeof AuthGamesIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthDashboardRoute: AuthDashboardRoute,
   AuthGamesGameIdRoute: AuthGamesGameIdRoute,
   AuthGamesIndexRoute: AuthGamesIndexRoute,
 }

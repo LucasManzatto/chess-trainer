@@ -5,7 +5,6 @@ const navLinks = [
   { to: '/' as const, label: 'Free Play', exact: true },
   { to: '/puzzles' as const, label: 'Puzzles', exact: false },
   { to: '/openings' as const, label: 'Openings', exact: false },
-  { to: '/dashboard' as const, label: 'Dashboard', exact: false },
   { to: '/games' as const, label: 'Games', exact: false },
 ]
 

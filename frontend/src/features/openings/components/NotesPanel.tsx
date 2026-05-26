@@ -91,13 +91,13 @@ export function NotesPanel({ openingId, moveIndex, fen, moves }: Props) {
     deletePosition,
   } = useNotesPanel({ openingId, moveIndex, fen })
 
-  if (!session) return null
-
   const sortedPositionComments = useMemo(
     () => [...positionComments].sort((a, b) => a.move_index - b.move_index),
     [positionComments],
   )
   const hasAnyNotes = openingComments.length > 0 || positionComments.length > 0
+
+  if (!session) return null
 
   return (
     <div className="space-y-4">
