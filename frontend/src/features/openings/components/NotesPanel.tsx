@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNotesPanel } from './useNotesPanel'
+import { moveLabel } from '../utils/notesUtils'
 
 type Props = {
   openingId: number
@@ -10,10 +11,6 @@ type Props = {
 
 type EditingState = { id: number; content: string; type: 'opening' | 'position' }
 
-function moveLabel(moves: string[], index: number): string {
-  const num = Math.floor(index / 2) + 1
-  return index % 2 === 0 ? `${num}. ${moves[index]}` : `${num}... ${moves[index]}`
-}
 
 function NoteCard({
   label,

@@ -7,7 +7,7 @@ export type TrieNode = {
   count: number
 }
 
-function buildTrie(openings: Opening[]): TrieNode {
+export function buildTrie(openings: Opening[]): TrieNode {
   const root: TrieNode = { children: new Map(), openings: [], count: 0 }
 
   for (const opening of openings) {

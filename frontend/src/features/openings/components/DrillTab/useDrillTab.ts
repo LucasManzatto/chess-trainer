@@ -20,7 +20,7 @@ type DrillAction =
   | { type: 'reset_flash'; moveIndex: number }
   | { type: 'back_to_queue' }
 
-function drillReducer(state: DrillState, action: DrillAction): DrillState {
+export function drillReducer(state: DrillState, action: DrillAction): DrillState {
   switch (action.type) {
     case 'start':
       return { phase: 'drilling', item: action.item, moveIndex: 0, flash: null }

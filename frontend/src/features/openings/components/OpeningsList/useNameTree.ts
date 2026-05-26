@@ -9,7 +9,7 @@ export type NameNode = {
   children: NameNode[]
 }
 
-function parseNamePath(name: string): string[] {
+export function parseNamePath(name: string): string[] {
   const colonIdx = name.indexOf(': ')
   if (colonIdx === -1) return [name]
   const main = name.slice(0, colonIdx)
@@ -19,7 +19,7 @@ function parseNamePath(name: string): string[] {
   return [main, rest.slice(0, commaIdx), rest.slice(commaIdx + 2)]
 }
 
-function buildNameTree(openings: Opening[]): NameNode[] {
+export function buildNameTree(openings: Opening[]): NameNode[] {
   type BuildNode = NameNode & { _m: Map<string, BuildNode> }
   const rootList: BuildNode[] = []
   const rootMap = new Map<string, BuildNode>()
