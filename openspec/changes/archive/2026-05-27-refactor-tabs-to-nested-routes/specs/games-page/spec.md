@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Games index route exists at /games and requires auth
 A layout route SHALL exist at `/games` defined in `src/routes/_auth/games.tsx`, nested under the `_auth` layout. Navigating to `/games` SHALL immediately redirect to `/games/list`. The layout SHALL render a tab nav with "Games" and "Dashboard" tabs and an `<Outlet />` below. Unauthenticated users SHALL be redirected by the `_auth` layout. When the authenticated user has no `chess_com_username` set, the layout SHALL render the first-run setup prompt instead of the tab nav and outlet.

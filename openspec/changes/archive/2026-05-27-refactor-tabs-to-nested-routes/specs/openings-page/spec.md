@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Openings route exists at /openings
 A layout route SHALL exist at `/openings` defined in `src/routes/openings.tsx`. Navigating to `/openings` SHALL immediately redirect to `/openings/browse`. The layout SHALL render a tab nav with "Browse" and "Drill" tabs and an `<Outlet />` below. The page SHALL be publicly accessible and render without login. The layout component SHALL call `useFavorites` so both child tabs benefit from cached favorites.
