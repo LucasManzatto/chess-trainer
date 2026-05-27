@@ -2,18 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Chess } from 'chess.js'
 import { useChessStore, useChessStoreApi } from '../stores/chessStore'
 import { useArrowKeyNavigation } from '../../../hooks/useArrowKeyNavigation'
-import { computeThreats } from '../../../chess/analysis'
 import { parsePgn } from '../../../chess/pgn'
-import { getFenAtIndex } from '../../../chess/game'
-import type { UseChessGameProps, ThreatSquares } from '../types'
+import { useChessDerivedState } from './useChessDerivedState'
+import type { UseChessGameProps } from '../types'
 import type { GameMetadata } from '../../../chess/types'
-import type { Key, Dests } from '@lichess-org/chessground/types'
+import type { Key } from '@lichess-org/chessground/types'
 import type { Config } from '@lichess-org/chessground/config'
 
 export type { GameMetadata } from '../../../chess/types'
 export type { MoveResult, GameOverResult, UseChessGameProps } from '../types'
 
-const EMPTY_THREATS: ThreatSquares = { hanging: [], pinned: [] }
 const INITIAL_FEN = new Chess().fen()
 
 export function useChessGame({
@@ -27,8 +25,6 @@ export function useChessGame({
   const [gameMetadata, setGameMetadata] = useState<GameMetadata | null>(null)
 
   const store = useChessStoreApi()
-  const history = useChessStore(s => s.history)
-  const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
   const loadMoves = useChessStore(s => s.loadMoves)
   const navigateToIndex = useChessStore(s => s.navigateToIndex)
   const navigateBack = useChessStore(s => s.navigateBack)
@@ -36,11 +32,7 @@ export function useChessGame({
   const reset = useChessStore(s => s.reset)
   const undo = useChessStore(s => s.undo)
 
-  // Reconstruct chess engine from current FEN — no mutable object in Zustand
-  const chess = useMemo(
-    () => new Chess(getFenAtIndex(history, currentMoveIndex)),
-    [history, currentMoveIndex],
-  )
+  const { chess, turn, dests, lastEntry, threats, history, currentMoveIndex } = useChessDerivedState()
 
   useArrowKeyNavigation(navigateBack, navigateForward)
 
@@ -54,19 +46,6 @@ export function useChessGame({
 
   const isAtEnd = currentMoveIndex === history.length - 1
   const isInteractive = interactive && (!interactiveAtEnd || isAtEnd)
-  const turn: 'white' | 'black' = chess.turn() === 'w' ? 'white' : 'black'
-
-  const dests = useMemo(() => {
-    const map: Dests = new Map()
-    for (const move of chess.moves({ verbose: true })) {
-      const list = map.get(move.from as Key) ?? []
-      list.push(move.to as Key)
-      map.set(move.from as Key, list)
-    }
-    return map
-  }, [chess])
-
-  const lastEntry = currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
 
   const executeStepMove = useCallback((orig: string, dest: string) => {
     const result = store.getState().applyMove(orig, dest)
@@ -122,7 +101,6 @@ export function useChessGame({
   const allMoves = useMemo(() => history.map(e => e.san), [history])
   const allFens = useMemo(() => [INITIAL_FEN, ...history.map(e => e.fen)], [history])
   const currentMoves = useMemo(() => allMoves.slice(0, currentMoveIndex + 1), [allMoves, currentMoveIndex])
-  const threats = lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS
 
   return {
     config,

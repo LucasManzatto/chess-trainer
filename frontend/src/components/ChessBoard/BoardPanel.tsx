@@ -1,102 +1,32 @@
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
-import { Chess } from 'chess.js'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import type { DrawShape } from '@lichess-org/chessground/draw'
-import type { Config } from '@lichess-org/chessground/config'
-import type { Key, Dests } from '@lichess-org/chessground/types'
+import type { Key } from '@lichess-org/chessground/types'
 import { EvaluationBar } from './EvaluationBar'
 import { usePositionEvaluation } from './hooks/usePositionEvaluation'
+import { useChessDerivedState } from './hooks/useChessDerivedState'
 import { useBoardSettingsStore } from './stores/boardSettingsStore'
-import { useChessStore, useChessStoreApi } from './stores/chessStore'
-import { CloseIcon, EyeIcon, FlipIcon, GearIcon, HangingPieceIcon, PinnedPieceIcon } from '../icons'
+import { useChessStore } from './stores/chessStore'
+import { CloseIcon, EyeIcon, FlipIcon, GearIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
-import { squareToPixel } from './utils'
-import type { EvaluationScore, ThreatSquares } from './types'
-import { getFenAtIndex } from '../../chess/game'
-import { computeThreats } from '../../chess/analysis'
+import type { EvaluationScore } from './types'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
-const DOT_SIZE = 22
-const BOARD_PRESETS = [350, 450, 550, 700] as const
-const BOARD_PRESET_LABELS = ['S', 'M', 'L', 'XL'] as const
-const EMPTY_THREATS: ThreatSquares = { hanging: [], pinned: [] }
 
-function useBoardConfig() {
-  const history = useChessStore(s => s.history)
-  const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
-  const orientation = useChessStore(s => s.orientation)
-  const store = useChessStoreApi()
+// ─── BoardPanelTitle ──────────────────────────────────────────────────────────
 
-  const chess = useMemo(
-    () => new Chess(getFenAtIndex(history, currentMoveIndex)),
-    [history, currentMoveIndex],
-  )
-
-  const turn: 'white' | 'black' = chess.turn() === 'w' ? 'white' : 'black'
-
-  const dests = useMemo(() => {
-    const map: Dests = new Map()
-    for (const move of chess.moves({ verbose: true })) {
-      const list = map.get(move.from as Key) ?? []
-      list.push(move.to as Key)
-      map.set(move.from as Key, list)
-    }
-    return map
-  }, [chess])
-
-  const lastEntry = currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
-
-  const config = useMemo((): Config => ({
-    fen: chess.fen(),
-    orientation,
-    turnColor: turn,
-    check: chess.inCheck(),
-    lastMove: lastEntry ? [lastEntry.from as Key, lastEntry.to as Key] : undefined,
-    movable: {
-      free: false,
-      color: turn,
-      dests,
-      showDests: true,
-      events: {
-        after: (orig, dest) => store.getState().applyMove(orig, dest),
-      },
-    },
-    animation: { enabled: true, duration: 300 },
-    highlight: { lastMove: true, check: true },
-    premovable: { enabled: false },
-  }), [chess, orientation, turn, dests, lastEntry, store])
-
-  const threats: ThreatSquares = lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS
-
-  return { config, threats, orientation }
-}
-
-function ThreatOverlay({ threats, boardSize, orientation }: {
-  threats: ThreatSquares
-  boardSize: number
-  orientation: 'white' | 'black'
-}) {
+function BoardPanelTitle({ title, width }: { title: ReactNode; width: number }) {
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      {threats.hanging.map(sq => {
-        const { left, top } = squareToPixel(sq, boardSize, orientation, DOT_SIZE)
-        return (
-          <div key={`h-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
-            <HangingPieceIcon />
-          </div>
-        )
-      })}
-      {threats.pinned.map(sq => {
-        const { left, top } = squareToPixel(sq, boardSize, orientation, DOT_SIZE)
-        return (
-          <div key={`p-${sq}`} className="absolute drop-shadow-md" style={{ width: DOT_SIZE, height: DOT_SIZE, left, top }}>
-            <PinnedPieceIcon />
-          </div>
-        )
-      })}
+    <div style={{ width }} className="flex items-center justify-between gap-2 flex-shrink-0">
+      {title}
     </div>
   )
 }
+
+// ─── BoardSettings ────────────────────────────────────────────────────────────
+
+const BOARD_PRESETS = [350, 450, 550, 700] as const
+const BOARD_PRESET_LABELS = ['S', 'M', 'L', 'XL'] as const
 
 function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { size, setSize } = useBoardSettingsStore()
@@ -162,6 +92,55 @@ function BoardSettingsDrawer({ open, onClose }: { open: boolean; onClose: () => 
   )
 }
 
+type BoardSettingsProps = {
+  orientation: 'white' | 'black'
+  onFlip: () => void
+  showThreatsControl: boolean
+  showThreats: boolean
+  onToggleThreats: () => void
+}
+
+function BoardSettings({ orientation, onFlip, showThreatsControl, showThreats, onToggleThreats }: BoardSettingsProps) {
+  const [showDrawer, setShowDrawer] = useState(false)
+
+  return (
+    <>
+      <div className="self-start flex-shrink-0 flex flex-col gap-1" style={{ width: GEAR_BUTTON_WIDTH }}>
+        <button
+          onClick={() => setShowDrawer(v => !v)}
+          className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+          title="Board settings"
+        >
+          <GearIcon />
+        </button>
+        <button
+          onClick={onFlip}
+          className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+          title={`Flip board (${orientation === 'white' ? 'White' : 'Black'} on bottom)`}
+        >
+          <FlipIcon />
+        </button>
+        {showThreatsControl && (
+          <button
+            onClick={onToggleThreats}
+            className={`p-1.5 rounded transition-colors ${
+              showThreats
+                ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Toggle threat hints"
+          >
+            <EyeIcon />
+          </button>
+        )}
+      </div>
+      <BoardSettingsDrawer open={showDrawer} onClose={() => setShowDrawer(false)} />
+    </>
+  )
+}
+
+// ─── BoardPanel ───────────────────────────────────────────────────────────────
+
 export type PrecomputedEval = {
   score: EvaluationScore | undefined
   bestMove: string | undefined
@@ -185,17 +164,23 @@ export function BoardPanel({
   precomputedEval,
 }: BoardPanelProps) {
   const { size: boardSize } = useBoardSettingsStore()
-  const [showSettings, setShowSettings] = useState(false)
   const [showThreats, setShowThreats] = useState(defaultShowThreats)
 
-  const { config, threats, orientation } = useBoardConfig()
+  const orientation = useChessStore(s => s.orientation)
   const setOrientation = useChessStore(s => s.setOrientation)
+  const setShapes = useChessStore(s => s.setShapes)
+
+  const { chess } = useChessDerivedState()
+  const fen = chess.fen()
 
   const flipOrientation = useCallback(() => {
     setOrientation(orientation === 'white' ? 'black' : 'white')
   }, [orientation, setOrientation])
 
-  const fen = config.fen
+  const handleToggleThreats = useCallback(() => {
+    setShowThreats(v => !v)
+    onToggleThreats?.()
+  }, [onToggleThreats])
 
   // Skip live eval only when we have an actual stored score; fall back to live otherwise
   const hasPrecomputedScore = precomputedEval?.score !== undefined
@@ -206,7 +191,7 @@ export function BoardPanel({
   const bestMove = precomputedEval?.bestMove ?? liveBestMove
   const bestMoveShape = useMemo<DrawShape[]>(
     () => bestMove
-      ? [{ orig: bestMove.slice(0, 2) as import('@lichess-org/chessground/types').Key, dest: bestMove.slice(2, 4) as import('@lichess-org/chessground/types').Key, brush: 'blue' }]
+      ? [{ orig: bestMove.slice(0, 2) as Key, dest: bestMove.slice(2, 4) as Key, brush: 'blue' }]
       : [],
     [bestMove],
   )
@@ -216,62 +201,34 @@ export function BoardPanel({
     [extraShapes, bestMoveShape],
   )
 
+  useEffect(() => {
+    setShapes(allShapes)
+  }, [allShapes, setShapes])
+
   const assemblyWidth = EVAL_BAR_WIDTH + 8 + boardSize + 8 + GEAR_BUTTON_WIDTH
 
   return (
     <div className="flex flex-col items-center justify-center gap-3">
       {title !== undefined && (
-        <div style={{ width: assemblyWidth }} className="flex items-center justify-between gap-2 flex-shrink-0">
-          {title}
-        </div>
+        <BoardPanelTitle title={title} width={assemblyWidth} />
       )}
 
       <div className="flex flex-row gap-2 flex-shrink-0" style={{ height: boardSize }}>
         <EvaluationBar score={score} isLoading={evalLoading} />
 
-        <div style={{ width: boardSize, height: boardSize, flexShrink: 0, position: 'relative' }}>
-          <ChessBoard
-            config={config}
-            boardWidth={boardSize}
-            extraShapes={allShapes}
-          />
-          {showThreats && (
-            <ThreatOverlay threats={threats} boardSize={boardSize} orientation={orientation} />
-          )}
-        </div>
+        <ChessBoard
+          boardWidth={boardSize}
+          showThreats={showThreats}
+        />
 
-        <div className="self-start flex-shrink-0 flex flex-col gap-1" style={{ width: GEAR_BUTTON_WIDTH }}>
-          <button
-            onClick={() => setShowSettings(v => !v)}
-            className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-            title="Board settings"
-          >
-            <GearIcon />
-          </button>
-          <button
-            onClick={flipOrientation}
-            className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-            title={`Flip board (${orientation === 'white' ? 'White' : 'Black'} on bottom)`}
-          >
-            <FlipIcon />
-          </button>
-          {showThreatsControl && (
-            <button
-              onClick={() => { setShowThreats(v => !v); onToggleThreats?.() }}
-              className={`p-1.5 rounded transition-colors ${
-                showThreats
-                  ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
-                  : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-              }`}
-              title="Toggle threat hints"
-            >
-              <EyeIcon />
-            </button>
-          )}
-        </div>
+        <BoardSettings
+          orientation={orientation}
+          onFlip={flipOrientation}
+          showThreatsControl={showThreatsControl}
+          showThreats={showThreats}
+          onToggleThreats={handleToggleThreats}
+        />
       </div>
-
-      <BoardSettingsDrawer open={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   )
 }

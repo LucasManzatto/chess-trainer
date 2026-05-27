@@ -1,10 +1,12 @@
-import { memo, useMemo } from 'react'
+import { memo, useCallback, useMemo } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { Game } from '../../types'
 import { useGames } from '../../hooks/useGames'
 import { useGamesSync } from '../../hooks/useGamesSync'
 import { SyncControls } from '../GamesTab/SyncControls'
 import { timeControlLabel } from '../../utils/gameFormatters'
+
+// ─── ResultBadge ─────────────────────────────────────────────────────────────
 
 type ResultBadgeProps = { result: Game['result'] }
 
@@ -21,6 +23,75 @@ function ResultBadge({ result }: ResultBadgeProps) {
     </span>
   )
 }
+
+// ─── FilterToggle ─────────────────────────────────────────────────────────────
+
+type FilterToggleProps<T extends string> = {
+  value: T | null
+  options: { label: string; value: T }[]
+  onChange: (v: T | null) => void
+}
+
+function FilterToggle<T extends string>({ value, options, onChange }: FilterToggleProps<T>) {
+  return (
+    <div className="flex gap-1">
+      {options.map(opt => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(value === opt.value ? null : opt.value)}
+          className={`px-2 py-0.5 rounded text-xs transition-colors ${
+            value === opt.value
+              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── GamesFilters ─────────────────────────────────────────────────────────────
+
+const RESULT_OPTIONS = [
+  { label: 'W', value: 'win' as const },
+  { label: 'L', value: 'loss' as const },
+  { label: 'D', value: 'draw' as const },
+]
+
+const COLOR_OPTIONS = [
+  { label: '♔ White', value: 'white' as const },
+  { label: '♚ Black', value: 'black' as const },
+]
+
+const TIME_CLASS_OPTIONS = [
+  { label: 'Bullet', value: 'bullet' as const },
+  { label: 'Blitz', value: 'blitz' as const },
+  { label: 'Rapid', value: 'rapid' as const },
+  { label: 'Daily', value: 'daily' as const },
+]
+
+function GamesFilters() {
+  const navigate = useNavigate()
+  const { result, color, time_class } = useSearch({ from: '/_auth/games/list' })
+
+  const setFilter = useCallback(
+    (patch: Partial<{ result: typeof result; color: typeof color; time_class: typeof time_class }>) =>
+      navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, ...patch }), replace: true }),
+    [navigate],
+  )
+
+  return (
+    <>
+      <FilterToggle value={result} options={RESULT_OPTIONS} onChange={v => setFilter({ result: v })} />
+      <FilterToggle value={color} options={COLOR_OPTIONS} onChange={v => setFilter({ color: v })} />
+      <FilterToggle value={time_class} options={TIME_CLASS_OPTIONS} onChange={v => setFilter({ time_class: v })} />
+    </>
+  )
+}
+
+// ─── GameRow ──────────────────────────────────────────────────────────────────
 
 type GameRowProps = {
   game: Game
@@ -67,31 +138,60 @@ function GameRow({ game, selected, onSelect }: GameRowProps) {
   )
 }
 
-type FilterToggleProps<T extends string> = {
-  value: T | null
-  options: { label: string; value: T }[]
-  onChange: (v: T | null) => void
+// ─── GamesListHeader ──────────────────────────────────────────────────────────
+
+type GamesListHeaderProps = {
+  total: number
+  syncStatus: ReturnType<typeof useGamesSync>['syncStatus']
+  isRunning: boolean
+  onSync: () => void
 }
 
-function FilterToggle<T extends string>({ value, options, onChange }: FilterToggleProps<T>) {
+function GamesListHeader({ total, syncStatus, isRunning, onSync }: GamesListHeaderProps) {
   return (
-    <div className="flex gap-1">
-      {options.map(opt => (
-        <button
-          key={opt.value}
-          onClick={() => onChange(value === opt.value ? null : opt.value)}
-          className={`px-2 py-0.5 rounded text-xs transition-colors ${
-            value === opt.value
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-transparent'
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
+    <div className="px-3 py-2 border-b border-white/[0.06] flex flex-col gap-2 flex-shrink-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Games</span>
+          <span className="text-xs text-gray-600">{total}</span>
+        </div>
+        <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={onSync} />
+      </div>
+      <GamesFilters />
     </div>
   )
 }
+
+// ─── GameList ─────────────────────────────────────────────────────────────────
+
+type GameListProps = {
+  games: Game[]
+  isLoading: boolean
+  selectedId: number | null
+  onSelect: (game: Game) => void
+}
+
+function GameList({ games, isLoading, selectedId, onSelect }: GameListProps) {
+  return (
+    <div className="flex-1 overflow-y-auto min-h-0">
+      {isLoading ? (
+        <div className="flex items-center justify-center h-24 text-gray-600 text-sm">
+          Loading…
+        </div>
+      ) : games.length === 0 ? (
+        <div className="flex items-center justify-center h-24 text-gray-600 text-sm text-center px-4">
+          No games found
+        </div>
+      ) : (
+        games.map(g => (
+          <GameRow key={g.id} game={g} selected={g.id === selectedId} onSelect={onSelect} />
+        ))
+      )}
+    </div>
+  )
+}
+
+// ─── GamesList ────────────────────────────────────────────────────────────────
 
 export const GamesList = memo(function GamesList() {
   const navigate = useNavigate()
@@ -106,84 +206,17 @@ export const GamesList = memo(function GamesList() {
   const { syncStatus, isRunning, triggerSync } = useGamesSync()
   const games = gamesData?.items ?? []
   const total = gamesData?.total ?? 0
-  function onSelect(game: Game) {
-    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, gameId: game.id }), replace: true })
-  }
 
-  function onResultChange(v: typeof result) {
-    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, result: v }), replace: true })
-  }
-
-  function onColorChange(v: typeof color) {
-    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, color: v }), replace: true })
-  }
-
-  function onTimeClassChange(v: typeof time_class) {
-    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, time_class: v }), replace: true })
-  }
+  const onSelect = useCallback(
+    (game: Game) =>
+      navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, gameId: game.id }), replace: true }),
+    [navigate],
+  )
 
   return (
     <div className="flex flex-col h-full">
-      {/* Filters header */}
-      <div className="px-3 py-2 border-b border-white/[0.06] flex flex-col gap-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Games
-            </span>
-            <span className="text-xs text-gray-600">{total}</span>
-          </div>
-          <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={triggerSync} />
-        </div>
-        <FilterToggle
-          value={result}
-          options={[
-            { label: 'W', value: 'win' as const },
-            { label: 'L', value: 'loss' as const },
-            { label: 'D', value: 'draw' as const },
-          ]}
-          onChange={onResultChange}
-        />
-        <FilterToggle
-          value={color}
-          options={[
-            { label: '♔ White', value: 'white' as const },
-            { label: '♚ Black', value: 'black' as const },
-          ]}
-          onChange={onColorChange}
-        />
-        <FilterToggle
-          value={time_class}
-          options={[
-            { label: 'Bullet', value: 'bullet' as const },
-            { label: 'Blitz', value: 'blitz' as const },
-            { label: 'Rapid', value: 'rapid' as const },
-          ]}
-          onChange={onTimeClassChange}
-        />
-      </div>
-
-      {/* Games list */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-sm">
-            Loading…
-          </div>
-        ) : games.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-gray-600 text-sm text-center px-4">
-            No games found
-          </div>
-        ) : (
-          games.map(g => (
-            <GameRow
-              key={g.id}
-              game={g}
-              selected={g.id === gameId}
-              onSelect={onSelect}
-            />
-          ))
-        )}
-      </div>
+      <GamesListHeader total={total} syncStatus={syncStatus} isRunning={isRunning} onSync={triggerSync} />
+      <GameList games={games} isLoading={isLoading} selectedId={gameId ?? null} onSelect={onSelect} />
     </div>
   )
 })

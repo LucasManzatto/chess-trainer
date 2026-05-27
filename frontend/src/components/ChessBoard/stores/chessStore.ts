@@ -7,6 +7,7 @@ import {
   undoLastMove,
 } from '../../../chess/game'
 import type { HistoryEntry, MoveResult, MoveClassification } from '../../../chess/types'
+import type { DrawShape } from '@lichess-org/chessground/draw'
 
 interface ChessState {
   history: HistoryEntry[]
@@ -15,6 +16,7 @@ interface ChessState {
   moveClassifications: MoveClassification[] | undefined
   openingMoveCount: number
   criticalMoveIndices: number[]
+  shapes: DrawShape[]
 }
 
 interface ChessActions {
@@ -29,6 +31,7 @@ interface ChessActions {
   setMoveClassifications: (classifications: MoveClassification[] | undefined) => void
   setOpeningMoveCount: (count: number) => void
   setCriticalMoveIndices: (indices: number[]) => void
+  setShapes: (shapes: DrawShape[]) => void
 }
 
 export type ChessStore = ChessState & ChessActions
@@ -41,6 +44,7 @@ function createChessStore() {
     moveClassifications: undefined,
     openingMoveCount: 0,
     criticalMoveIndices: [],
+    shapes: [],
 
     loadMoves: (moves) => {
       const history = buildHistoryFromMoves(moves)
@@ -87,6 +91,7 @@ function createChessStore() {
     setMoveClassifications: (classifications) => set({ moveClassifications: classifications }),
     setOpeningMoveCount: (count) => set({ openingMoveCount: count }),
     setCriticalMoveIndices: (indices) => set({ criticalMoveIndices: indices }),
+    setShapes: (shapes) => set({ shapes }),
   }))
 }
 
