@@ -7,9 +7,30 @@ import { useBoardSettingsStore } from './stores/boardSettingsStore'
 import { CloseIcon, EyeIcon, FlipIcon, GearIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
 import type { EvaluationScore } from './types'
+import { useAddToDrill } from '../../features/openings/components/BrowseTab/useAddToDrill'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
+
+// ─── AddToDrillButton ─────────────────────────────────────────────────────────
+
+function AddToDrillButton({ openingId }: { openingId: number }) {
+  const { isLoggedIn, inDrill, add, isPending } = useAddToDrill(openingId)
+  if (!isLoggedIn) return null
+  return (
+    <button
+      onClick={add}
+      disabled={inDrill || isPending}
+      className={`text-xs px-3 py-1.5 rounded transition-colors ${
+        inDrill
+          ? 'bg-green-500/10 text-green-500 cursor-default'
+          : 'bg-amber-500/15 text-amber-300 hover:bg-amber-500/25'
+      }`}
+    >
+      {inDrill ? '✓ In Drill' : '+ Add to Drill'}
+    </button>
+  )
+}
 
 // ─── BoardPanelTitle ──────────────────────────────────────────────────────────
 
@@ -146,6 +167,8 @@ export type PrecomputedEval = {
 
 export type BoardPanelProps = {
   title?: ReactNode
+  openingName?: string
+  openingId?: number
   extraShapes?: DrawShape[]
   showThreatsControl?: boolean
   defaultShowThreats?: boolean
@@ -157,6 +180,8 @@ export type BoardPanelProps = {
 
 export function BoardPanel({
   title,
+  openingName,
+  openingId,
   extraShapes = [],
   showThreatsControl = false,
   defaultShowThreats = false,
@@ -195,10 +220,19 @@ export function BoardPanel({
   const bestMove = precomputedEval?.bestMove ?? liveBestMove
   const assemblyWidth = EVAL_BAR_WIDTH + 8 + boardSize + 8 + GEAR_BUTTON_WIDTH
 
+  const resolvedTitle = title ?? (openingName !== undefined ? (
+    <>
+      <div className="text-xl font-semibold text-white leading-snug truncate">
+        {openingName}
+      </div>
+      {openingId !== undefined && <AddToDrillButton openingId={openingId} />}
+    </>
+  ) : undefined)
+
   return (
     <div className="flex flex-col items-center justify-center gap-3">
-      {title !== undefined && (
-        <BoardPanelTitle title={title} width={assemblyWidth} />
+      {resolvedTitle !== undefined && (
+        <BoardPanelTitle title={resolvedTitle} width={assemblyWidth} />
       )}
 
       <div className="flex flex-row gap-2 flex-shrink-0" style={{ height: boardSize }}>

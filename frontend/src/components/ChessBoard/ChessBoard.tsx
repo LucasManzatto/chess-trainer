@@ -109,9 +109,7 @@ export function ChessBoard({
   extraShapes,
   bestMove,
 }: ChessBoardProps) {
-  const { size: storedSize } = useBoardSettingsStore()
-  const resolvedWidth = boardWidth ?? storedSize
-  const { containerRef, width } = useBoardSizing(resolvedWidth)
+  const { containerRef, width } = useBoardSizing(boardWidth)
 
   const config = useBoardConfig({ orientation, interactive, interactiveAtEnd, animationDurationInMs, onMove })
   const { threats } = useChessDerivedState()

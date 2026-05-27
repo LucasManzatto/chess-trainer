@@ -4,7 +4,6 @@ import { useGameAnalysis } from '../../../components/ChessBoard/hooks/useGameAna
 import { useChessStore } from '../../../components/ChessBoard/stores/chessStore'
 import { useOpenings } from '../../openings/hooks/useOpenings'
 import { computeOpeningMatch } from '../utils/gameLogic'
-import type { OpeningMatch } from '../utils/gameLogic'
 import { findCriticalMoves } from '../utils/analysisUtils'
 import type { Game, MoveClassification } from '../types'
 

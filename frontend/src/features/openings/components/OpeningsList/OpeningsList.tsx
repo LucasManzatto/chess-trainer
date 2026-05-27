@@ -1,35 +1,57 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { Opening } from '../../types'
-import type { ViewMode } from './useOpeningsList'
 import { useFavorites } from '../../hooks/useFavorites'
-import { ColorBadge, StarButton } from './OpeningsListPrimitives'
 import { OpeningsNameTree } from './OpeningsNameTree'
 import { OpeningsMoveTree } from './OpeningsMoveTree'
+import { useOpenings } from '../../hooks/useOpenings'
+import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
+import { useBrowseOpeningContext } from '../BrowseTab/useBrowseOpeningContext'
+import { OpeningsListHeader } from './OpeningsListHeader'
+import { OpeningsListFilter } from './OpeningsListFilter'
+import { OpeningsListRow } from './OpeningsListRow'
+import type { ViewMode } from './useOpeningsList'
 
-type Props = {
-  openings: Opening[]
-  isLoading?: boolean
-  selectedId?: number
-  selectedName?: string
-  search?: string
-  onSearchChange?: (s: string) => void
-  onSelect?: (o: Opening) => void
-  defaultViewMode?: ViewMode
-}
+export function OpeningsList() {
+  const { data: openingsData, isLoading } = useOpenings()
+  const { currentMoves, loadMoves, currentMoveIndex } = useChessGame()
+  const context = useBrowseOpeningContext(openingsData, currentMoves)
+  const navigate = useNavigate()
+  const { openingId } = useSearch({ from: '/openings/browse' })
+  const autoSelectedRef = useRef<number | null>(null)
 
-export function OpeningsList({
-  openings,
-  isLoading,
-  selectedId,
-  selectedName,
-  search,
-  onSearchChange,
-  onSelect,
-  defaultViewMode = 'list',
-}: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode)
+  useEffect(() => {
+    if (!openingId || !openingsData || autoSelectedRef.current === openingId) return
+    const target = openingsData.find(o => o.id === openingId)
+    if (!target) return
+    autoSelectedRef.current = openingId
+    loadMoves(target.moves)
+  }, [openingId, openingsData])
+
+  function onSelect(o: Opening) {
+    loadMoves(o.moves)
+    navigate({ from: '/openings/browse', to: '/openings/browse', search: (prev) => ({ ...prev, openingId: o.id }), replace: true })
+  }
+
+  const selectedId = context.exactMatch?.id ?? context.selected?.id
+  const selectedName = context.selected?.name
+
+  const allOpenings = useMemo(() => {
+    const base = currentMoveIndex >= 0 && context.matchingOpenings.length > 0
+      ? context.matchingOpenings
+      : (openingsData ?? [])
+    return base
+  }, [openingsData, context.matchingOpenings, currentMoveIndex])
+
+  const [viewMode, setViewMode] = useState<ViewMode>('name')
+  const [search, setSearch] = useState('')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const { ids: favoriteIds, toggleFavorite, bulkToggle } = useFavorites()
+
+  const openings = useMemo(
+    () => search ? allOpenings.filter(o => o.name.toLowerCase().includes(search.toLowerCase())) : allOpenings,
+    [allOpenings, search],
+  )
 
   const displayed = useMemo(() => {
     if (!showFavoritesOnly) return openings
@@ -39,109 +61,57 @@ export function OpeningsList({
   return (
     <>
       <div className="border-b border-white/[0.06]">
-        <div className="px-3 h-10 flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Openings</span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowFavoritesOnly(v => !v)}
-              title="Show favorites only"
-              className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
-                showFavoritesOnly ? 'text-amber-400' : 'text-gray-600 hover:text-gray-300'
-              }`}
-            >
-              ★
-            </button>
-            <div className="w-px h-4 bg-white/10 mx-0.5" />
-            {(['list', 'name', 'move'] as ViewMode[]).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`text-xs px-2 py-0.5 rounded transition-colors ${
-                  viewMode === mode
-                    ? 'bg-amber-500/20 text-amber-300'
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-        </div>
-        {onSearchChange && (
-          <div className="px-3 pb-2">
-            <input
-              type="text"
-              placeholder="Search openings…"
-              value={search ?? ''}
-              onChange={e => onSearchChange(e.target.value)}
-              className="w-full bg-white/5 text-sm text-white placeholder-gray-500 rounded-md px-3 py-1.5 border border-white/10 focus:outline-none focus:border-amber-400/50"
-            />
-          </div>
-        )}
+        <OpeningsListHeader
+          showFavoritesOnly={showFavoritesOnly}
+          onToggleFavoritesOnly={() => setShowFavoritesOnly(v => !v)}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+        <OpeningsListFilter search={search} onSearchChange={setSearch} />
       </div>
       <div className="flex-1 overflow-y-auto">
-        {isLoading && <p className="text-gray-500 text-sm p-3">Loading openings…</p>}
-        {!isLoading && displayed.length === 0 && (
+        {isLoading ? (
+          <p className="text-gray-500 text-sm p-3">Loading openings…</p>
+        ) : displayed.length === 0 ? (
           <p className="text-gray-500 text-sm p-3">No openings found</p>
-        )}
-        {!isLoading && displayed.length > 0 && viewMode === 'list' && (
-          <div className="py-1">
-            {displayed.map(o =>
-              onSelect ? (
-                <button
-                  key={o.id}
-                  onClick={() => onSelect(o)}
-                  className={`w-full text-left pl-2 pr-3 py-1.5 text-sm transition-colors flex items-center gap-2 min-w-0 ${
-                    selectedId === o.id
-                      ? 'border-l-2 border-amber-400 bg-amber-500/10 text-amber-200'
-                      : 'border-l-2 border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <ColorBadge opening={o} />
-                  <span className="truncate flex-1">{o.name}</span>
-                  <StarButton
-                    state={favoriteIds.has(o.id) ? 'full' : 'empty'}
-                    onClick={e => { e.stopPropagation(); toggleFavorite(o.id) }}
+        ) : (
+          <>
+            {viewMode === 'list' && (
+              <div className="py-1">
+                {displayed.map(o => (
+                  <OpeningsListRow
+                    key={o.id}
+                    opening={o}
+                    isSelected={selectedId === o.id}
+                    isFavorite={favoriteIds.has(o.id)}
+                    onSelect={onSelect}
+                    onToggleFavorite={toggleFavorite}
                   />
-                </button>
-              ) : (
-                <div
-                  key={o.id}
-                  className={`pl-2 pr-3 py-1.5 text-sm border-l-2 flex items-center gap-2 min-w-0 ${
-                    selectedId === o.id ? 'border-amber-400 text-amber-300 font-semibold' : 'border-transparent text-gray-400'
-                  }`}
-                >
-                  <ColorBadge opening={o} />
-                  <span className="truncate flex-1">{o.name}</span>
-                  <StarButton
-                    state={favoriteIds.has(o.id) ? 'full' : 'empty'}
-                    onClick={e => { e.stopPropagation(); toggleFavorite(o.id) }}
-                  />
-                </div>
-              )
+                ))}
+              </div>
             )}
-          </div>
-        )}
-        {!isLoading && displayed.length > 0 && viewMode === 'name' && (
-          <OpeningsNameTree
-            openings={displayed}
-            selectedId={selectedId}
-            selectedName={selectedName}
-            onSelect={onSelect}
-            favoriteIds={favoriteIds}
-            onToggleFavorite={toggleFavorite}
-            onBulkToggle={bulkToggle}
-          />
-        )}
-        {!isLoading && displayed.length > 0 && viewMode === 'move' && (
-          <OpeningsMoveTree
-            openings={displayed}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            favoriteIds={favoriteIds}
-            onToggleFavorite={toggleFavorite}
-            onBulkToggle={bulkToggle}
-          />
+            {viewMode === 'name' && (
+              <OpeningsNameTree
+                openings={displayed}
+                selectedId={selectedId}
+                selectedName={selectedName}
+                onSelect={onSelect}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={toggleFavorite}
+                onBulkToggle={bulkToggle}
+              />
+            )}
+            {viewMode === 'move' && (
+              <OpeningsMoveTree
+                openings={displayed}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={toggleFavorite}
+                onBulkToggle={bulkToggle}
+              />
+            )}
+          </>
         )}
       </div>
     </>
