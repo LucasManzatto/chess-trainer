@@ -43,6 +43,7 @@ function BrowsePage() {
 
 function BrowsePageInner() {
   const {
+    orientation,
     openings,
     isLoading,
     selected,
@@ -74,6 +75,7 @@ function BrowsePageInner() {
 
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
+          orientation={orientation}
           extraShapes={shapes}
           showThreatsControl={true}
           title={

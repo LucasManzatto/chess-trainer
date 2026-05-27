@@ -5,13 +5,12 @@ import type { Opening } from '../../types'
 import { openingColor } from '../../types'
 import { computeCandidateShapes } from '../../../../chess/analysis'
 import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
-import { useChessStore } from '../../../../components/ChessBoard/stores/chessStore'
 import { useBrowseOpeningContext } from './useBrowseOpeningContext'
 
 export function useBrowsePage() {
   const { data: openings, isLoading } = useOpenings()
   const [search, setSearch] = useState('')
-  const setOrientation = useChessStore(s => s.setOrientation)
+  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
   const navigate = useNavigate()
   const { openingId } = useSearch({ from: '/openings/browse' })
   const autoSelectedRef = useRef<number | null>(null)
@@ -54,6 +53,7 @@ export function useBrowsePage() {
       : null
 
   return {
+    orientation,
     openings: displayedOpenings,
     isLoading,
     selected: context.selected,

@@ -17,8 +17,7 @@ function FreePage() {
 }
 
 function FreePageInner() {
-  const { config, boardFen, loadFromPgn, gameMetadata } =
-    useChessGame({ interactiveAtEnd: true })
+  const { boardFen, loadFromPgn, gameMetadata } = useChessGame()
   const [showImport, setShowImport] = useState(false)
   const { score, isLoading } = usePositionEvaluation(boardFen)
 
@@ -28,7 +27,7 @@ function FreePageInner() {
         <div className="w-full md:flex-1 md:max-w-[min(calc(100vh-8rem),700px)] min-w-0 flex flex-row gap-2 self-start">
           <EvaluationBar score={score} isLoading={isLoading} />
           <div className="flex-1">
-            <ChessBoard config={config} />
+            <ChessBoard interactiveAtEnd />
           </div>
         </div>
         <div className="w-full md:w-64 md:shrink-0 flex flex-col gap-2">

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
@@ -24,6 +25,8 @@ function GamesListPage() {
 }
 
 function GamesListPageInner() {
+  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
+
   return (
     <div className="grid grid-cols-[300px_1fr_220px_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
       <section className="overflow-y-hidden min-h-0 bg-white/[0.03] border border-white/[0.06] flex flex-col">
@@ -32,14 +35,16 @@ function GamesListPageInner() {
 
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
+          orientation={orientation}
           showThreatsControl
           defaultShowThreats
+          interactive={false}
         />
       </section>
 
       <MoveList />
 
-      <AnalysisPanel />
+      <AnalysisPanel onOrientationChange={setOrientation} />
     </div>
   )
 }

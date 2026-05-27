@@ -30,7 +30,11 @@ export function useChessDerivedState() {
   }, [chess])
 
   const lastEntry = currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
-  const threats: ThreatSquares = lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS
+
+  const threats: ThreatSquares = useMemo(
+    () => (lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS),
+    [lastEntry],
+  )
 
   return { chess, turn, dests, lastEntry, threats, history, currentMoveIndex }
 }

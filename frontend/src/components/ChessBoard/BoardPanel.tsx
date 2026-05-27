@@ -1,11 +1,9 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import type { DrawShape } from '@lichess-org/chessground/draw'
-import type { Key } from '@lichess-org/chessground/types'
 import { EvaluationBar } from './EvaluationBar'
 import { usePositionEvaluation } from './hooks/usePositionEvaluation'
 import { useChessDerivedState } from './hooks/useChessDerivedState'
 import { useBoardSettingsStore } from './stores/boardSettingsStore'
-import { useChessStore } from './stores/chessStore'
 import { CloseIcon, EyeIcon, FlipIcon, GearIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
 import type { EvaluationScore } from './types'
@@ -153,6 +151,8 @@ export type BoardPanelProps = {
   defaultShowThreats?: boolean
   onToggleThreats?: () => void
   precomputedEval?: PrecomputedEval
+  orientation?: 'white' | 'black'
+  interactive?: boolean
 }
 
 export function BoardPanel({
@@ -162,13 +162,17 @@ export function BoardPanel({
   defaultShowThreats = false,
   onToggleThreats,
   precomputedEval,
+  orientation: orientationProp = 'white',
+  interactive = true,
 }: BoardPanelProps) {
   const { size: boardSize } = useBoardSettingsStore()
   const [showThreats, setShowThreats] = useState(defaultShowThreats)
 
-  const orientation = useChessStore(s => s.orientation)
-  const setOrientation = useChessStore(s => s.setOrientation)
-  const setShapes = useChessStore(s => s.setShapes)
+  const [orientation, setOrientation] = useState(orientationProp)
+
+  useEffect(() => {
+    setOrientation(orientationProp)
+  }, [orientationProp])
 
   const { chess } = useChessDerivedState()
   const fen = chess.fen()
@@ -189,22 +193,6 @@ export function BoardPanel({
   )
   const score = hasPrecomputedScore ? precomputedEval!.score : liveScore
   const bestMove = precomputedEval?.bestMove ?? liveBestMove
-  const bestMoveShape = useMemo<DrawShape[]>(
-    () => bestMove
-      ? [{ orig: bestMove.slice(0, 2) as Key, dest: bestMove.slice(2, 4) as Key, brush: 'blue' }]
-      : [],
-    [bestMove],
-  )
-
-  const allShapes = useMemo(
-    () => [...extraShapes, ...bestMoveShape],
-    [extraShapes, bestMoveShape],
-  )
-
-  useEffect(() => {
-    setShapes(allShapes)
-  }, [allShapes, setShapes])
-
   const assemblyWidth = EVAL_BAR_WIDTH + 8 + boardSize + 8 + GEAR_BUTTON_WIDTH
 
   return (
@@ -219,6 +207,10 @@ export function BoardPanel({
         <ChessBoard
           boardWidth={boardSize}
           showThreats={showThreats}
+          orientation={orientation}
+          interactive={interactive}
+          extraShapes={extraShapes}
+          bestMove={bestMove}
         />
 
         <BoardSettings

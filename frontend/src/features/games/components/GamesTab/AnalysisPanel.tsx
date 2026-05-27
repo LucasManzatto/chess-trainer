@@ -74,7 +74,7 @@ function AnalysisHeader({ analyzeStatus, analyzeProgress, hasAnalysis, onAnalyze
   )
 }
 
-export function AnalysisPanel() {
+export function AnalysisPanel({ onOrientationChange }: { onOrientationChange?: (o: 'white' | 'black') => void }) {
   const navigate = useNavigate()
   const { result, color, time_class, eco, gameId } = useSearch({ from: '/_auth/games/list' })
 
@@ -90,7 +90,7 @@ export function AnalysisPanel() {
     queryClient.invalidateQueries({ queryKey: gamesKeys.list(filters) })
   }, [queryClient, filters])
 
-  const board = useGameBoard(onAnalysisComplete)
+  const board = useGameBoard(onAnalysisComplete, onOrientationChange)
 
   const autoSelectedRef = useRef<number | null>(null)
   const games = gamesData?.items ?? []

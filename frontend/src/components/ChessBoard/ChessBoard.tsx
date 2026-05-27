@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Config } from '@lichess-org/chessground/config'
+import type { DrawShape } from '@lichess-org/chessground/draw'
 import { useBoardSizing } from './hooks/useBoardSizing'
 import { useChessDerivedState } from './hooks/useChessDerivedState'
 import { ChessGround } from './ChessGround'
 import { useBoardSettingsStore } from './stores/boardSettingsStore'
-import { useChessStore, useChessStoreApi } from './stores/chessStore'
+import { useChessStoreApi, useChessStore } from './stores/chessStore'
 import { squareToPixel } from './utils'
 import { HangingPieceIcon, PinnedPieceIcon } from '../icons'
 import type { MoveResult, GameOverResult, ThreatSquares } from './types'
@@ -14,10 +15,22 @@ export type { MoveResult, GameOverResult }
 
 const DOT_SIZE = 22
 
-function useBoardConfig() {
-  const orientation = useChessStore(s => s.orientation)
+type BoardConfigOptions = {
+  orientation: 'white' | 'black'
+  interactive: boolean
+  interactiveAtEnd: boolean
+  animationDurationInMs: number
+  onMove?: (result: MoveResult) => void
+}
+
+function useBoardConfig({ orientation, interactive, interactiveAtEnd, animationDurationInMs, onMove }: BoardConfigOptions) {
   const store = useChessStoreApi()
   const { chess, turn, dests, lastEntry } = useChessDerivedState()
+  const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
+  const historyLength = useChessStore(s => s.history.length)
+
+  const isAtEnd = currentMoveIndex === historyLength - 1
+  const isInteractive = interactive && (!interactiveAtEnd || isAtEnd)
 
   const config = useMemo((): Config => ({
     fen: chess.fen(),
@@ -25,21 +38,25 @@ function useBoardConfig() {
     turnColor: turn,
     check: chess.inCheck(),
     lastMove: lastEntry ? [lastEntry.from as Key, lastEntry.to as Key] : undefined,
+    viewOnly: !isInteractive,
     movable: {
       free: false,
-      color: turn,
-      dests,
+      color: isInteractive ? turn : undefined,
+      dests: isInteractive ? dests : undefined,
       showDests: true,
       events: {
-        after: (orig, dest) => store.getState().applyMove(orig, dest),
+        after: (orig, dest) => {
+          const result = store.getState().applyMove(orig, dest)
+          if (result) onMove?.(result)
+        },
       },
     },
-    animation: { enabled: true, duration: 300 },
+    animation: { enabled: true, duration: animationDurationInMs },
     highlight: { lastMove: true, check: true },
     premovable: { enabled: false },
-  }), [chess, orientation, turn, dests, lastEntry, store])
+  }), [chess, orientation, turn, isInteractive, dests, lastEntry, animationDurationInMs, store, onMove])
 
-  return { config, orientation }
+  return config
 }
 
 function ThreatOverlay({ threats, boardSize, orientation }: {
@@ -72,20 +89,41 @@ function ThreatOverlay({ threats, boardSize, orientation }: {
 export type ChessBoardProps = {
   boardWidth?: number
   showThreats?: boolean
+  orientation?: 'white' | 'black'
+  interactive?: boolean
+  interactiveAtEnd?: boolean
+  animationDurationInMs?: number
+  onMove?: (result: MoveResult) => void
+  extraShapes?: DrawShape[]
+  bestMove?: string
 }
 
-export function ChessBoard({ boardWidth, showThreats }: ChessBoardProps) {
+export function ChessBoard({
+  boardWidth,
+  showThreats,
+  orientation = 'white',
+  interactive = true,
+  interactiveAtEnd = false,
+  animationDurationInMs = 300,
+  onMove,
+  extraShapes,
+  bestMove,
+}: ChessBoardProps) {
   const { size: storedSize } = useBoardSettingsStore()
   const resolvedWidth = boardWidth ?? storedSize
   const { containerRef, width } = useBoardSizing(resolvedWidth)
 
-  const { config, orientation } = useBoardConfig()
+  const config = useBoardConfig({ orientation, interactive, interactiveAtEnd, animationDurationInMs, onMove })
   const { threats } = useChessDerivedState()
-  const shapes = useChessStore(s => s.shapes)
+
+  const autoShapes = useMemo<DrawShape[]>(() => [
+    ...(extraShapes ?? []),
+    ...(bestMove ? [{ orig: bestMove.slice(0, 2) as Key, dest: bestMove.slice(2, 4) as Key, brush: 'blue' }] : []),
+  ], [extraShapes, bestMove])
 
   return (
     <div ref={containerRef} style={{ width: '100%', position: 'relative' }}>
-      <ChessGround config={config} width={width} autoShapes={shapes} />
+      <ChessGround config={config} width={width} autoShapes={autoShapes} />
       {showThreats && threats && (
         <ThreatOverlay threats={threats} boardSize={width} orientation={orientation} />
       )}

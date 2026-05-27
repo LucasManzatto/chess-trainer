@@ -69,10 +69,7 @@ export function useDrillPage() {
     }
   }, [state])
 
-  const board = useChessGame({
-    interactive: isDrilling && flash !== 'wrong',
-    onMove: handleMoveValidate,
-  })
+  const board = useChessGame()
 
   const drillItem = isDrilling ? state.item : null
   useEffect(() => {
@@ -101,7 +98,8 @@ export function useDrillPage() {
     isLoading,
     state,
     dispatch,
-    config: board.config,
+    interactive: isDrilling && flash !== 'wrong',
+    onMove: handleMoveValidate,
     flash,
     handleGrade,
   }

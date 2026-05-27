@@ -1,17 +1,18 @@
-import type { Config } from '@lichess-org/chessground/config'
 import { ChessBoard } from '../../../../components/ChessBoard/ChessBoard'
 import { DrillNotesPanel } from './DrillNotesPanel'
 import type { DrillQueueItem } from '../../types'
+import type { MoveResult } from '../../../../components/ChessBoard/ChessBoard'
 
 type Props = {
   item: DrillQueueItem
   moveIndex: number
-  config: Config
+  interactive: boolean
+  onMove: (move: MoveResult) => void
   flash: 'correct' | 'wrong' | null
   onBack: () => void
 }
 
-export function DrillBoard({ item, moveIndex, config, flash, onBack }: Props) {
+export function DrillBoard({ item, moveIndex, interactive, onMove, flash, onBack }: Props) {
   const progress = `${moveIndex} / ${item.moves.length}`
 
   return (
@@ -28,7 +29,7 @@ export function DrillBoard({ item, moveIndex, config, flash, onBack }: Props) {
             flash === 'wrong' ? 'ring-4 ring-red-500/60 rounded' : ''
           } ${flash === 'correct' ? 'ring-2 ring-green-500/40 rounded' : ''}`}
         >
-          <ChessBoard config={config} />
+          <ChessBoard interactive={interactive} onMove={onMove} />
         </div>
 
         <button

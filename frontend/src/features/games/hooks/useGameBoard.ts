@@ -8,14 +8,13 @@ import type { OpeningMatch } from '../utils/gameLogic'
 import { findCriticalMoves } from '../utils/analysisUtils'
 import type { Game, MoveClassification } from '../types'
 
-export function useGameBoard(onAnalysisComplete: () => void) {
+export function useGameBoard(onAnalysisComplete: () => void, onOrientationChange?: (o: 'white' | 'black') => void) {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
-  const setOrientation = useChessStore(s => s.setOrientation)
   const setMoveClassifications = useChessStore(s => s.setMoveClassifications)
   const setOpeningMoveCount = useChessStore(s => s.setOpeningMoveCount)
   const setCriticalMoveIndices = useChessStore(s => s.setCriticalMoveIndices)
 
-  const gameHistory = useChessGame({ interactiveAtEnd: false })
+  const gameHistory = useChessGame()
 
   const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
     useGameAnalysis(gameHistory.allFens, gameHistory.allMoves, selectedGame?.id ?? null, 18, onAnalysisComplete)
@@ -54,9 +53,9 @@ export function useGameBoard(onAnalysisComplete: () => void) {
 
   const selectGame = useCallback((game: Game) => {
     setSelectedGame(game)
-    setOrientation(game.user_color)
+    onOrientationChange?.(game.user_color)
     gameHistory.loadFromPgn(game.pgn)
-  }, [gameHistory.loadFromPgn, setOrientation])
+  }, [gameHistory.loadFromPgn, onOrientationChange])
 
   return {
     selectedGame,

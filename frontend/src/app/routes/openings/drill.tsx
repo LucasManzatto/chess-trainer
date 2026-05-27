@@ -14,7 +14,7 @@ function DrillPage() {
 }
 
 function DrillPageInner() {
-  const { isLoggedIn, queue, isLoading, state, dispatch, config, flash, handleGrade } = useDrillPage()
+  const { isLoggedIn, queue, isLoading, state, dispatch, interactive, onMove, flash, handleGrade } = useDrillPage()
 
   if (!isLoggedIn) {
     return (
@@ -40,7 +40,8 @@ function DrillPageInner() {
       <DrillBoard
         item={state.item}
         moveIndex={state.moveIndex}
-        config={config}
+        interactive={interactive}
+        onMove={onMove}
         flash={flash}
         onBack={() => dispatch({ type: 'back_to_queue' })}
       />
