@@ -1,21 +1,22 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useOpenings } from '../../hooks/useOpenings'
 import type { Opening } from '../../types'
 import { openingColor } from '../../types'
 import { computeCandidateShapes } from '../../../../chess/analysis'
 import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
+import { useChessStore } from '../../../../components/ChessBoard/stores/chessStore'
 import { useBrowseOpeningContext } from './useBrowseOpeningContext'
 
 export function useBrowsePage() {
   const { data: openings, isLoading } = useOpenings()
   const [search, setSearch] = useState('')
-  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
+  const setOrientation = useChessStore(s => s.setOrientation)
   const navigate = useNavigate()
   const { openingId } = useSearch({ from: '/openings/browse' })
   const autoSelectedRef = useRef<number | null>(null)
 
-  const board = useChessGame({ orientation })
+  const board = useChessGame()
   const context = useBrowseOpeningContext(openings, board.currentMoves)
 
   useEffect(() => {
@@ -47,10 +48,6 @@ export function useBrowsePage() {
     navigate({ from: '/openings/browse', to: '/openings/browse', search: (prev) => ({ ...prev, openingId: o.id }), replace: true })
   }
 
-  const flipOrientation = useCallback(() => {
-    setOrientation(o => o === 'white' ? 'black' : 'white')
-  }, [])
-
   const openingMoveIndex: number | null =
     context.selected && board.currentMoveIndex >= 0 && board.currentMoveIndex < context.selected.moves.length
       ? board.currentMoveIndex
@@ -64,7 +61,6 @@ export function useBrowsePage() {
     search,
     allMoves: board.allMoves,
     currentMoveIndex: board.currentMoveIndex,
-    config: board.config,
     boardFen: board.boardFen,
     openingMoveIndex,
     candidateMoves: context.candidateMoves,
@@ -72,7 +68,6 @@ export function useBrowsePage() {
     setSearch,
     setMoveIndex: board.navigateToIndex,
     selectOpening: handleOpeningSelect,
-    flipOrientation,
     resetBoard: board.reset,
   }
 }

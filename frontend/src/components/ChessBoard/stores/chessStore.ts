@@ -6,11 +6,15 @@ import {
   getFenAtIndex,
   undoLastMove,
 } from '../../../chess/game'
-import type { HistoryEntry, MoveResult } from '../../../chess/types'
+import type { HistoryEntry, MoveResult, MoveClassification } from '../../../chess/types'
 
 interface ChessState {
   history: HistoryEntry[]
   currentMoveIndex: number
+  orientation: 'white' | 'black'
+  moveClassifications: MoveClassification[] | undefined
+  openingMoveCount: number
+  criticalMoveIndices: number[]
 }
 
 interface ChessActions {
@@ -21,6 +25,10 @@ interface ChessActions {
   navigateToIndex: (index: number | null) => void
   reset: () => void
   undo: () => void
+  setOrientation: (o: 'white' | 'black') => void
+  setMoveClassifications: (classifications: MoveClassification[] | undefined) => void
+  setOpeningMoveCount: (count: number) => void
+  setCriticalMoveIndices: (indices: number[]) => void
 }
 
 export type ChessStore = ChessState & ChessActions
@@ -29,6 +37,10 @@ function createChessStore() {
   return createStore<ChessStore>()((set, get, store) => ({
     history: [],
     currentMoveIndex: -1,
+    orientation: 'white',
+    moveClassifications: undefined,
+    openingMoveCount: 0,
+    criticalMoveIndices: [],
 
     loadMoves: (moves) => {
       const history = buildHistoryFromMoves(moves)
@@ -64,11 +76,17 @@ function createChessStore() {
 
     reset: () => set(store.getInitialState()),
 
+    setOrientation: (o) => set({ orientation: o }),
+
     undo: () => {
       const { history, currentMoveIndex } = get()
       const { history: nextHistory, newIndex } = undoLastMove(history, currentMoveIndex)
       set({ history: nextHistory, currentMoveIndex: newIndex })
     },
+
+    setMoveClassifications: (classifications) => set({ moveClassifications: classifications }),
+    setOpeningMoveCount: (count) => set({ openingMoveCount: count }),
+    setCriticalMoveIndices: (indices) => set({ criticalMoveIndices: indices }),
   }))
 }
 

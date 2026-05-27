@@ -1,16 +1,12 @@
+import { useMemo, useState } from 'react'
 import { useMoveList } from './useMoveList'
 import type { MoveClassification } from '../ChessBoard/types'
+import { PanelSection } from '../PanelSection'
+import { useChessStore } from '../ChessBoard/stores/chessStore'
 
 type MoveListProps = {
-  moves: string[]
-  selectedIndex?: number | null
-  onMoveClick?: (index: number) => void
   onReset?: () => void
   showHeader?: boolean
-  moveClassifications?: MoveClassification[]
-  openingMoveCount?: number
-  criticalMoveIndices?: number[]
-  showCriticalOnly?: boolean
 }
 
 const CLASSIFICATION_COLORS: Record<MoveClassification, string> = {
@@ -124,51 +120,78 @@ function MoveToken({ san, index, selectedIndex, onClick, classification, isOpeni
   )
 }
 
-export function MoveList({ moves, selectedIndex = null, onMoveClick, onReset, showHeader = true, moveClassifications, openingMoveCount = 0, criticalMoveIndices = [], showCriticalOnly = false }: MoveListProps) {
+export function MoveList({ onReset, showHeader = true }: MoveListProps) {
+  const history = useChessStore(s => s.history)
+  const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
+  const navigateToIndex = useChessStore(s => s.navigateToIndex)
+  const moveClassifications = useChessStore(s => s.moveClassifications)
+  const openingMoveCount = useChessStore(s => s.openingMoveCount)
+  const criticalMoveIndices = useChessStore(s => s.criticalMoveIndices)
+
+  const moves = useMemo(() => history.map(e => e.san), [history])
+  const selectedIndex = currentMoveIndex >= 0 && currentMoveIndex < moves.length ? currentMoveIndex : null
+  const onMoveClick = navigateToIndex
+
   const { bottomRef, tokenRefs, pairs } = useMoveList(moves, selectedIndex)
   const hasClassifications = moveClassifications && moveClassifications.length === moves.length
+  const [showCriticalOnly, setShowCriticalOnly] = useState(false)
 
-  return (
-    <div className="flex flex-col h-full">
-      {showHeader && (
-        <div className="flex items-center justify-between px-3 h-10 border-b border-white/[0.06] flex-shrink-0">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</h2>
-          {moves.length > 0 && onReset && (
-            <button onClick={onReset} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-              Reset
-            </button>
-          )}
-        </div>
+  const headerAction = (
+    <div className="flex items-center gap-2">
+      {criticalMoveIndices.length > 0 && (
+        <button
+          onClick={() => setShowCriticalOnly(v => !v)}
+          className={`text-xs transition-colors ${showCriticalOnly ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-gray-300'}`}
+        >
+          {showCriticalOnly ? 'Critical only' : 'All moves'}
+        </button>
       )}
-
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {moves.length === 0 ? (
-          <p className="text-gray-500 text-sm px-3 py-4">No moves yet</p>
-        ) : (
-          <table className="w-full text-sm">
-            <tbody>
-              {pairs.map(([white, black], pairIndex) => (
-                <MovePairRow
-                  key={`${pairIndex}-${white}`}
-                  pairIndex={pairIndex}
-                  white={white}
-                  black={black}
-                  selectedIndex={selectedIndex}
-                  onMoveClick={onMoveClick}
-                  whiteRef={el => { tokenRefs.current[pairIndex * 2] = el }}
-                  blackRef={el => { tokenRefs.current[pairIndex * 2 + 1] = el }}
-                  whiteClassification={hasClassifications ? moveClassifications[pairIndex * 2] : undefined}
-                  blackClassification={hasClassifications ? moveClassifications[pairIndex * 2 + 1] : undefined}
-                  openingMoveCount={openingMoveCount}
-                  criticalMoveIndices={criticalMoveIndices}
-                  showCriticalOnly={showCriticalOnly}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
-        <div ref={bottomRef} />
-      </div>
+      {moves.length > 0 && onReset && (
+        <button onClick={onReset} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+          Reset
+        </button>
+      )}
     </div>
   )
+
+  const content = (
+    <div className="flex-1 overflow-y-auto min-h-0">
+      {moves.length === 0 ? (
+        <p className="text-gray-500 text-sm px-3 py-4">No moves yet</p>
+      ) : (
+        <table className="w-full text-sm">
+          <tbody>
+            {pairs.map(([white, black], pairIndex) => (
+              <MovePairRow
+                key={`${pairIndex}-${white}`}
+                pairIndex={pairIndex}
+                white={white}
+                black={black}
+                selectedIndex={selectedIndex}
+                onMoveClick={onMoveClick}
+                whiteRef={el => { tokenRefs.current[pairIndex * 2] = el }}
+                blackRef={el => { tokenRefs.current[pairIndex * 2 + 1] = el }}
+                whiteClassification={hasClassifications ? moveClassifications[pairIndex * 2] : undefined}
+                blackClassification={hasClassifications ? moveClassifications[pairIndex * 2 + 1] : undefined}
+                openingMoveCount={openingMoveCount}
+                criticalMoveIndices={criticalMoveIndices}
+                showCriticalOnly={showCriticalOnly}
+              />
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div ref={bottomRef} />
+    </div>
+  )
+
+  if (showHeader) {
+    return (
+      <PanelSection title="Moves" headerAction={headerAction}>
+        {content}
+      </PanelSection>
+    )
+  }
+
+  return <div className="flex flex-col h-full">{content}</div>
 }

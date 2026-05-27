@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useChessGame } from '../../../components/ChessBoard/hooks/useChessGame'
 import { useGameAnalysis } from '../../../components/ChessBoard/hooks/useGameAnalysis'
+import { useChessStore } from '../../../components/ChessBoard/stores/chessStore'
 import { useOpenings } from '../../openings/hooks/useOpenings'
 import { computeOpeningMatch } from '../utils/gameLogic'
 import type { OpeningMatch } from '../utils/gameLogic'
@@ -9,9 +10,12 @@ import type { Game, MoveClassification } from '../types'
 
 export function useGameBoard(onAnalysisComplete: () => void) {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
-  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
+  const setOrientation = useChessStore(s => s.setOrientation)
+  const setMoveClassifications = useChessStore(s => s.setMoveClassifications)
+  const setOpeningMoveCount = useChessStore(s => s.setOpeningMoveCount)
+  const setCriticalMoveIndices = useChessStore(s => s.setCriticalMoveIndices)
 
-  const gameHistory = useChessGame({ interactiveAtEnd: false, orientation })
+  const gameHistory = useChessGame({ interactiveAtEnd: false })
 
   const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
     useGameAnalysis(gameHistory.allFens, gameHistory.allMoves, selectedGame?.id ?? null, 18, onAnalysisComplete)
@@ -30,38 +34,41 @@ export function useGameBoard(onAnalysisComplete: () => void) {
     return src.moves.map(m => m.classification)
   }, [analysis, selectedGame?.analysis, gameHistory.allMoves.length])
 
+  useEffect(() => {
+    setMoveClassifications(moveClassifications)
+  }, [moveClassifications, setMoveClassifications])
+
+  useEffect(() => {
+    setOpeningMoveCount(openingMoveCount)
+  }, [openingMoveCount, setOpeningMoveCount])
+
   const criticalMoveIndices = useMemo(() => {
     const src = analysis ?? selectedGame?.analysis
     if (!src || !selectedGame) return []
     return findCriticalMoves(src.moves, src.initial_score ?? 0, selectedGame.user_color)
   }, [analysis, selectedGame?.analysis, selectedGame?.user_color, selectedGame])
 
+  useEffect(() => {
+    setCriticalMoveIndices(criticalMoveIndices)
+  }, [criticalMoveIndices, setCriticalMoveIndices])
+
   const selectGame = useCallback((game: Game) => {
     setSelectedGame(game)
     setOrientation(game.user_color)
     gameHistory.loadFromPgn(game.pgn)
-  }, [gameHistory.loadFromPgn])
-
-  const flipOrientation = useCallback(() => {
-    setOrientation(o => o === 'white' ? 'black' : 'white')
-  }, [])
+  }, [gameHistory.loadFromPgn, setOrientation])
 
   return {
     selectedGame,
     selectGame,
-    config: gameHistory.config,
     allMoves: gameHistory.allMoves,
     selectedMoveIndex: gameHistory.currentMoveIndex,
-    threats: gameHistory.threats,
-    flipOrientation,
     onMoveClick: gameHistory.handleMoveClick,
     analyze,
     analyzeStatus,
     analyzeProgress,
     analysis,
-    moveClassifications,
     openingMatch,
-    openingMoveCount,
     criticalMoveIndices,
   }
 }

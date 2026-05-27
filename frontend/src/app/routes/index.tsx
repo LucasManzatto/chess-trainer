@@ -17,7 +17,7 @@ function FreePage() {
 }
 
 function FreePageInner() {
-  const { config, allMoves, currentMoveIndex, boardFen, loadFromPgn, gameMetadata, handleMoveClick } =
+  const { config, boardFen, loadFromPgn, gameMetadata } =
     useChessGame({ interactiveAtEnd: true })
   const [showImport, setShowImport] = useState(false)
   const { score, isLoading } = usePositionEvaluation(boardFen)
@@ -55,9 +55,7 @@ function FreePageInner() {
               </div>
             )}
             <MoveList
-              moves={allMoves}
-              selectedIndex={currentMoveIndex >= 0 ? currentMoveIndex : null}
-              onMoveClick={handleMoveClick}
+              showHeader={false}
             />
           </div>
         </div>

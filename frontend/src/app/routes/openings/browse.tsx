@@ -48,17 +48,12 @@ function BrowsePageInner() {
     selected,
     exactMatch,
     search,
-    allMoves,
-    currentMoveIndex,
-    config,
     boardFen,
     openingMoveIndex,
     shapes,
     candidateMoves,
     setSearch,
-    setMoveIndex,
     selectOpening,
-    flipOrientation,
     resetBoard,
   } = useBrowsePage()
 
@@ -79,8 +74,6 @@ function BrowsePageInner() {
 
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
-          config={config}
-          onFlipOrientation={flipOrientation}
           extraShapes={shapes}
           showThreatsControl={true}
           title={
@@ -97,9 +90,7 @@ function BrowsePageInner() {
       <PanelSection>
         <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
-            moves={allMoves}
-            selectedIndex={currentMoveIndex >= 0 ? currentMoveIndex : null}
-            onMoveClick={setMoveIndex}
+            showHeader={false}
             onReset={resetBoard}
           />
         </div>

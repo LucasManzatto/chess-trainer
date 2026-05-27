@@ -1,5 +1,8 @@
-import { memo } from 'react'
-import type { Game, GamesFilters, SyncStatus } from '../../types'
+import { memo, useMemo } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import type { Game } from '../../types'
+import { useGames } from '../../hooks/useGames'
+import { useGamesSync } from '../../hooks/useGamesSync'
 import { SyncControls } from '../GamesTab/SyncControls'
 import { timeControlLabel } from '../../utils/gameFormatters'
 
@@ -22,11 +25,10 @@ function ResultBadge({ result }: ResultBadgeProps) {
 type GameRowProps = {
   game: Game
   selected: boolean
-  username: string
   onSelect: (game: Game) => void
 }
 
-function GameRow({ game, selected, username, onSelect }: GameRowProps) {
+function GameRow({ game, selected, onSelect }: GameRowProps) {
   const opponent = game.user_color === 'white' ? game.black_username : game.white_username
   const opponentRating = game.user_color === 'white' ? game.black_rating : game.white_rating
 
@@ -91,37 +93,35 @@ function FilterToggle<T extends string>({ value, options, onChange }: FilterTogg
   )
 }
 
-type GamesListProps = {
-  games: Game[]
-  isLoading: boolean
-  selectedId: number | null
-  username: string
-  filters: GamesFilters
-  total: number
-  syncStatus: SyncStatus | null
-  isRunning: boolean
-  onSelect: (game: Game) => void
-  onResultChange: (v: GamesFilters['result']) => void
-  onColorChange: (v: GamesFilters['color']) => void
-  onTimeClassChange: (v: GamesFilters['time_class']) => void
-  onSync: () => void
-}
+export const GamesList = memo(function GamesList() {
+  const navigate = useNavigate()
+  const { result, color, time_class, gameId } = useSearch({ from: '/_auth/games/list' })
 
-export const GamesList = memo(function GamesList({
-  games,
-  isLoading,
-  selectedId,
-  username,
-  filters,
-  total,
-  syncStatus,
-  isRunning,
-  onSelect,
-  onResultChange,
-  onColorChange,
-  onTimeClassChange,
-  onSync,
-}: GamesListProps) {
+  const filters = useMemo(
+    () => ({ result, color, time_class, eco: '' }),
+    [result, color, time_class],
+  )
+
+  const { data: gamesData, isLoading } = useGames(filters)
+  const { syncStatus, isRunning, triggerSync } = useGamesSync()
+  const games = gamesData?.items ?? []
+  const total = gamesData?.total ?? 0
+  function onSelect(game: Game) {
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, gameId: game.id }), replace: true })
+  }
+
+  function onResultChange(v: typeof result) {
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, result: v }), replace: true })
+  }
+
+  function onColorChange(v: typeof color) {
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, color: v }), replace: true })
+  }
+
+  function onTimeClassChange(v: typeof time_class) {
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, time_class: v }), replace: true })
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Filters header */}
@@ -133,10 +133,10 @@ export const GamesList = memo(function GamesList({
             </span>
             <span className="text-xs text-gray-600">{total}</span>
           </div>
-          <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={onSync} />
+          <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={triggerSync} />
         </div>
         <FilterToggle
-          value={filters.result}
+          value={result}
           options={[
             { label: 'W', value: 'win' as const },
             { label: 'L', value: 'loss' as const },
@@ -145,7 +145,7 @@ export const GamesList = memo(function GamesList({
           onChange={onResultChange}
         />
         <FilterToggle
-          value={filters.color}
+          value={color}
           options={[
             { label: '♔ White', value: 'white' as const },
             { label: '♚ Black', value: 'black' as const },
@@ -153,7 +153,7 @@ export const GamesList = memo(function GamesList({
           onChange={onColorChange}
         />
         <FilterToggle
-          value={filters.time_class}
+          value={time_class}
           options={[
             { label: 'Bullet', value: 'bullet' as const },
             { label: 'Blitz', value: 'blitz' as const },
@@ -178,8 +178,7 @@ export const GamesList = memo(function GamesList({
             <GameRow
               key={g.id}
               game={g}
-              selected={g.id === selectedId}
-              username={username}
+              selected={g.id === gameId}
               onSelect={onSelect}
             />
           ))

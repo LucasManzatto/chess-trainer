@@ -1,20 +1,75 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useMemo, useState } from 'react'
+import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Config } from '@lichess-org/chessground/config'
+import type { Key, Dests } from '@lichess-org/chessground/types'
 import { EvaluationBar } from './EvaluationBar'
 import { usePositionEvaluation } from './hooks/usePositionEvaluation'
 import { useBoardSettingsStore } from './stores/boardSettingsStore'
+import { useChessStore, useChessStoreApi } from './stores/chessStore'
 import { CloseIcon, EyeIcon, FlipIcon, GearIcon, HangingPieceIcon, PinnedPieceIcon } from '../icons'
 import { ChessBoard } from './ChessBoard'
 import { squareToPixel } from './utils'
 import type { EvaluationScore, ThreatSquares } from './types'
+import { getFenAtIndex } from '../../chess/game'
+import { computeThreats } from '../../chess/analysis'
 
 const EVAL_BAR_WIDTH = 16
 const GEAR_BUTTON_WIDTH = 28
 const DOT_SIZE = 22
 const BOARD_PRESETS = [350, 450, 550, 700] as const
 const BOARD_PRESET_LABELS = ['S', 'M', 'L', 'XL'] as const
+const EMPTY_THREATS: ThreatSquares = { hanging: [], pinned: [] }
 
+function useBoardConfig() {
+  const history = useChessStore(s => s.history)
+  const currentMoveIndex = useChessStore(s => s.currentMoveIndex)
+  const orientation = useChessStore(s => s.orientation)
+  const store = useChessStoreApi()
+
+  const chess = useMemo(
+    () => new Chess(getFenAtIndex(history, currentMoveIndex)),
+    [history, currentMoveIndex],
+  )
+
+  const turn: 'white' | 'black' = chess.turn() === 'w' ? 'white' : 'black'
+
+  const dests = useMemo(() => {
+    const map: Dests = new Map()
+    for (const move of chess.moves({ verbose: true })) {
+      const list = map.get(move.from as Key) ?? []
+      list.push(move.to as Key)
+      map.set(move.from as Key, list)
+    }
+    return map
+  }, [chess])
+
+  const lastEntry = currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
+
+  const config = useMemo((): Config => ({
+    fen: chess.fen(),
+    orientation,
+    turnColor: turn,
+    check: chess.inCheck(),
+    lastMove: lastEntry ? [lastEntry.from as Key, lastEntry.to as Key] : undefined,
+    movable: {
+      free: false,
+      color: turn,
+      dests,
+      showDests: true,
+      events: {
+        after: (orig, dest) => store.getState().applyMove(orig, dest),
+      },
+    },
+    animation: { enabled: true, duration: 300 },
+    highlight: { lastMove: true, check: true },
+    premovable: { enabled: false },
+  }), [chess, orientation, turn, dests, lastEntry, store])
+
+  const threats: ThreatSquares = lastEntry ? computeThreats(lastEntry.fen) : EMPTY_THREATS
+
+  return { config, threats, orientation }
+}
 
 function ThreatOverlay({ threats, boardSize, orientation }: {
   threats: ThreatSquares
@@ -113,11 +168,8 @@ export type PrecomputedEval = {
 }
 
 export type BoardPanelProps = {
-  config: Config
-  onFlipOrientation: () => void
   title?: ReactNode
   extraShapes?: DrawShape[]
-  threats?: ThreatSquares
   showThreatsControl?: boolean
   defaultShowThreats?: boolean
   onToggleThreats?: () => void
@@ -125,11 +177,8 @@ export type BoardPanelProps = {
 }
 
 export function BoardPanel({
-  config,
-  onFlipOrientation,
   title,
   extraShapes = [],
-  threats,
   showThreatsControl = false,
   defaultShowThreats = false,
   onToggleThreats,
@@ -139,8 +188,14 @@ export function BoardPanel({
   const [showSettings, setShowSettings] = useState(false)
   const [showThreats, setShowThreats] = useState(defaultShowThreats)
 
+  const { config, threats, orientation } = useBoardConfig()
+  const setOrientation = useChessStore(s => s.setOrientation)
+
+  const flipOrientation = useCallback(() => {
+    setOrientation(orientation === 'white' ? 'black' : 'white')
+  }, [orientation, setOrientation])
+
   const fen = config.fen
-  const orientation = config.orientation ?? 'white'
 
   // Skip live eval only when we have an actual stored score; fall back to live otherwise
   const hasPrecomputedScore = precomputedEval?.score !== undefined
@@ -180,7 +235,7 @@ export function BoardPanel({
             boardWidth={boardSize}
             extraShapes={allShapes}
           />
-          {threats && showThreats && (
+          {showThreats && (
             <ThreatOverlay threats={threats} boardSize={boardSize} orientation={orientation} />
           )}
         </div>
@@ -194,7 +249,7 @@ export function BoardPanel({
             <GearIcon />
           </button>
           <button
-            onClick={onFlipOrientation}
+            onClick={flipOrientation}
             className="p-1.5 rounded bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
             title={`Flip board (${orientation === 'white' ? 'White' : 'Black'} on bottom)`}
           >
