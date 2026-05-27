@@ -16,6 +16,7 @@ import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
 import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
 import { Route as PuzzlesPuzzleIdRouteImport } from './routes/puzzles/$puzzleId'
 import { Route as OpeningsDrillRouteImport } from './routes/openings/drill'
+import { Route as OpeningsBrowse_v2RouteImport } from './routes/openings/browse_v2'
 import { Route as OpeningsBrowseRouteImport } from './routes/openings/browse'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
@@ -57,6 +58,11 @@ const PuzzlesPuzzleIdRoute = PuzzlesPuzzleIdRouteImport.update({
 const OpeningsDrillRoute = OpeningsDrillRouteImport.update({
   id: '/drill',
   path: '/drill',
+  getParentRoute: () => OpeningsRoute,
+} as any)
+const OpeningsBrowse_v2Route = OpeningsBrowse_v2RouteImport.update({
+  id: '/browse_v2',
+  path: '/browse_v2',
   getParentRoute: () => OpeningsRoute,
 } as any)
 const OpeningsBrowseRoute = OpeningsBrowseRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
+  '/openings/browse_v2': typeof OpeningsBrowse_v2Route
   '/openings/drill': typeof OpeningsDrillRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
+  '/openings/browse_v2': typeof OpeningsBrowse_v2Route
   '/openings/drill': typeof OpeningsDrillRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings': typeof OpeningsIndexRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
+  '/openings/browse_v2': typeof OpeningsBrowse_v2Route
   '/openings/drill': typeof OpeningsDrillRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
+    | '/openings/browse_v2'
     | '/openings/drill'
     | '/puzzles/$puzzleId'
     | '/openings/'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
+    | '/openings/browse_v2'
     | '/openings/drill'
     | '/puzzles/$puzzleId'
     | '/openings'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
+    | '/openings/browse_v2'
     | '/openings/drill'
     | '/puzzles/$puzzleId'
     | '/openings/'
@@ -257,6 +269,13 @@ declare module '@tanstack/react-router' {
       path: '/drill'
       fullPath: '/openings/drill'
       preLoaderRoute: typeof OpeningsDrillRouteImport
+      parentRoute: typeof OpeningsRoute
+    }
+    '/openings/browse_v2': {
+      id: '/openings/browse_v2'
+      path: '/browse_v2'
+      fullPath: '/openings/browse_v2'
+      preLoaderRoute: typeof OpeningsBrowse_v2RouteImport
       parentRoute: typeof OpeningsRoute
     }
     '/openings/browse': {
@@ -348,12 +367,14 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface OpeningsRouteChildren {
   OpeningsBrowseRoute: typeof OpeningsBrowseRoute
+  OpeningsBrowse_v2Route: typeof OpeningsBrowse_v2Route
   OpeningsDrillRoute: typeof OpeningsDrillRoute
   OpeningsIndexRoute: typeof OpeningsIndexRoute
 }
 
 const OpeningsRouteChildren: OpeningsRouteChildren = {
   OpeningsBrowseRoute: OpeningsBrowseRoute,
+  OpeningsBrowse_v2Route: OpeningsBrowse_v2Route,
   OpeningsDrillRoute: OpeningsDrillRoute,
   OpeningsIndexRoute: OpeningsIndexRoute,
 }

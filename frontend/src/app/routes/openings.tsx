@@ -7,6 +7,7 @@ export const Route = createFileRoute('/openings')({
 
 const TABS = [
   { label: 'Browse', to: '/openings/browse' as const },
+  { label: 'Browse V2', to: '/openings/browse_v2' as const },
   { label: 'Drill', to: '/openings/drill' as const },
 ]
 
