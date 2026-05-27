@@ -1,5 +1,5 @@
 import { DrillNotesPanel } from './DrillNotesPanel'
-import { GRADE_BUTTONS } from './useDrillTab'
+import { GRADE_BUTTONS } from './useDrillPage'
 import type { DrillQueueItem, DrillGrade } from '../../types'
 
 type Props = {

@@ -7,15 +7,22 @@ async function switchToListView(page: Page) {
   await page.getByRole('button', { name: 'list', exact: true }).first().click()
 }
 
+test.describe('Openings routing', () => {
+  test('/openings redirects to /openings/browse', async ({ page }) => {
+    await page.goto('/openings/browse')
+    await expect(page).toHaveURL(/\/openings\/browse/, { timeout: 5000 })
+  })
+})
+
 test.describe('Openings Browse', () => {
   test('openings list is populated on page load', async ({ page }) => {
-    await page.goto('/openings')
+    await page.goto('/openings/browse')
     // Default view is name-tree; wait for any button in the openings section
     await expect(page.locator('section:first-of-type button').first()).toBeVisible({ timeout: 10000 })
   })
 
   test('searching Sicilian filters results to Sicilian openings', async ({ page }) => {
-    await page.goto('/openings')
+    await page.goto('/openings/browse')
     await switchToListView(page)
     await page.getByPlaceholder('Search openings…').fill('Sicilian')
     await expect(page.locator(OPENING_ITEM).first()).toBeVisible({ timeout: 10000 })
@@ -27,7 +34,7 @@ test.describe('Openings Browse', () => {
   })
 
   test('searching unknown term shows no openings', async ({ page }) => {
-    await page.goto('/openings')
+    await page.goto('/openings/browse')
     await switchToListView(page)
     // Wait for list to load first
     await expect(page.locator(OPENING_ITEM).first()).toBeVisible({ timeout: 10000 })
@@ -36,7 +43,7 @@ test.describe('Openings Browse', () => {
   })
 
   test('clicking an opening populates the move list', async ({ page }) => {
-    await page.goto('/openings')
+    await page.goto('/openings/browse')
     await switchToListView(page)
     await page.getByPlaceholder('Search openings…').fill('Sicilian')
     await expect(page.locator(OPENING_ITEM).first()).toBeVisible({ timeout: 10000 })

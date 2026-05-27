@@ -1,15 +1,20 @@
-import { useDrillTab } from './useDrillTab'
-import { DrillQueue } from './DrillQueue'
-import { DrillBoard } from './DrillBoard'
-import { DrillGrading } from './DrillGrading'
-import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
+import { createFileRoute } from '@tanstack/react-router'
+import { ChessStoreProvider } from '../../../components/ChessBoard/ChessStoreProvider'
+import { DrillQueue } from '../../../features/openings/components/DrillTab/DrillQueue'
+import { DrillBoard } from '../../../features/openings/components/DrillTab/DrillBoard'
+import { DrillGrading } from '../../../features/openings/components/DrillTab/DrillGrading'
+import { useDrillPage } from '../../../features/openings/components/DrillTab/useDrillPage'
 
-export function DrillTab() {
-  return <ChessStoreProvider><DrillTabInner /></ChessStoreProvider>
+export const Route = createFileRoute('/openings/drill')({
+  component: DrillPage,
+})
+
+function DrillPage() {
+  return <ChessStoreProvider><DrillPageInner /></ChessStoreProvider>
 }
 
-function DrillTabInner() {
-  const { isLoggedIn, queue, isLoading, state, dispatch, config, flash, handleGrade } = useDrillTab()
+function DrillPageInner() {
+  const { isLoggedIn, queue, isLoading, state, dispatch, config, flash, handleGrade } = useDrillPage()
 
   if (!isLoggedIn) {
     return (

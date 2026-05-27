@@ -14,7 +14,7 @@ export function DrillQueue({ queue, onStart }: Props) {
           <p className="text-gray-600 text-sm">No openings due for review today.</p>
           <p className="text-gray-600 text-sm">
             Add openings from the{' '}
-            <a href="/openings/?tab=browse" className="text-amber-400 hover:underline">Browse tab</a>.
+            <a href="/openings/browse" className="text-amber-400 hover:underline">Browse tab</a>.
           </p>
         </div>
       </div>

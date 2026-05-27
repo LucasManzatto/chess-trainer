@@ -8,10 +8,10 @@ import { useGameBoard } from './useGameBoard'
 import { gamesKeys } from '../api/queryKeys'
 import type { Game, GamesFilters } from '../types'
 
-export function useGamesTab() {
+export function useGamesPage() {
   const { data: profile, isLoading: profileLoading } = useProfile()
   const navigate = useNavigate()
-  const { result, color, time_class, eco, gameId } = useSearch({ from: '/_auth/games/' })
+  const { result, color, time_class, eco, gameId } = useSearch({ from: '/_auth/games/list' })
 
   const filters: GamesFilters = useMemo(
     () => ({ result, color, time_class, eco }),
@@ -40,26 +40,26 @@ export function useGamesTab() {
       autoSelectedRef.current = gameId
       board.selectGame(game)
     } else {
-      navigate({ to: '/games', search: (prev) => ({ ...prev, gameId: undefined }), replace: true })
+      navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, gameId: undefined }), replace: true })
     }
   }, [gameId, games, gamesLoading, board.selectGame, navigate])
 
   const selectGame = useCallback((game: Game) => {
     board.selectGame(game)
-    navigate({ to: '/games', search: (prev) => ({ ...prev, gameId: game.id }), replace: true })
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, gameId: game.id }), replace: true })
   }, [board.selectGame, navigate])
 
   function setResult(result: GamesFilters['result']) {
-    navigate({ to: '/games', search: (prev) => ({ ...prev, result }), replace: true })
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, result }), replace: true })
   }
   function setColor(color: GamesFilters['color']) {
-    navigate({ to: '/games', search: (prev) => ({ ...prev, color }), replace: true })
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, color }), replace: true })
   }
   function setTimeClass(time_class: GamesFilters['time_class']) {
-    navigate({ to: '/games', search: (prev) => ({ ...prev, time_class }), replace: true })
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, time_class }), replace: true })
   }
   function setEco(eco: string) {
-    navigate({ to: '/games', search: (prev) => ({ ...prev, eco }), replace: true })
+    navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, eco }), replace: true })
   }
 
   return {

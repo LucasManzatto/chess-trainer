@@ -46,7 +46,7 @@ export const GRADE_BUTTONS = [
   { grade: 5 as DrillGrade, label: 'Easy', color: 'bg-green-500/20 text-green-300 hover:bg-green-500/30' },
 ] as const
 
-export function useDrillTab() {
+export function useDrillPage() {
   const { isLoggedIn, queue, isLoading, submitGrade } = useDrillQueue()
   const [state, dispatch] = useReducer(drillReducer, { phase: 'queue' })
 

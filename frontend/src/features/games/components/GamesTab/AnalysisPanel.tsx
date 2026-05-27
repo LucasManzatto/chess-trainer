@@ -17,8 +17,8 @@ function OpeningSection({ openingMatch, openingName }: OpeningSectionProps) {
     <div className="px-3 py-2 border-b border-white/[0.06]">
       {openingMatch ? (
         <Link
-          to="/openings"
-          search={{ tab: 'browse', openingId: openingMatch.opening.id, modal: undefined }}
+          to="/openings/browse"
+          search={{ openingId: openingMatch.opening.id, modal: undefined }}
           className="flex items-center gap-1.5 group"
         >
           <p className="text-xs text-gray-300 leading-snug group-hover:text-white transition-colors flex-1 min-w-0 truncate">

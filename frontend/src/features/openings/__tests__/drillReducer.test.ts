@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { drillReducer } from '../components/DrillTab/useDrillTab'
-import type { DrillState } from '../components/DrillTab/useDrillTab'
+import { drillReducer } from '../components/DrillTab/useDrillPage'
+import type { DrillState } from '../components/DrillTab/useDrillPage'
 import type { DrillQueueItem } from '../types'
 
 function item(moves: string[] = ['e4', 'e5', 'Nf3']): DrillQueueItem {

@@ -1,12 +1,27 @@
+import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { z } from 'zod'
+import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
 import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
 import { MoveList } from '../../../../components/MoveList/MoveList'
 import { PanelSection } from '../../../../components/PanelSection'
-import { useGamesTab } from '../../hooks/useGamesTab'
-import { GamesList } from '../GamesList/GamesList'
-import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
-import { AnalysisPanel } from './AnalysisPanel'
+import { GamesList } from '../../../../features/games/components/GamesList/GamesList'
+import { AnalysisPanel } from '../../../../features/games/components/GamesTab/AnalysisPanel'
+import { useGamesPage } from '../../../../features/games/hooks/useGamesPage'
 import type { AnalyzeStatus } from '../../../../components/ChessBoard/hooks/useGameAnalysis'
+
+const searchSchema = z.object({
+  result: z.enum(['win', 'loss', 'draw']).nullable().default(null).catch(null),
+  color: z.enum(['white', 'black']).nullable().default(null).catch(null),
+  time_class: z.enum(['bullet', 'blitz', 'rapid', 'daily']).nullable().default(null).catch(null),
+  eco: z.string().default('').catch(''),
+  gameId: z.number().optional().catch(undefined),
+})
+
+export const Route = createFileRoute('/_auth/games/list')({
+  validateSearch: searchSchema,
+  component: GamesListPage,
+})
 
 type AnalysisHeaderProps = {
   analyzeStatus: AnalyzeStatus
@@ -38,11 +53,11 @@ function AnalysisHeader({ analyzeStatus, analyzeProgress, hasAnalysis, onAnalyze
   )
 }
 
-export function GamesTab() {
-  return <ChessStoreProvider><GamesTabInner /></ChessStoreProvider>
+function GamesListPage() {
+  return <ChessStoreProvider><GamesListPageInner /></ChessStoreProvider>
 }
 
-function GamesTabInner() {
+function GamesListPageInner() {
   const [showCriticalOnly, setShowCriticalOnly] = useState(false)
   const {
     username,
@@ -72,13 +87,12 @@ function GamesTabInner() {
     openingMatch,
     openingMoveCount,
     criticalMoveIndices,
-  } = useGamesTab()
+  } = useGamesPage()
 
   const hasAnalysis = !!(selectedGame?.analysis) || analyzeStatus === 'done'
 
   return (
     <div className="grid grid-cols-[300px_1fr_220px_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
-      {/* Col 1: Games list */}
       <section className="overflow-y-hidden min-h-0 bg-white/[0.03] border border-white/[0.06] flex flex-col">
         <GamesList
           games={games}
@@ -97,7 +111,6 @@ function GamesTabInner() {
         />
       </section>
 
-      {/* Col 2: Board */}
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
           config={config}
@@ -108,7 +121,6 @@ function GamesTabInner() {
         />
       </section>
 
-      {/* Col 3: Move list */}
       <PanelSection
         title="Moves"
         headerAction={
@@ -136,7 +148,6 @@ function GamesTabInner() {
         </div>
       </PanelSection>
 
-      {/* Col 4: Analysis */}
       <PanelSection
         title="Analysis"
         headerAction={

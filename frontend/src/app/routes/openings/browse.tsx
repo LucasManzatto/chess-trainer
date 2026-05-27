@@ -1,12 +1,23 @@
-import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
-import { PanelSection } from '../../../../components/PanelSection'
-import { NotesPanel } from '../NotesPanel'
-import { OpeningsList } from '../OpeningsList/OpeningsList'
-import { ContinuationsList } from '../../../../components/ContinuationsList'
-import { MoveList } from '../../../../components/MoveList/MoveList'
-import { useBrowseTab } from './useBrowseTab'
-import { useAddToDrill } from './useAddToDrill'
-import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
+import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
+import { ChessStoreProvider } from '../../../components/ChessBoard/ChessStoreProvider'
+import { BoardPanel } from '../../../components/ChessBoard/BoardPanel'
+import { MoveList } from '../../../components/MoveList/MoveList'
+import { PanelSection } from '../../../components/PanelSection'
+import { ContinuationsList } from '../../../components/ContinuationsList'
+import { NotesPanel } from '../../../features/openings/components/NotesPanel'
+import { OpeningsList } from '../../../features/openings/components/OpeningsList/OpeningsList'
+import { useAddToDrill } from '../../../features/openings/components/BrowseTab/useAddToDrill'
+import { useBrowsePage } from '../../../features/openings/components/BrowseTab/useBrowsePage'
+
+const searchSchema = z.object({
+  openingId: z.number().optional().catch(undefined),
+})
+
+export const Route = createFileRoute('/openings/browse')({
+  validateSearch: searchSchema,
+  component: BrowsePage,
+})
 
 function AddToDrillButton({ openingId }: { openingId: number }) {
   const { isLoggedIn, inDrill, add, isPending } = useAddToDrill(openingId)
@@ -26,11 +37,11 @@ function AddToDrillButton({ openingId }: { openingId: number }) {
   )
 }
 
-export function BrowseTab() {
-  return <ChessStoreProvider><BrowseTabInner /></ChessStoreProvider>
+function BrowsePage() {
+  return <ChessStoreProvider><BrowsePageInner /></ChessStoreProvider>
 }
 
-function BrowseTabInner() {
+function BrowsePageInner() {
   const {
     openings,
     isLoading,
@@ -49,11 +60,10 @@ function BrowseTabInner() {
     selectOpening,
     flipOrientation,
     resetBoard,
-  } = useBrowseTab()
+  } = useBrowsePage()
 
   return (
     <div className="grid grid-cols-[300px_1fr_220px_280px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
-      {/* Left: openings list */}
       <section className="overflow-y-auto min-h-0 bg-white/[0.03] border border-white/[0.06]">
         <OpeningsList
           openings={openings}
@@ -67,7 +77,6 @@ function BrowseTabInner() {
         />
       </section>
 
-      {/* Center: board */}
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
         <BoardPanel
           config={config}
@@ -85,7 +94,6 @@ function BrowseTabInner() {
         />
       </section>
 
-      {/* Moves */}
       <PanelSection>
         <div className="flex-1 min-h-0 overflow-hidden">
           <MoveList
@@ -98,7 +106,6 @@ function BrowseTabInner() {
         <ContinuationsList candidateMoves={candidateMoves} />
       </PanelSection>
 
-      {/* Notes */}
       <PanelSection title="Notes">
         <div className="flex-1 min-h-0 overflow-y-auto p-3">
           {selected ? (

@@ -7,12 +7,12 @@ import { computeCandidateShapes } from '../../../../chess/analysis'
 import { useChessGame } from '../../../../components/ChessBoard/hooks/useChessGame'
 import { useBrowseOpeningContext } from './useBrowseOpeningContext'
 
-export function useBrowseTab() {
+export function useBrowsePage() {
   const { data: openings, isLoading } = useOpenings()
   const [search, setSearch] = useState('')
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
   const navigate = useNavigate()
-  const { openingId } = useSearch({ from: '/openings/' })
+  const { openingId } = useSearch({ from: '/openings/browse' })
   const autoSelectedRef = useRef<number | null>(null)
 
   const board = useChessGame({ orientation })
@@ -44,7 +44,7 @@ export function useBrowseTab() {
   function handleOpeningSelect(o: Opening) {
     board.loadMoves(o.moves)
     setOrientation(openingColor(o))
-    navigate({ to: '/openings', search: (prev) => ({ ...prev, openingId: o.id }), replace: true })
+    navigate({ from: '/openings/browse', to: '/openings/browse', search: (prev) => ({ ...prev, openingId: o.id }), replace: true })
   }
 
   const flipOrientation = useCallback(() => {
