@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { useChessBoardStore } from './store/chessBoardStore'
-import { GearIcon, FlipIcon, EyeIcon, CloseIcon, ResetIcon } from '../icons'
+import { useBoardSettings } from './store/boardSettingsStore'
+import { GearIcon, FlipIcon, EyeIcon, CloseIcon, ResetIcon } from '../../components/icons'
 
 export function ChessBoardSettings() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const flipOrientation = useChessBoardStore(s => s.flipOrientation)
-  const showThreats = useChessBoardStore(s => s.showThreats)
-  const setShowThreats = useChessBoardStore(s => s.setShowThreats)
   const reset = useChessBoardStore(s => s.reset)
-  const boardSize = useChessBoardStore(s => s.boardSize)
-  const setBoardSize = useChessBoardStore(s => s.setBoardSize)
+
+  const showThreats = useBoardSettings(s => s.showThreats)
+  const setShowThreats = useBoardSettings(s => s.setShowThreats)
+  const boardSize = useBoardSettings(s => s.boardSize)
+  const setBoardSize = useBoardSettings(s => s.setBoardSize)
 
   return (
     <>

@@ -4,6 +4,7 @@ import { EvaluationBar } from './ChessBoardEvalBar'
 import { ChessBoardBoard } from './ChessBoardBoard'
 import { ChessBoardSettings } from './ChessBoardSettings'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
+import { useBoardSettings } from './store/boardSettingsStore'
 import { usePositionEvaluation } from './hooks/usePositionEvaluation'
 import { getFenAtIndex } from '../../chess/game'
 
@@ -29,7 +30,7 @@ function useEvaluation() {
 
 export function ChessBoardV2({ header }: Props) {
   const { isLoading } = useEvaluation()
-  const boardSize = useChessBoardStore(s => s.boardSize)
+  const boardSize = useBoardSettings(s => s.boardSize)
   const evalScore = useChessBoardStore(s => s.evalScore)
 
   return (

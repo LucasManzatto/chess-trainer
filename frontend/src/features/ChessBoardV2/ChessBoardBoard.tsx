@@ -6,6 +6,7 @@ import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
+import { useBoardSettings } from './store/boardSettingsStore'
 import { getFenAtIndex } from '../../chess/game'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ export function ChessBoardBoard() {
   const shapes = useChessBoardStore(s => s.shapes)
   const hintShapes = useChessBoardStore(s => s.hintShapes)
   const lastExternalFen = useChessBoardStore(s => s.lastExternalFen)
-  const boardSize = useChessBoardStore(s => s.boardSize)
+  const boardSize = useBoardSettings(s => s.boardSize)
   const evalBestMove = useChessBoardStore(s => s.evalBestMove)
 
   const fen = lastExternalFen ?? getFenAtIndex(history, currentMoveIndex)
