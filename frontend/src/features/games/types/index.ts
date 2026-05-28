@@ -1,4 +1,4 @@
-import type { GameAnalysis, MoveAnalysis, MoveClassification } from '../../../components/ChessBoard/types'
+import type { GameAnalysis, MoveAnalysis, MoveClassification } from '../../../lib/chess/types'
 
 export type { GameAnalysis, MoveAnalysis, MoveClassification }
 

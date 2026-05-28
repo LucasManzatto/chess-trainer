@@ -1,4 +1,4 @@
-import type { MoveAnalysis } from '../../../../components/ChessBoard/types'
+import type { MoveAnalysis } from '../../../../lib/chess/types'
 
 type CriticalMomentsListProps = {
   moves: MoveAnalysis[]

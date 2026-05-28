@@ -1,4 +1,4 @@
-import type { MoveClassification } from '../../../../components/ChessBoard/types'
+import type { MoveClassification } from '../../../../lib/chess/types'
 
 const ORDER: MoveClassification[] = ['blunder', 'mistake', 'inaccuracy', 'good', 'excellent', 'best']
 

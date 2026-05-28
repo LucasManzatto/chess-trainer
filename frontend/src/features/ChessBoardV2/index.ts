@@ -1,7 +1,0 @@
-export { ChessBoardV2 } from './ChessBoardV2'
-export { EvaluationBar } from './ChessBoardEvalBar'
-export { ChessBoardBoard } from './ChessBoardBoard'
-export { ChessBoardSettings } from './ChessBoardSettings'
-export { ChessBoardV2Provider } from './store/ChessBoardV2Provider'
-export { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
-export type { ChessBoardStoreType, ChessBoardStoreConfig } from './store/chessBoardStore'

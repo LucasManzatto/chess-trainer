@@ -1,19 +1,14 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { useFavorites } from '../../features/openings/hooks/useFavorites'
 
 export const Route = createFileRoute('/openings')({
   component: OpeningsLayout,
 })
 
 const TABS = [
-  { label: 'Browse', to: '/openings/browse' as const },
-  { label: 'Browse V2', to: '/openings/browse_v2' as const },
-  { label: 'Drill', to: '/openings/drill' as const },
+  { label: 'Browse', to: '/openings/browse_v2' as const },
 ]
 
 function OpeningsLayout() {
-  useFavorites()
-
   return (
     <main className="flex flex-col flex-1 min-h-0 overflow-hidden">
       <div className="border-b border-white/10 px-4 flex gap-1 pt-2">

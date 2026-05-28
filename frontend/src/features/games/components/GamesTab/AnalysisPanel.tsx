@@ -7,13 +7,12 @@ import { MoveQualityTable } from './MoveQualityTable'
 import { CriticalMomentsList } from './CriticalMomentsList'
 import { computeWinPercentTimeline, countClassifications } from '../../utils/analysisUtils'
 import { PanelSection } from '../../../../components/PanelSection'
-import { useChessStore } from '../../../../components/ChessBoard/stores/chessStore'
 import { useGames } from '../../hooks/useGames'
 import { useGameBoard } from '../../hooks/useGameBoard'
 import { gamesKeys } from '../../api/queryKeys'
 import type { GamesFilters } from '../../types'
 import type { OpeningMatch } from '../../utils/gameLogic'
-import type { AnalyzeStatus } from '../../../../components/ChessBoard/hooks/useGameAnalysis'
+import type { AnalyzeStatus } from '../../../../features/board/hooks/useGameAnalysis'
 
 type OpeningSectionProps = {
   openingMatch: OpeningMatch | null
@@ -25,8 +24,8 @@ function OpeningSection({ openingMatch, openingName }: OpeningSectionProps) {
     <div className="px-3 py-2 border-b border-white/[0.06]">
       {openingMatch ? (
         <Link
-          to="/openings/browse"
-          search={{ openingId: openingMatch.opening.id, modal: undefined }}
+          to="/openings/browse_v2"
+          search={{ modal: undefined }}
           className="flex items-center gap-1.5 group"
         >
           <p className="text-xs text-gray-300 leading-snug group-hover:text-white transition-colors flex-1 min-w-0 truncate">
@@ -110,7 +109,6 @@ export function AnalysisPanel({ onOrientationChange }: { onOrientationChange?: (
 
   const game = board.selectedGame
   const { analysis, criticalMoveIndices, openingMatch, analyzeStatus, analyzeProgress, analyze: onAnalyze } = board
-  const onMoveClick = useChessStore(s => s.navigateToIndex)
   const hasAnalysis = !!(game?.analysis) || analyzeStatus === 'done'
   const headerAction = game ? (
     <AnalysisHeader
@@ -172,7 +170,7 @@ export function AnalysisPanel({ onOrientationChange }: { onOrientationChange?: (
               criticalMoveIndices={criticalMoveIndices}
               timeline={timeline}
               userColor={game.user_color}
-              onMoveClick={onMoveClick}
+              onMoveClick={() => {}}
             />
           </>
         )}

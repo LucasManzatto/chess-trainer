@@ -42,9 +42,10 @@ export default defineConfig([
             { target: './src/features', from: './src/app' },
 
             // shared modules cannot import from features or app
+            // TODO: remove features/engine exception once components/ChessBoard moves to features/board
             {
               target: ['./src/components', './src/hooks', './src/lib', './src/types', './src/utils'],
-              from: ['./src/features', './src/app'],
+              from: ['./src/features/ChessBoardV2', './src/features/games', './src/features/openings', './src/features/openings_v2'],
             },
 
             // features cannot cross-import each other

@@ -1,5 +1,5 @@
-import { cpToWinPercent } from '../../../chess'
-import type { MoveAnalysis, MoveClassification } from '../../../components/ChessBoard/types'
+import { cpToWinPercent } from '../../../lib/chess'
+import type { MoveAnalysis, MoveClassification } from '../../../lib/chess/types'
 
 export function computeWinPercentTimeline(initialScore: number, scores: number[]): number[] {
   return [cpToWinPercent(initialScore), ...scores.map(cpToWinPercent)]

@@ -1,9 +1,5 @@
-import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { ChessStoreProvider } from '../../../../components/ChessBoard/ChessStoreProvider'
-import { BoardPanel } from '../../../../components/ChessBoard/BoardPanel'
-import { MoveList } from '../../../../components/MoveList/MoveList'
 import { GamesList } from '../../../../features/games/components/GamesList/GamesList'
 import { AnalysisPanel } from '../../../../features/games/components/GamesTab/AnalysisPanel'
 
@@ -21,30 +17,15 @@ export const Route = createFileRoute('/_auth/games/list')({
 })
 
 function GamesListPage() {
-  return <ChessStoreProvider><GamesListPageInner /></ChessStoreProvider>
-}
-
-function GamesListPageInner() {
-  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
-
   return (
-    <div className="grid grid-cols-[300px_1fr_220px_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
+    <div className="grid grid-cols-[300px_1fr_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
       <section className="overflow-y-hidden min-h-0 bg-white/[0.03] border border-white/[0.06] flex flex-col">
         <GamesList />
       </section>
 
-      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
-        <BoardPanel
-          orientation={orientation}
-          showThreatsControl
-          defaultShowThreats
-          interactive={false}
-        />
-      </section>
+      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden" />
 
-      <MoveList />
-
-      <AnalysisPanel onOrientationChange={setOrientation} />
+      <AnalysisPanel />
     </div>
   )
 }

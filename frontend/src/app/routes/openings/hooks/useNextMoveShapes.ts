@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
-import type { Opening } from '../../../../features/openings/types'
-import { useChessBoardStore, useChessBoardStoreApi } from '../../../../features/ChessBoardV2'
-import { getFenAtIndex } from '../../../../chess/game'
+import type { Opening } from '../../../../features/openings/hooks/useOpenings'
+import { useChessBoardStore, useChessBoardStoreApi } from '../../../../features/board'
+import { getFenAtIndex } from '../../../../lib/chess/game'
 
 const INITIAL_FEN = new Chess().fen()
 

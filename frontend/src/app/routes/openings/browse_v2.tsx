@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { OpeningsStoreProvider } from '../../../features/openings_v2/store/OpeningsStoreProvider'
-import { OpeningsListV2 } from '../../../features/openings_v2/components/OpeningsListV2'
-import { MovesListV2 } from '../../../features/openings_v2/components/MovesListV2'
-import { NotesV2 } from '../../../features/openings_v2/components/NotesV2'
-import { ChessBoardV2, ChessBoardV2Provider } from '../../../features/ChessBoardV2'
-import { ChessBoardHeader } from '../../../features/openings_v2/components/ChessBoardHeader'
+import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
+import { OpeningsListV2 } from '../../../features/openings/components/OpeningsListV2'
+import { MovesListV2 } from '../../../features/openings/components/MovesListV2'
+import { NotesV2 } from '../../../features/openings/components/NotesV2'
+import { ChessBoard, ChessBoardProvider } from '../../../features/board'
+import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
 import { useNextMoveShapes } from './hooks/useNextMoveShapes'
 import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
 import { useFilteredOpenings } from './hooks/useFilteredOpenings'
@@ -16,11 +16,11 @@ export const Route = createFileRoute('/openings/browse_v2')({
 
 function BrowseV2Page() {
   return (
-    <ChessBoardV2Provider>
+    <ChessBoardProvider>
       <OpeningsStoreProvider>
         <BrowseV2PageInner />
       </OpeningsStoreProvider>
-    </ChessBoardV2Provider>
+    </ChessBoardProvider>
   )
 }
 
@@ -39,7 +39,7 @@ function BrowseV2PageInner() {
       </section>
 
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
-        <ChessBoardV2 header={<ChessBoardHeader />} />
+        <ChessBoard header={<ChessBoardHeader />} />
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">

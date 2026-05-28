@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { computeWinPercentTimeline, findCriticalMoves, countClassifications } from '../utils/analysisUtils'
-import { cpToWinPercent } from '../../../chess'
-import type { MoveAnalysis } from '../../../components/ChessBoard/types'
+import { cpToWinPercent } from '../../../lib/chess'
+import type { MoveAnalysis } from '../../../lib/chess/types'
 
 function move(score: number, classification: MoveAnalysis['classification'] = 'good'): MoveAnalysis {
   return { san: 'e4', cp_loss: 0, best_move: 'e4', classification, score }

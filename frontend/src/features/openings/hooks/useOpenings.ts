@@ -1,5 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import type { Opening } from '../types'
+
+export type Opening = {
+  id: number
+  eco: string
+  name: string
+  pgn: string
+  fen: string
+  moves: string[]
+}
 
 async function fetchOpenings(): Promise<Opening[]> {
   const resp = await fetch('/openings.json')

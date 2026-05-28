@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { useChessBoardStore } from '../../../../features/ChessBoardV2'
-import { useOpeningsStore } from '../../../../features/openings_v2/store/openingsStore'
+import { useChessBoardStore } from '../../../../features/board'
+import { useOpeningsStore } from '../../../../features/openings/store/openingsStore'
 
 export function useFilteredOpenings(search: string) {
   const openings = useOpeningsStore(s => s.openings)
