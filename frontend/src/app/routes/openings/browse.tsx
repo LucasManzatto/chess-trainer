@@ -7,7 +7,7 @@ import { useNextMoveShapes } from './hooks/useNextMoveShapes'
 import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
 import { useFilteredOpenings } from './hooks/useFilteredOpenings'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
-import { MovesList } from '../../../components/ui/MovesList'
+import { MovesList } from '../../../features/openings/components/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 
 export const Route = createFileRoute('/openings/browse')({
