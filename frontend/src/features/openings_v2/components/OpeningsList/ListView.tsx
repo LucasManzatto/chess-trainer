@@ -1,5 +1,5 @@
-import type { Opening } from '../../openings/types'
-import { useOpeningsStore } from '../store/openingsStore'
+import type { Opening } from '../../../openings/types'
+import { useOpeningsStore } from '../../store/openingsStore'
 
 interface ListViewProps {
   openings: Opening[]

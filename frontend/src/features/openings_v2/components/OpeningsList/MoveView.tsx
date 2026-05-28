@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
-import type { Opening } from '../../openings/types'
-import { useOpeningsStore } from '../store/openingsStore'
+import type { Opening } from '../../../openings/types'
+import { useOpeningsStore } from '../../store/openingsStore'
 
 // Each node in the trie represents one move. Openings whose move sequence ends here
 // are stored in `openings`; further moves branch into `children`.

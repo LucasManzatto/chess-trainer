@@ -1,7 +1,7 @@
 import { ListView } from './ListView'
 import { NameView } from './NameView'
 import { MoveView } from './MoveView'
-import type { Opening } from '../../openings/types'
+import type { Opening } from '../../../openings/types'
 
 type ViewMode = 'list' | 'name' | 'move'
 

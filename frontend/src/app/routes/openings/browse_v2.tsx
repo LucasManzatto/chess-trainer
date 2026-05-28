@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings_v2/store/OpeningsStoreProvider'
-import { OpeningsListV2 } from '../../../features/openings_v2/OpeningsListV2'
-import { ChessBoardV2 } from '../../../features/openings_v2/ChessBoardV2'
-import { MovesListV2 } from '../../../features/openings_v2/MovesListV2'
-import { NotesV2 } from '../../../features/openings_v2/NotesV2'
+import { OpeningsListV2 } from '../../../features/openings_v2/components/OpeningsListV2'
+import { MovesListV2 } from '../../../features/openings_v2/components/MovesListV2'
+import { NotesV2 } from '../../../features/openings_v2/components/NotesV2'
+import { ChessBoardV2, ChessBoardV2Provider } from '../../../components/ChessBoardV2'
 
 export const Route = createFileRoute('/openings/browse_v2')({
   component: BrowseV2Page,
@@ -11,9 +11,12 @@ export const Route = createFileRoute('/openings/browse_v2')({
 
 function BrowseV2Page() {
   return (
-    <OpeningsStoreProvider>
-      <BrowseV2PageInner />
-    </OpeningsStoreProvider>
+    <ChessBoardV2Provider>
+      <OpeningsStoreProvider>
+        <BrowseV2PageInner />
+      </OpeningsStoreProvider>
+    </ChessBoardV2Provider>
+    
   )
 }
 
@@ -24,7 +27,7 @@ function BrowseV2PageInner() {
         <OpeningsListV2 />
       </section>
 
-      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden">
+      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
         <ChessBoardV2 />
       </section>
 
