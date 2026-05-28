@@ -86,8 +86,8 @@ describe('getFenAtIndex', () => {
     expect(getFenAtIndex([], -1)).toBe(STARTING_FEN)
   })
 
-  it('returns last FEN for null', () => {
-    expect(getFenAtIndex(history, null)).toBe(history[1].fen)
+  it('returns FEN for last index', () => {
+    expect(getFenAtIndex(history, history.length - 1)).toBe(history[1].fen)
   })
 
   it('returns correct FEN for valid index', () => {

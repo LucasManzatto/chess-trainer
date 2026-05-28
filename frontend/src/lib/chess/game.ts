@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js'
-import type { HistoryEntry } from './types'
+import type { HistoryEntry, MovePair, ActiveMove } from './types'
 
 const INITIAL_FEN = new Chess().fen()
 
@@ -35,10 +35,29 @@ export function applyMoveToPosition(
   return { history: nextHistory, newIndex: nextHistory.length - 1, entry }
 }
 
-export function getFenAtIndex(history: HistoryEntry[], index: number | null): string {
-  if (history.length === 0 || index === -1) return INITIAL_FEN
-  const target = index === null ? history.length - 1 : index
-  return history[target]?.fen ?? INITIAL_FEN
+export function getFenAtIndex(history: HistoryEntry[], index: number): string {
+  if (history.length === 0 || index < 0) return INITIAL_FEN
+  return history[index]?.fen ?? INITIAL_FEN
+}
+
+export function getActiveMove(currentMoveIndex: number): ActiveMove | undefined {
+  if (currentMoveIndex < 0) return undefined
+  return {
+    moveNumber: Math.floor(currentMoveIndex / 2) + 1,
+    color: currentMoveIndex % 2 === 0 ? 'white' : 'black',
+  }
+}
+
+export function getMoves(history: HistoryEntry[]): MovePair[] {
+  const pairs: MovePair[] = []
+  for (let i = 0; i < history.length; i += 2) {
+    pairs.push({
+      moveNumber: Math.floor(i / 2) + 1,
+      white: history[i].san,
+      black: history[i + 1]?.san ?? null,
+    })
+  }
+  return pairs
 }
 
 export function undoLastMove(

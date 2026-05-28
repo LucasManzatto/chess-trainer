@@ -1,3 +1,14 @@
+export type MovePair = {
+  moveNumber: number
+  white: string
+  black: string | null
+}
+
+export type ActiveMove = {
+  moveNumber: number
+  color: 'white' | 'black'
+}
+
 export type HistoryEntry = {
   san: string
   fen: string
