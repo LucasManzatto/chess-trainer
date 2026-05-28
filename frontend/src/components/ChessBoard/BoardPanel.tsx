@@ -196,7 +196,7 @@ export function BoardPanel({
   const [orientation, setOrientation] = useState(orientationProp)
 
   useEffect(() => {
-    setOrientation(orientationProp)
+    queueMicrotask(() => setOrientation(orientationProp))
   }, [orientationProp])
 
   const { chess } = useChessDerivedState()

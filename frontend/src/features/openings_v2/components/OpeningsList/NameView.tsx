@@ -112,7 +112,8 @@ export function NameView({ openings }: NameViewProps) {
   const toggle = useCallback((path: string) => {
     setExpanded(prev => {
       const next = new Set(prev)
-      next.has(path) ? next.delete(path) : next.add(path)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
       return next
     })
   }, [])

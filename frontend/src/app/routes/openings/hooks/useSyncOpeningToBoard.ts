@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useChessBoardStoreApi } from '../../../components/ChessBoardV2'
-import { useOpeningsStore } from '../store/openingsStore'
+import { useChessBoardStoreApi } from '../../../../features/ChessBoardV2'
+import { useOpeningsStore } from '../../../../features/openings_v2/store/openingsStore'
 
 export function useSyncOpeningToBoard() {
   const selectedOpening = useOpeningsStore(s => s.selectedOpening)

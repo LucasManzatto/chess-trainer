@@ -1,19 +1,17 @@
-import { useRef, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useOpenings } from '../../openings/hooks/useOpenings'
 import { createOpeningsStore, OpeningsStoreContext } from './openingsStore'
 
 export function OpeningsStoreProvider({ children }: { children: ReactNode }) {
-  const storeRef = useRef<ReturnType<typeof createOpeningsStore> | null>(null)
-  if (!storeRef.current) storeRef.current = createOpeningsStore()
-
+  const [store] = useState(() => createOpeningsStore())
   const { data: openings } = useOpenings()
 
   useEffect(() => {
-    if (openings) storeRef.current!.getState().setOpenings(openings)
-  }, [openings])
+    if (openings) store.getState().setOpenings(openings)
+  }, [openings, store])
 
   return (
-    <OpeningsStoreContext.Provider value={storeRef.current}>
+    <OpeningsStoreContext.Provider value={store}>
       {children}
     </OpeningsStoreContext.Provider>
   )

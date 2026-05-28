@@ -1,12 +1,10 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ChessStoreContext, createChessStore } from './stores/chessStore'
-import { useRef } from 'react'
 
 export function ChessStoreProvider({ children }: { children: ReactNode }) {
-  const storeRef = useRef<ReturnType<typeof createChessStore> | null>(null)
-  if (!storeRef.current) storeRef.current = createChessStore()
+  const [store] = useState(() => createChessStore())
   return (
-    <ChessStoreContext.Provider value={storeRef.current}>
+    <ChessStoreContext.Provider value={store}>
       {children}
     </ChessStoreContext.Provider>
   )

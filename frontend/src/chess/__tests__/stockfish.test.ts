@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseScore, toWhitePerspective } from '../stockfish'
 
-const WHITE_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
 const BLACK_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
 
 describe('parseScore', () => {

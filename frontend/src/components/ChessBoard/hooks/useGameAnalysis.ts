@@ -28,9 +28,11 @@ export function useGameAnalysis(
 
   useEffect(() => {
     abortRef.current = true
-    setStatus('idle')
-    setAnalysis(null)
-    setProgress({ current: 0, total: 0 })
+    queueMicrotask(() => {
+      setStatus('idle')
+      setAnalysis(null)
+      setProgress({ current: 0, total: 0 })
+    })
   }, [gameId])
 
   const analyze = useCallback(async () => {

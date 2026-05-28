@@ -2,14 +2,13 @@ import { useEffect } from 'react'
 import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
-import { useChessBoardStore, useChessBoardStoreApi } from '../../../components/ChessBoardV2'
-import { useOpeningsStore } from '../store/openingsStore'
-import { getFenAtIndex } from '../../../chess/game'
+import type { Opening } from '../../../../features/openings/types'
+import { useChessBoardStore, useChessBoardStoreApi } from '../../../../features/ChessBoardV2'
+import { getFenAtIndex } from '../../../../chess/game'
 
 const INITIAL_FEN = new Chess().fen()
 
-export function useNextMoveShapes() {
-  const openings = useOpeningsStore(s => s.openings)
+export function useNextMoveShapes(openings: Opening[]) {
   const chessBoardStore = useChessBoardStoreApi()
 
   const playedMovesKey = useChessBoardStore(s =>
@@ -21,14 +20,13 @@ export function useNextMoveShapes() {
   )
 
   useEffect(() => {
-    const playedMoves = playedMovesKey ? playedMovesKey.split(',') : []
+    const nextMoveIndex = playedMovesKey ? playedMovesKey.split(',').length : 0
     const chess = new Chess(currentFen)
     const seen = new Set<string>()
     const shapes: DrawShape[] = []
 
     for (const opening of openings) {
-      if (!playedMoves.every((san, i) => opening.moves[i] === san)) continue
-      const nextSan = opening.moves[playedMoves.length]
+      const nextSan = opening.moves[nextMoveIndex]
       if (!nextSan || seen.has(nextSan)) continue
       seen.add(nextSan)
 

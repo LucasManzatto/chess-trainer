@@ -119,12 +119,12 @@ export function useNameTree(openings: Opening[], selectedName?: string) {
       toExpand.push(segments.slice(0, i + 1).join('/'))
     }
     if (toExpand.length === 0) return
-    setExpanded(prev => {
+    queueMicrotask(() => setExpanded(prev => {
       if (toExpand.every(p => prev.has(p))) return prev
       const next = new Set(prev)
       for (const p of toExpand) next.add(p)
       return next
-    })
+    }))
   }, [selectedName])
 
   function toggle(path: string) {

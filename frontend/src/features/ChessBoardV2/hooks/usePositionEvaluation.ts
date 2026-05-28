@@ -112,7 +112,7 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
 
   useEffect(() => {
     if (fen === undefined) {
-      setEngineState(s => s.score === undefined && s.bestMove === undefined ? s : { score: undefined, bestMove: undefined, scoredFen: '', error: false })
+      queueMicrotask(() => setEngineState(s => s.score === undefined && s.bestMove === undefined ? s : { score: undefined, bestMove: undefined, scoredFen: '', error: false }))
       return
     }
 
