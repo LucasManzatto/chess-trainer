@@ -1,6 +1,5 @@
 import { request } from '../../../lib/api'
-import type { OpeningComment, PositionComment, DrillQueueItem, DrillGrade, FavoriteToggleResponse, DrillActionResponse } from '../types'
-import type { Opening } from '../hooks/useOpenings'
+import type { OpeningComment, PositionComment, DrillQueueItem, DrillGrade, FavoriteToggleResponse, DrillActionResponse, Opening } from '../types'
 
 export async function fetchOpenings(): Promise<Opening[]> {
   const resp = await fetch('/openings.json')

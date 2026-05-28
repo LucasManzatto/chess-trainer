@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { getMoves, getActiveMove } from '../../../lib/chess/game'
+import { getMoves, getActiveMove, getFenAtIndex } from '../../../lib/chess/game'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
 import { ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
@@ -10,6 +10,7 @@ import { useFilteredOpenings } from './hooks/useFilteredOpenings'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
+import { useOpeningsStore } from '../../../features/openings/store/openingsStore'
 
 export const Route = createFileRoute('/openings/browse')({
   component: BrowseV2Page,
@@ -36,10 +37,14 @@ function BrowseV2PageInner() {
   const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
+  const selectedOpening = useOpeningsStore(s => s.selectedOpening)
 
   const moves = useMemo(() => getMoves(history), [history])
-
-  const activeMove = getActiveMove(currentMoveIndex)
+  const activeMove = useMemo(() => getActiveMove(currentMoveIndex), [currentMoveIndex])
+  const currentFen = useMemo(
+    () => currentMoveIndex >= 0 ? getFenAtIndex(history, currentMoveIndex) : null,
+    [history, currentMoveIndex],
+  )
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {
     navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
@@ -60,7 +65,7 @@ function BrowseV2PageInner() {
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
-        <Notes />
+        <Notes selectedOpening={selectedOpening} currentMoveIndex={currentMoveIndex} currentFen={currentFen} />
       </section>
     </div>
   )
