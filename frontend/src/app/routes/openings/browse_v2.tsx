@@ -4,6 +4,9 @@ import { OpeningsListV2 } from '../../../features/openings_v2/components/Opening
 import { MovesListV2 } from '../../../features/openings_v2/components/MovesListV2'
 import { NotesV2 } from '../../../features/openings_v2/components/NotesV2'
 import { ChessBoardV2, ChessBoardV2Provider } from '../../../components/ChessBoardV2'
+import { ChessBoardHeader } from '../../../features/openings_v2/components/ChessBoardHeader'
+import { useNextMoveShapes } from '../../../features/openings_v2/hooks/useNextMoveShapes'
+import { useSyncOpeningToBoard } from '../../../features/openings_v2/hooks/useSyncOpeningToBoard'
 
 export const Route = createFileRoute('/openings/browse_v2')({
   component: BrowseV2Page,
@@ -16,11 +19,13 @@ function BrowseV2Page() {
         <BrowseV2PageInner />
       </OpeningsStoreProvider>
     </ChessBoardV2Provider>
-    
   )
 }
 
 function BrowseV2PageInner() {
+  useSyncOpeningToBoard()
+  useNextMoveShapes()
+
   return (
     <div className="grid grid-cols-[300px_1fr_220px_280px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
       <section className="overflow-y-auto min-h-0 bg-white/[0.03] border border-white/[0.06]">
@@ -28,7 +33,7 @@ function BrowseV2PageInner() {
       </section>
 
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
-        <ChessBoardV2 />
+        <ChessBoardV2 header={<ChessBoardHeader />} />
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
@@ -41,4 +46,3 @@ function BrowseV2PageInner() {
     </div>
   )
 }
-

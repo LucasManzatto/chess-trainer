@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useChessBoardStore } from './store/chessBoardStore'
-import { GearIcon, FlipIcon, EyeIcon, CloseIcon } from '../icons'
+import { GearIcon, FlipIcon, EyeIcon, CloseIcon, ResetIcon } from '../icons'
 
 export function ChessBoardSettings() {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -8,6 +8,7 @@ export function ChessBoardSettings() {
   const flipOrientation = useChessBoardStore(s => s.flipOrientation)
   const showThreats = useChessBoardStore(s => s.showThreats)
   const setShowThreats = useChessBoardStore(s => s.setShowThreats)
+  const reset = useChessBoardStore(s => s.reset)
   const boardSize = useChessBoardStore(s => s.boardSize)
   const setBoardSize = useChessBoardStore(s => s.setBoardSize)
 
@@ -34,6 +35,13 @@ export function ChessBoardSettings() {
           title={showThreats ? 'Hide threats' : 'Show threats'}
         >
           <EyeIcon size={14} />
+        </button>
+        <button
+          className="p-1.5 rounded bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors"
+          onClick={reset}
+          title="Reset board"
+        >
+          <ResetIcon size={14} />
         </button>
       </div>
 

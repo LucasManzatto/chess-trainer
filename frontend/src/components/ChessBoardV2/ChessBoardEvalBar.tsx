@@ -9,8 +9,7 @@ function whitePercent(score: EvaluationScore): number {
   if (score.type === 'mate') {
     return score.value > 0 ? 100 : 0
   }
-  const clamped = Math.max(-1000, Math.min(1000, score.value))
-  return 50 + (clamped / 1000) * 50
+  return 50 + 50 * Math.tanh(score.value / 400)
 }
 
 function scoreLabel(score: EvaluationScore): string {

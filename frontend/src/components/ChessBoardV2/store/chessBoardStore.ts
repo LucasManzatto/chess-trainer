@@ -35,6 +35,9 @@ interface ChessBoardState {
   evalScore: EvaluationScore | undefined
   evalBestMove: string | undefined
 
+  // Hint arrows (next-move suggestions from external source)
+  hintShapes: DrawShape[]
+
   // Tracks FEN loaded externally (opening select, position setup) vs player moves.
   // Consumers can diff against history to avoid stale auto-select side effects.
   lastExternalFen: string | null
@@ -46,6 +49,7 @@ interface ChessBoardState {
 interface ChessBoardActions {
   // Game
   loadMoves: (moves: string[]) => void
+  loadOpeningMoves: (moves: string[]) => void
   loadFen: (fen: string) => void
   applyMove: (orig: string, dest: string) => MoveResult | null
   navigateBack: () => void
@@ -73,6 +77,9 @@ interface ChessBoardActions {
   // Evaluation
   setEvaluation: (score: EvaluationScore | undefined, bestMove: string | undefined) => void
 
+  // Hint arrows
+  setHintShapes: (shapes: DrawShape[]) => void
+
   // Promotion
   setPendingPromotion: (promotion: { from: string; to: string } | null) => void
 }
@@ -96,6 +103,7 @@ function getInitialState(): ChessBoardState {
     boardSize: 480,
     evalScore: undefined,
     evalBestMove: undefined,
+    hintShapes: [],
     lastExternalFen: null,
     pendingPromotion: null,
   }
@@ -113,11 +121,15 @@ export function createChessBoardStore(config: ChessBoardStoreConfig = {}) {
     orientation: config.orientation ?? 'white',
     interactive: config.interactive ?? true,
     showThreats: config.showThreats ?? false,
-    boardSize: 480,
 
     loadMoves: (moves) => {
       const history = buildHistoryFromMoves(moves)
       set({ history, currentMoveIndex: history.length - 1, lastExternalFen: null })
+    },
+
+    loadOpeningMoves: (moves) => {
+      const history = buildHistoryFromMoves(moves)
+      set({ history, currentMoveIndex: history.length - 1, lastExternalFen: null, hintShapes: [] })
     },
 
     loadFen: (fen) => {
@@ -180,6 +192,8 @@ export function createChessBoardStore(config: ChessBoardStoreConfig = {}) {
     setBoardSize: (boardSize) => set({ boardSize }),
 
     setEvaluation: (evalScore, evalBestMove) => set({ evalScore, evalBestMove }),
+
+    setHintShapes: (hintShapes) => set({ hintShapes }),
 
     setPendingPromotion: (pendingPromotion) => set({ pendingPromotion }),
   }))
