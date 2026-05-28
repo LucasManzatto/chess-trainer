@@ -5,7 +5,7 @@ export const Route = createFileRoute('/openings')({
 })
 
 const TABS = [
-  { label: 'Browse', to: '/openings/browse_v2' as const },
+  { label: 'Browse', to: '/openings/browse' as const },
 ]
 
 function OpeningsLayout() {

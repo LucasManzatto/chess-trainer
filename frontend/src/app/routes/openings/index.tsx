@@ -2,6 +2,6 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/openings/')({
   beforeLoad: () => {
-    throw redirect({ to: '/openings/browse_v2' })
+    throw redirect({ to: '/openings/browse' })
   },
 })

@@ -15,7 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
 import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
 import { Route as PuzzlesPuzzleIdRouteImport } from './routes/puzzles/$puzzleId'
-import { Route as OpeningsBrowse_v2RouteImport } from './routes/openings/browse_v2'
+import { Route as OpeningsBrowseRouteImport } from './routes/openings/browse'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
 import { Route as AuthGamesRouteImport } from './routes/_auth/games'
@@ -53,9 +53,9 @@ const PuzzlesPuzzleIdRoute = PuzzlesPuzzleIdRouteImport.update({
   path: '/puzzles/$puzzleId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OpeningsBrowse_v2Route = OpeningsBrowse_v2RouteImport.update({
-  id: '/browse_v2',
-  path: '/browse_v2',
+const OpeningsBrowseRoute = OpeningsBrowseRouteImport.update({
+  id: '/browse',
+  path: '/browse',
   getParentRoute: () => OpeningsRoute,
 } as any)
 const AuthPathnameRoute = AuthPathnameRouteImport.update({
@@ -100,7 +100,7 @@ export interface FileRoutesByFullPath {
   '/games': typeof AuthGamesRouteWithChildren
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/openings/browse_v2': typeof OpeningsBrowse_v2Route
+  '/openings/browse': typeof OpeningsBrowseRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
@@ -113,7 +113,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/openings/browse_v2': typeof OpeningsBrowse_v2Route
+  '/openings/browse': typeof OpeningsBrowseRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings': typeof OpeningsIndexRoute
   '/puzzles': typeof PuzzlesIndexRoute
@@ -130,7 +130,7 @@ export interface FileRoutesById {
   '/_auth/games': typeof AuthGamesRouteWithChildren
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/openings/browse_v2': typeof OpeningsBrowse_v2Route
+  '/openings/browse': typeof OpeningsBrowseRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
@@ -147,7 +147,7 @@ export interface FileRouteTypes {
     | '/games'
     | '/account/$pathname'
     | '/auth/$pathname'
-    | '/openings/browse_v2'
+    | '/openings/browse'
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
@@ -160,7 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account/$pathname'
     | '/auth/$pathname'
-    | '/openings/browse_v2'
+    | '/openings/browse'
     | '/puzzles/$puzzleId'
     | '/openings'
     | '/puzzles'
@@ -176,7 +176,7 @@ export interface FileRouteTypes {
     | '/_auth/games'
     | '/account/$pathname'
     | '/auth/$pathname'
-    | '/openings/browse_v2'
+    | '/openings/browse'
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
@@ -240,11 +240,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PuzzlesPuzzleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/openings/browse_v2': {
-      id: '/openings/browse_v2'
-      path: '/browse_v2'
-      fullPath: '/openings/browse_v2'
-      preLoaderRoute: typeof OpeningsBrowse_v2RouteImport
+    '/openings/browse': {
+      id: '/openings/browse'
+      path: '/browse'
+      fullPath: '/openings/browse'
+      preLoaderRoute: typeof OpeningsBrowseRouteImport
       parentRoute: typeof OpeningsRoute
     }
     '/auth/$pathname': {
@@ -328,12 +328,12 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface OpeningsRouteChildren {
-  OpeningsBrowse_v2Route: typeof OpeningsBrowse_v2Route
+  OpeningsBrowseRoute: typeof OpeningsBrowseRoute
   OpeningsIndexRoute: typeof OpeningsIndexRoute
 }
 
 const OpeningsRouteChildren: OpeningsRouteChildren = {
-  OpeningsBrowse_v2Route: OpeningsBrowse_v2Route,
+  OpeningsBrowseRoute: OpeningsBrowseRoute,
   OpeningsIndexRoute: OpeningsIndexRoute,
 }
 

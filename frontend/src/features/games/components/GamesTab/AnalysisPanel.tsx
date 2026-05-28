@@ -24,7 +24,7 @@ function OpeningSection({ openingMatch, openingName }: OpeningSectionProps) {
     <div className="px-3 py-2 border-b border-white/[0.06]">
       {openingMatch ? (
         <Link
-          to="/openings/browse_v2"
+          to="/openings/browse"
           search={{ modal: undefined }}
           className="flex items-center gap-1.5 group"
         >

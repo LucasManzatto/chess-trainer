@@ -1,13 +1,12 @@
-import type {
-  OpeningComment,
-  PositionComment,
-  DrillQueueItem,
-  DrillGrade,
-  FavoriteToggleResponse,
-  DrillActionResponse,
-} from '../types'
-
 import { request } from '../../../lib/api'
+import type { OpeningComment, PositionComment, DrillQueueItem, DrillGrade, FavoriteToggleResponse, DrillActionResponse } from '../types'
+import type { Opening } from '../hooks/useOpenings'
+
+export async function fetchOpenings(): Promise<Opening[]> {
+  const resp = await fetch('/openings.json')
+  if (!resp.ok) throw new Error('Failed to load openings')
+  return resp.json()
+}
 
 // Opening comments
 export const openingCommentsApi = {
