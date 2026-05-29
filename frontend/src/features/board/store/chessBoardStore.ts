@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
-import { buildHistoryFromMoves } from '../../../lib/chess/game'
+import { buildHistoryFromMoves, getFenAtIndex } from '../../../lib/chess/game'
 import { createGameSlice, getInitialGameState, type GameSlice } from './slices/gameSlice'
 import { createDisplaySlice, getInitialDisplayState, type DisplaySlice, type DisplaySliceConfig } from './slices/displaySlice'
 import { createOverlaySlice, getInitialOverlayState, type OverlaySlice } from './slices/overlaySlice'
@@ -11,18 +11,18 @@ export type ChessBoardStoreType = GameSlice & DisplaySlice & OverlaySlice & Eval
   reset: () => void
 }
 
+export function getCurrentFen(state: ChessBoardStoreType): string {
+  return state.lastExternalFen ?? getFenAtIndex(state.history, state.currentMoveIndex)
+}
+
 export type ChessBoardStoreConfig = DisplaySliceConfig
 
 export function createChessBoardStore(config: ChessBoardStoreConfig = {}) {
   return createStore<ChessBoardStoreType>()((set, get, store) => ({
     ...createGameSlice(set, get, store),
-    ...createDisplaySlice(set, get, store),
+    ...createDisplaySlice(config)(set, get, store),
     ...createOverlaySlice(set, get, store),
     ...createEvalSlice(set, get, store),
-
-    // Apply config overrides on top of slice defaults
-    orientation: config.orientation ?? 'white',
-    interactive: config.interactive ?? true,
 
     // Cross-slice action: resets game state and clears display hints atomically
     loadOpeningMoves: (moves) => {
@@ -32,11 +32,9 @@ export function createChessBoardStore(config: ChessBoardStoreConfig = {}) {
 
     reset: () => set({
       ...getInitialGameState(),
-      ...getInitialDisplayState(),
+      ...getInitialDisplayState({ orientation: get().orientation, interactive: get().interactive }),
       ...getInitialOverlayState(),
       ...getInitialEvalState(),
-      orientation: get().orientation,
-      interactive: get().interactive,
     }),
   }))
 }

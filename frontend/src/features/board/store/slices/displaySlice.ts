@@ -24,27 +24,29 @@ export type DisplaySliceConfig = {
   interactive?: boolean
 }
 
-export function getInitialDisplayState(): Pick<DisplaySlice,
+export function getInitialDisplayState(config: DisplaySliceConfig = {}): Pick<DisplaySlice,
   'orientation' | 'shapes' | 'hintShapes' | 'customSquares' | 'pendingPromotion' | 'interactive'
 > {
   return {
-    orientation: 'white',
+    orientation: config.orientation ?? 'white',
     shapes: [],
     hintShapes: [],
     customSquares: {},
     pendingPromotion: null,
-    interactive: true,
+    interactive: config.interactive ?? true,
   }
 }
 
-export const createDisplaySlice: StateCreator<ChessBoardStoreType, [], [], DisplaySlice> = (set) => ({
-  ...getInitialDisplayState(),
+export function createDisplaySlice(config: DisplaySliceConfig = {}): StateCreator<ChessBoardStoreType, [], [], DisplaySlice> {
+  return (set) => ({
+    ...getInitialDisplayState(config),
 
-  setOrientation: (orientation) => set({ orientation }),
-  flipOrientation: () => set(s => ({ orientation: s.orientation === 'white' ? 'black' : 'white' })),
-  setShapes: (shapes) => set({ shapes }),
-  setHintShapes: (hintShapes) => set({ hintShapes }),
-  setCustomSquares: (customSquares) => set({ customSquares }),
-  setPendingPromotion: (pendingPromotion) => set({ pendingPromotion }),
-  setInteractive: (interactive) => set({ interactive }),
-})
+    setOrientation: (orientation) => set({ orientation }),
+    flipOrientation: () => set(s => ({ orientation: s.orientation === 'white' ? 'black' : 'white' })),
+    setShapes: (shapes) => set({ shapes }),
+    setHintShapes: (hintShapes) => set({ hintShapes }),
+    setCustomSquares: (customSquares) => set({ customSquares }),
+    setPendingPromotion: (pendingPromotion) => set({ pendingPromotion }),
+    setInteractive: (interactive) => set({ interactive }),
+  })
+}

@@ -1,6 +1,17 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useOpeningsStore } from '../../store/openingsStore'
+import { useOpeningsStore, getSelectedOpening } from '../../store/openingsStore'
 import type { Opening } from '../../types'
+import { useExpandToSelection } from '../../hooks/useExpandToSelection'
+
+function getMovesPaths(opening: Opening): string[] {
+  const paths: string[] = []
+  let current = ''
+  for (const move of opening.moves) {
+    current = current ? `${current}/${move}` : move
+    paths.push(current)
+  }
+  return paths
+}
 
 // Each node in the trie represents one move. Openings whose move sequence ends here
 // are stored in `openings`; further moves branch into `children`.
@@ -101,11 +112,13 @@ interface MoveViewProps {
 }
 
 export function MoveView({ openings }: MoveViewProps) {
-  const selectedOpening = useOpeningsStore(s => s.selectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedOpening)
   const setSelectedOpening = useOpeningsStore(s => s.setSelectedOpening)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const trie = useMemo(() => buildTrie(openings), [openings])
+
+  useExpandToSelection(selectedOpening, setExpanded, getMovesPaths)
 
   const toggle = useCallback((path: string) => {
     setExpanded(prev => {

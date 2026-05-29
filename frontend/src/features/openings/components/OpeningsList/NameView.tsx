@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useOpeningsStore } from '../../store/openingsStore'
+import { useOpeningsStore, getSelectedOpening } from '../../store/openingsStore'
 import type { Opening } from '../../types'
+import { useExpandToSelection } from '../../hooks/useExpandToSelection'
 
 type NameNode = {
   label: string
@@ -15,6 +16,17 @@ function parseNamePath(name: string): string[] {
   const main = name.slice(0, colonIdx)
   const rest = name.slice(colonIdx + 2) // skip ': ' (2 chars)
   return [main, ...rest.split(', ')]
+}
+
+function getNamePaths(opening: Opening): string[] {
+  const segments = parseNamePath(opening.name)
+  const paths: string[] = []
+  let current = ''
+  for (let i = 0; i < segments.length - 1; i++) {
+    current = current ? `${current}/${segments[i]}` : segments[i]
+    paths.push(current)
+  }
+  return paths
 }
 
 function buildNameTree(openings: Opening[]): NameNode[] {
@@ -103,11 +115,13 @@ interface NameViewProps {
 }
 
 export function NameView({ openings }: NameViewProps) {
-  const selectedOpening = useOpeningsStore(s => s.selectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedOpening)
   const setSelectedOpening = useOpeningsStore(s => s.setSelectedOpening)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const roots = useMemo(() => buildNameTree(openings), [openings])
+
+  useExpandToSelection(selectedOpening, setExpanded, getNamePaths)
 
   const toggle = useCallback((path: string) => {
     setExpanded(prev => {

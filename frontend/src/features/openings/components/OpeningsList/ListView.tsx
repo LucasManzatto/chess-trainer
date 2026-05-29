@@ -1,4 +1,4 @@
-import { useOpeningsStore } from '../../store/openingsStore'
+import { useOpeningsStore, getSelectedOpening } from '../../store/openingsStore'
 import type { Opening } from '../../types'
 
 interface ListViewProps {
@@ -6,7 +6,7 @@ interface ListViewProps {
 }
 
 export function ListView({ openings }: ListViewProps) {
-  const selectedOpening = useOpeningsStore(s => s.selectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedOpening)
   const setSelectedOpening = useOpeningsStore(s => s.setSelectedOpening)
 
   return (

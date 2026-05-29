@@ -3,10 +3,7 @@ import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Opening } from '../../../../features/openings/types'
-import { useChessBoardStore, useChessBoardStoreApi } from '../../../../features/board'
-import { getFenAtIndex } from '../../../../lib/chess/game'
-
-const INITIAL_FEN = new Chess().fen()
+import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen } from '../../../../features/board'
 
 export function useNextMoveShapes(openings: Opening[]) {
   const chessBoardStore = useChessBoardStoreApi()
@@ -15,9 +12,7 @@ export function useNextMoveShapes(openings: Opening[]) {
     s.history.slice(0, s.currentMoveIndex + 1).map(e => e.san).join(',')
   )
 
-  const currentFen = useChessBoardStore(s =>
-    s.lastExternalFen ?? getFenAtIndex(s.history, s.currentMoveIndex) ?? INITIAL_FEN
-  )
+  const currentFen = useChessBoardStore(getCurrentFen)
 
   useEffect(() => {
     const nextMoveIndex = playedMovesKey ? playedMovesKey.split(',').length : 0

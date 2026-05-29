@@ -11,7 +11,7 @@ import { useFilteredOpenings } from './hooks/useFilteredOpenings'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
-import { useOpeningsStore } from '../../../features/openings/store/openingsStore'
+import { useOpeningsStore, getSelectedOpening } from '../../../features/openings/store/openingsStore'
 
 export const Route = createFileRoute('/openings/browse')({
   component: BrowseV2Page,
@@ -39,7 +39,7 @@ function BrowseV2PageInner() {
   const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
-  const selectedOpening = useOpeningsStore(s => s.selectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedOpening)
 
   const moves = useMemo(() => getMoves(history), [history])
   const activeMove = useMemo(() => getActiveMove(currentMoveIndex), [currentMoveIndex])

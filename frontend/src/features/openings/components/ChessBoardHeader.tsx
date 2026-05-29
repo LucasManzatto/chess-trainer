@@ -1,7 +1,7 @@
-import { useOpeningsStore } from '../store/openingsStore'
+import { useOpeningsStore, getSelectedOpening } from '../store/openingsStore'
 
 export function ChessBoardHeader() {
-  const selectedOpening = useOpeningsStore(s => s.selectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedOpening)
 
   return (
     <div className="flex items-start w-full select-none pointer-events-none px-1">

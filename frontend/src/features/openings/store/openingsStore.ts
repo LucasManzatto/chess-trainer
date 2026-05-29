@@ -4,7 +4,6 @@ import type { Opening } from '../types'
 
 interface OpeningsState {
   openings: Opening[]
-  selectedOpening: Opening | null
   selectionHistory: Opening[]
   historyIndex: number
 }
@@ -18,39 +17,38 @@ interface OpeningsActions {
 
 export type OpeningsStoreType = OpeningsState & OpeningsActions
 
+export function getSelectedOpening(state: OpeningsStoreType): Opening | null {
+  return state.historyIndex >= 0 ? state.selectionHistory[state.historyIndex] : null
+}
+
 export function createOpeningsStore() {
-  return createStore<OpeningsStoreType>()((set, get) => ({
+  return createStore<OpeningsStoreType>()((set) => ({
     openings: [],
-    selectedOpening: null,
     selectionHistory: [],
     historyIndex: -1,
 
     setOpenings: openings => set({ openings }),
 
     setSelectedOpening: opening => set(state => {
-      if (opening === null) return { selectedOpening: null }
-      // Don't push if same opening re-selected
-      if (state.selectedOpening?.id === opening.id) return {}
+      if (opening === null) return { selectionHistory: [], historyIndex: -1 }
+      const current = getSelectedOpening(state)
+      if (current?.id === opening.id) return {}
 
       const truncated = state.selectionHistory.slice(0, state.historyIndex + 1)
       const next = [...truncated, opening]
-      return {
-        selectedOpening: opening,
-        selectionHistory: next,
-        historyIndex: next.length - 1,
-      }
+      return { selectionHistory: next, historyIndex: next.length - 1 }
     }),
 
     navigateBack: () => set(state => {
       const idx = state.historyIndex - 1
       if (idx < 0) return {}
-      return { historyIndex: idx, selectedOpening: state.selectionHistory[idx] }
+      return { historyIndex: idx }
     }),
 
     navigateForward: () => set(state => {
       const idx = state.historyIndex + 1
       if (idx >= state.selectionHistory.length) return {}
-      return { historyIndex: idx, selectedOpening: state.selectionHistory[idx] }
+      return { historyIndex: idx }
     }),
   }))
 }

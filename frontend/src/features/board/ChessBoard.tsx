@@ -1,24 +1,18 @@
 import { useEffect, type ReactNode } from 'react'
-import { Chess } from 'chess.js'
 import { EvaluationBar } from './ChessBoardEvalBar'
 import { ChessBoardBoard } from './ChessBoardBoard'
 import { ChessBoardSettings } from './ChessBoardSettings'
-import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
+import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen } from './store/chessBoardStore'
 import { useBoardSettings } from './store/boardSettingsStore'
 import { usePositionEvaluation } from './hooks/usePositionEvaluation'
-import { getFenAtIndex } from '../../lib/chess/game'
 
 type Props = {
   header?: ReactNode
 }
 
-const INITIAL_FEN = new Chess().fen()
-
 function useEvaluation() {
   const store = useChessBoardStoreApi()
-  const fen = useChessBoardStore(s =>
-    s.lastExternalFen ?? getFenAtIndex(s.history, s.currentMoveIndex) ?? INITIAL_FEN
-  )
+  const fen = useChessBoardStore(getCurrentFen)
   const { score, bestMove, isLoading } = usePositionEvaluation(fen)
 
   useEffect(() => {
