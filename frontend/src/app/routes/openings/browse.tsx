@@ -6,6 +6,7 @@ import { ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../fea
 import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
 import { useNextMoveShapes } from './hooks/useNextMoveShapes'
 import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
+import { useSyncBoardToOpening } from './hooks/useSyncBoardToOpening'
 import { useFilteredOpenings } from './hooks/useFilteredOpenings'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
@@ -33,6 +34,7 @@ function BrowseV2PageInner() {
   const displayed = useFilteredOpenings(search)
 
   useNextMoveShapes(displayed)
+  useSyncBoardToOpening(displayed)
 
   const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)

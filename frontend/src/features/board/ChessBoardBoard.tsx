@@ -145,6 +145,19 @@ export function ChessBoardBoard() {
     apiRef.current?.set(config)
   }, [config])
 
+  const navigateBack = useChessBoardStore(s => s.navigateBack)
+  const navigateForward = useChessBoardStore(s => s.navigateForward)
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLElement && e.target.isContentEditable)) return
+      if (e.key === 'ArrowLeft') navigateBack()
+      else if (e.key === 'ArrowRight') navigateForward()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [navigateBack, navigateForward])
+
   return (
     <div className="relative">
       <div ref={elRef} style={{ width: boardSize, height: boardSize }} />

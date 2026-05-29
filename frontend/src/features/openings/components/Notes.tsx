@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useOpeningComments } from '../hooks/useOpeningComments'
 import { usePositionComments } from '../hooks/usePositionComments'
-import type { OpeningComment, PositionComment, Opening } from '../types'
+import type { Opening } from '../types'
 
 type NotesProps = {
   selectedOpening: Opening | null
@@ -11,7 +11,7 @@ type NotesProps = {
 
 type NotesSectionProps = {
   title: string
-  comments: OpeningComment[] | PositionComment[]
+  comments: { id: number; content: string }[]
   isLoading: boolean
   onAdd: (content: string) => void
   pending: boolean

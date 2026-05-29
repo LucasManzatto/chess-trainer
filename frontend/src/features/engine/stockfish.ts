@@ -45,7 +45,7 @@ export function evalFen(
   depth: number,
 ): Promise<{ score: number; bestMove: string }> {
   return new Promise((resolve, reject) => {
-    let latestScore = 0
+    let latestEval: EvaluationScore = { type: 'cp', value: 0 }
     let latestBestMove = ''
 
     const handler = (e: MessageEvent<string>) => {
@@ -56,11 +56,7 @@ export function evalFen(
         if (!depthMatch || parseInt(depthMatch[1]) < depth) return
 
         const raw = parseScore(line)
-        if (raw) {
-          latestScore = raw.type === 'mate'
-            ? (raw.value > 0 ? 30000 : -30000)
-            : raw.value
-        }
+        if (raw) latestEval = raw
 
         const pvMatch = line.match(/\bpv ([a-h][1-8][a-h][1-8][qrbn]?)/)
         if (pvMatch) latestBestMove = pvMatch[1]
@@ -70,7 +66,11 @@ export function evalFen(
         const bmMatch = line.match(/^bestmove ([a-h][1-8][a-h][1-8][qrbn]?)/)
         if (bmMatch && !latestBestMove) latestBestMove = bmMatch[1]
         worker.removeEventListener('message', handler)
-        resolve({ score: toWhitePerspective({ type: 'cp', value: latestScore }, fen).value, bestMove: latestBestMove })
+        const perspective = toWhitePerspective(latestEval, fen)
+        const score = perspective.type === 'mate'
+          ? (perspective.value > 0 ? 30000 : -30000)
+          : perspective.value
+        resolve({ score, bestMove: latestBestMove })
       }
 
       if (line === 'error') {

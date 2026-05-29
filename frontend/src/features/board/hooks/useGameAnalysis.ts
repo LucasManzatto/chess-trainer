@@ -26,8 +26,15 @@ export function useGameAnalysis(
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [analysis, setAnalysis] = useState<GameAnalysis | null>(null)
   const abortRef = useRef(false)
+  const mountedRef = useRef(false)
+  const onCompleteRef = useRef(onComplete)
+  useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
 
   useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      return
+    }
     abortRef.current = true
     queueMicrotask(() => {
       setStatus('idle')
@@ -107,17 +114,21 @@ export function useGameAnalysis(
         initial_score: scores[0],
       }
 
+      if (abortRef.current) {
+        setStatus('idle')
+        return
+      }
       const savedGame = await gamesApi.saveAnalysis(gameId, result)
       const saved = savedGame.analysis ?? result
       setAnalysis(saved)
       setStatus('done')
-      onComplete?.()
+      onCompleteRef.current?.()
     } catch {
       if (!abortRef.current) setStatus('error')
     } finally {
       worker.terminate()
     }
-  }, [allFens, allMoves, gameId, depth, status, onComplete])
+  }, [allFens, allMoves, gameId, depth, status])
 
   return { analyze, status, progress, analysis }
 }

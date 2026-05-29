@@ -63,8 +63,16 @@ export function usePositionEvaluation(fen: string | undefined): EvaluationResult
         const line = e.data
 
         if (line.startsWith('bestmove')) {
+          const wasAwaiting = awaitingBestMoveRef.current
           awaitingBestMoveRef.current = false
           searchActiveRef.current = false
+          if (!wasAwaiting) {
+            const bmMatch = line.match(/^bestmove ([a-h][1-8][a-h][1-8][qrbn]?)/)
+            if (bmMatch) {
+              const completedFen = currentSearchFenRef.current
+              setEngineState(s => s.bestMove !== undefined ? s : { ...s, bestMove: bmMatch[1], scoredFen: completedFen })
+            }
+          }
           const pending = pendingFenRef.current
           if (pending !== null) {
             pendingFenRef.current = null

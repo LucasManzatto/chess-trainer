@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
-import type { Opening } from '../../hooks/useOpenings'
 import { useOpeningsStore } from '../../store/openingsStore'
+import type { Opening } from '../../types'
 
 type NameNode = {
   label: string
