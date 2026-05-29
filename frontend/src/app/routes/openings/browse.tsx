@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react'
-import { getMoves, getActiveMove, getFenAtIndex } from '../../../lib/chess/game'
+import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
-import { ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
 import { useNextMoveShapes } from './hooks/useNextMoveShapes'
 import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
@@ -43,10 +42,7 @@ function BrowseV2PageInner() {
 
   const moves = useMemo(() => getMoves(history), [history])
   const activeMove = useMemo(() => getActiveMove(currentMoveIndex), [currentMoveIndex])
-  const currentFen = useMemo(
-    () => currentMoveIndex >= 0 ? getFenAtIndex(history, currentMoveIndex) : null,
-    [history, currentMoveIndex],
-  )
+  const currentFen = useChessBoardStore(getCurrentFen)
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {
     navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))

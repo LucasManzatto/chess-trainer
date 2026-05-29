@@ -18,7 +18,7 @@ interface OpeningsActions {
 export type OpeningsStoreType = OpeningsState & OpeningsActions
 
 export function getSelectedOpening(state: OpeningsStoreType): Opening | null {
-  return state.historyIndex >= 0 ? state.selectionHistory[state.historyIndex] : null
+  return (state.historyIndex >= 0 ? state.selectionHistory[state.historyIndex] : null) ?? null
 }
 
 export function createOpeningsStore() {

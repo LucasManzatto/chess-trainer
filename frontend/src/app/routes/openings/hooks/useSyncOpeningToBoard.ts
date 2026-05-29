@@ -8,7 +8,9 @@ export function useSyncOpeningToBoard() {
 
   useEffect(() => {
     if (selectedOpening) {
-      store.getState().loadOpeningMoves(selectedOpening.moves)
+      const state = store.getState()
+      state.loadMoves(selectedOpening.moves)
+      state.setHintShapes([])
     } else {
       store.getState().reset()
     }

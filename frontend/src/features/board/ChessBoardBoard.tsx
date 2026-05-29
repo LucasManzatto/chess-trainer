@@ -5,7 +5,8 @@ import type { Config } from '@lichess-org/chessground/config'
 import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
-import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen } from './store/chessBoardStore'
+import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
+import { getCurrentFen } from './store/slices/gameSlice'
 import { useBoardSettings } from './store/boardSettingsStore'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
