@@ -50,14 +50,14 @@ function MoveTreeNode({ move, node, depth, path, expanded, onToggle, selectedId,
     <div>
       <button
         onClick={() => onToggle(path)}
-        className="w-full text-left py-1 text-sm transition-colors flex items-center gap-1.5 border-l-2 border-transparent text-gray-500 hover:bg-white/5 hover:text-gray-300"
+        className="w-full text-left py-1 text-sm transition-colors flex items-center gap-1.5 border-l-2 border-transparent text-white/35 hover:bg-white/[0.07] hover:text-white/70"
         style={{ paddingLeft: `${8 + depth * 12}px`, paddingRight: '8px' }}
       >
         <span className="text-gray-600 flex-shrink-0 w-3 text-xs">
           {hasChildren ? (isExpanded ? '▾' : '▸') : ''}
         </span>
-        <span className="font-mono text-xs text-gray-300">{move}</span>
-        <span className="text-xs text-gray-600 ml-auto pr-2">{node.count}</span>
+        <span className="font-mono text-xs text-white/65">{move}</span>
+        <span className="text-xs text-white/20 ml-auto pr-2">{node.count}</span>
       </button>
 
       {isExpanded && (
@@ -68,12 +68,12 @@ function MoveTreeNode({ move, node, depth, path, expanded, onToggle, selectedId,
               onClick={() => onSelect(opening)}
               className={`w-full text-left py-1 text-sm transition-colors flex items-center gap-2 min-w-0 ${
                 selectedId === opening.id
-                  ? 'border-l-2 border-amber-400 bg-amber-500/10 text-amber-200'
-                  : 'border-l-2 border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'border-l-2 border-amber-400/70 bg-amber-500/10 text-white/90'
+                  : 'border-l-2 border-transparent text-white/45 hover:bg-white/[0.07] hover:text-white/80'
               }`}
               style={{ paddingLeft: `${8 + (depth + 1) * 12}px`, paddingRight: '8px' }}
             >
-              <span className="text-xs font-mono text-amber-400/60 flex-shrink-0">{opening.eco}</span>
+              <span className="text-xs font-mono text-amber-400/50 flex-shrink-0">{opening.eco}</span>
               <span className="truncate">{opening.name}</span>
             </button>
           ))}

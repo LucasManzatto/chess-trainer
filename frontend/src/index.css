@@ -4,11 +4,18 @@
 @import "@lichess-org/chessground/assets/chessground.brown.css";
 @import "@lichess-org/chessground/assets/chessground.cburnett.css";
 
+@theme {
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+}
+
 :root {
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light dark;
-  background: #1a1a2e;
-  color: #e0e0e0;
+  font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color-scheme: dark;
+  background: radial-gradient(ellipse at 50% 0%, #1e2244 0%, #13132b 55%, #0d0d1e 100%);
+  color: #ddd8cc;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -26,10 +33,9 @@ body {
   min-height: 100vh;
 }
 
-/* Themed scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -37,15 +43,15 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }

@@ -51,20 +51,20 @@ function BrowseV2PageInner() {
   }
 
   return (
-    <div className="grid grid-cols-[300px_1fr_220px_280px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
-      <section className="overflow-y-auto min-h-0 bg-white/[0.03] border border-white/[0.06]">
+    <div className="grid grid-cols-[300px_1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
+      <section className="overflow-y-auto min-h-0 bg-white/[0.055] border border-white/[0.09] rounded">
         <OpeningsList openings={displayed} search={search} onSearchChange={setSearch} />
       </section>
 
-      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
+      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
         <ChessBoard header={<ChessBoardHeader />} />
       </section>
 
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
+      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
         <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} />
       </section>
 
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.03] border border-white/[0.06] rounded">
+      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
         <Notes selectedOpening={selectedOpening} currentMoveIndex={currentMoveIndex} currentFen={currentFen} />
       </section>
     </div>

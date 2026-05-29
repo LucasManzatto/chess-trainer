@@ -72,8 +72,8 @@ function NameTreeNode({ node, depth, path, expanded, onToggle, selectedId, onSel
         onClick={handleClick}
         className={`w-full text-left py-1 text-sm transition-colors flex items-center gap-1.5 min-w-0 ${
           isSelected
-            ? 'border-l-2 border-amber-400 bg-amber-500/10 text-amber-200'
-            : 'border-l-2 border-transparent text-gray-400 hover:bg-white/5 hover:text-white'
+            ? 'border-l-2 border-amber-400/70 bg-amber-500/10 text-white/90'
+            : 'border-l-2 border-transparent text-white/45 hover:bg-white/[0.07] hover:text-white/80'
         }`}
         style={{ paddingLeft: `${8 + depth * 12}px`, paddingRight: '8px' }}
       >

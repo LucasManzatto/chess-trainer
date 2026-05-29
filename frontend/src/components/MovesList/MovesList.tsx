@@ -14,31 +14,34 @@ export function MovesList({ moves = [], activeMove, onMoveClick }: Props) {
       <MovesHeader />
       <div className="flex-1 overflow-y-auto min-h-0">
         {moves.length === 0 ? (
-          <p className="px-3 py-4 text-xs text-gray-600">No moves yet.</p>
+          <div className="flex flex-col items-center justify-center h-full gap-2 py-8 px-4 text-center">
+            <span className="text-2xl opacity-20 select-none">⋯</span>
+            <p className="text-sm text-white/25">No moves yet</p>
+          </div>
         ) : (
-        <div className="flex flex-col">
-          {moves.map(({ moveNumber, white, black }) => (
-            <div key={moveNumber} className="grid grid-cols-[28px_1fr_1fr] text-sm">
-              <span className="flex items-center px-2 py-1 text-xs text-gray-600 select-none">
-                {moveNumber}.
-              </span>
-              <MoveButton
-                san={white}
-                active={activeMove?.moveNumber === moveNumber && activeMove.color === 'white'}
-                onClick={() => onMoveClick?.(moveNumber, 'white')}
-              />
-              {black != null ? (
+          <div className="flex flex-col py-1">
+            {moves.map(({ moveNumber, white, black }) => (
+              <div key={moveNumber} className="grid grid-cols-[28px_1fr_1fr] text-sm">
+                <span className="flex items-center px-2 py-1 text-xs text-white/25 select-none tabular-nums">
+                  {moveNumber}.
+                </span>
                 <MoveButton
-                  san={black}
-                  active={activeMove?.moveNumber === moveNumber && activeMove.color === 'black'}
-                  onClick={() => onMoveClick?.(moveNumber, 'black')}
+                  san={white}
+                  active={activeMove?.moveNumber === moveNumber && activeMove.color === 'white'}
+                  onClick={() => onMoveClick?.(moveNumber, 'white')}
                 />
-              ) : (
-                <div />
-              )}
-            </div>
-          ))}
-        </div>
+                {black != null ? (
+                  <MoveButton
+                    san={black}
+                    active={activeMove?.moveNumber === moveNumber && activeMove.color === 'black'}
+                    onClick={() => onMoveClick?.(moveNumber, 'black')}
+                  />
+                ) : (
+                  <div />
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -47,8 +50,13 @@ export function MovesList({ moves = [], activeMove, onMoveClick }: Props) {
 
 function MovesHeader() {
   return (
-    <div className="px-3 h-10 flex items-center justify-between border-b border-white/[0.06] flex-shrink-0">
-      <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Moves</span>
+    <div className="px-4 h-11 flex items-center border-b border-white/[0.08] flex-shrink-0">
+      <span
+        className="text-white/80 font-semibold tracking-tight"
+        style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '13px' }}
+      >
+        Moves
+      </span>
     </div>
   )
 }
@@ -63,10 +71,10 @@ function MoveButton({ san, active, onClick }: MoveButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`text-left px-2 py-1 rounded transition-colors font-mono ${
+      className={`text-left px-2 py-1 rounded transition-colors font-mono text-sm ${
         active
           ? 'bg-amber-500/20 text-amber-200'
-          : 'text-gray-300 hover:bg-white/5 hover:text-white'
+          : 'text-white/60 hover:bg-white/[0.07] hover:text-white/90'
       }`}
     >
       {san}

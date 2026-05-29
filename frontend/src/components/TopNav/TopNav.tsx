@@ -15,22 +15,38 @@ export function TopNav() {
   const routeMemory = useRouteMemoryStore((s) => s.routes)
 
   return (
-    <header className="flex items-center justify-between px-4 h-12 border-b border-white/10 bg-[#12122a] shrink-0">
-      <nav className="flex items-center gap-1">
-        {navLinks.map(({ to, label, exact }) => (
-          <Link
-            key={to}
-            to={to}
-            search={(prev) => ({ ...routeMemory[to], modal: (prev as { modal?: 'login' }).modal })}
-            activeProps={{ className: 'text-white bg-white/10' }}
-            inactiveProps={{ className: 'text-gray-400 hover:text-gray-200 hover:bg-white/5' }}
-            activeOptions={{ exact }}
-            className="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+    <header className="flex items-center justify-between px-5 h-13 border-b border-white/[0.08] bg-[#0e0e22]/90 backdrop-blur-sm shrink-0">
+      <div className="flex items-center gap-6">
+        <Link
+          to="/"
+          search={(prev) => ({ ...routeMemory['/'], modal: (prev as { modal?: 'login' }).modal })}
+          className="flex items-center gap-2 select-none"
+        >
+          <span className="text-amber-400 text-xl leading-none">♟</span>
+          <span
+            className="text-white font-semibold tracking-tight leading-none"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '15px' }}
           >
-            {label}
-          </Link>
-        ))}
-      </nav>
+            Chess Trainer
+          </span>
+        </Link>
+
+        <nav className="flex items-center gap-0.5">
+          {navLinks.map(({ to, label, exact }) => (
+            <Link
+              key={to}
+              to={to}
+              search={(prev) => ({ ...routeMemory[to], modal: (prev as { modal?: 'login' }).modal })}
+              activeProps={{ className: 'text-white bg-white/10' }}
+              inactiveProps={{ className: 'text-white/50 hover:text-white/80 hover:bg-white/5' }}
+              activeOptions={{ exact }}
+              className="px-3 py-1.5 rounded text-sm transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </div>
 
       <div className="flex items-center gap-2">
         {session?.user ? (
@@ -38,9 +54,9 @@ export function TopNav() {
             to="/account/$pathname"
             params={{ pathname: 'settings' }}
             search={{ modal: undefined }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
           >
-            <span className="w-6 h-6 rounded-full bg-amber-500/80 flex items-center justify-center text-xs font-bold text-white">
+            <span className="w-6 h-6 rounded-full bg-amber-500/70 flex items-center justify-center text-xs font-bold text-white">
               {session.user.name?.charAt(0).toUpperCase() ?? session.user.email?.charAt(0).toUpperCase() ?? '?'}
             </span>
             <span className="hidden sm:inline">{session.user.name ?? session.user.email}</span>
@@ -48,7 +64,7 @@ export function TopNav() {
         ) : (
           <button
             onClick={() => navigate({ to: '/', search: { modal: 'login' } })}
-            className="px-3 py-1.5 rounded text-sm font-medium bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
+            className="px-3 py-1.5 rounded text-sm border border-amber-500/30 text-amber-300/80 hover:border-amber-400/60 hover:text-amber-200 transition-colors"
           >
             Sign In
           </button>
