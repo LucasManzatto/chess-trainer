@@ -7,15 +7,10 @@ import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen } from '../../
 
 export function useNextMoveShapes(openings: Opening[]) {
   const chessBoardStore = useChessBoardStoreApi()
-
-  const playedMovesKey = useChessBoardStore(s =>
-    s.history.slice(0, s.currentMoveIndex + 1).map(e => e.san).join(',')
-  )
-
+  const nextMoveIndex = useChessBoardStore(s => s.currentMoveIndex + 1)
   const currentFen = useChessBoardStore(getCurrentFen)
 
   useEffect(() => {
-    const nextMoveIndex = playedMovesKey ? playedMovesKey.split(',').length : 0
     const chess = new Chess(currentFen)
     const seen = new Set<string>()
     const shapes: DrawShape[] = []
@@ -33,5 +28,5 @@ export function useNextMoveShapes(openings: Opening[]) {
     }
 
     chessBoardStore.getState().setHintShapes(shapes)
-  }, [openings, playedMovesKey, currentFen, chessBoardStore])
+  }, [openings, nextMoveIndex, currentFen, chessBoardStore])
 }

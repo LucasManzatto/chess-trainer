@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useChessBoardStore } from '../../../../features/board'
 import { useOpeningsStore } from '../../../../features/openings/store/openingsStore'
+import { isPrefix } from '../../../../features/openings/utils/movesMatch'
 
 export function useFilteredOpenings(search: string) {
   const openings = useOpeningsStore(s => s.openings)
@@ -12,7 +13,7 @@ export function useFilteredOpenings(search: string) {
   return useMemo(() => {
     const playedMoves = playedMovesKey ? playedMovesKey.split(',') : []
     return openings.filter(o =>
-      playedMoves.every((san, i) => o.moves[i] === san) &&
+      isPrefix(playedMoves, o) &&
       (!search || o.name.toLowerCase().includes(search.toLowerCase()))
     )
   }, [openings, search, playedMovesKey])

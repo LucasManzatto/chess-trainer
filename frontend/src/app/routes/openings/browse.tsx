@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
@@ -40,8 +40,8 @@ function BrowseV2PageInner() {
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
   const selectedOpening = useOpeningsStore(getSelectedOpening)
 
-  const moves = useMemo(() => getMoves(history), [history])
-  const activeMove = useMemo(() => getActiveMove(currentMoveIndex), [currentMoveIndex])
+  const moves = getMoves(history)
+  const activeMove = getActiveMove(currentMoveIndex)
   const currentFen = useChessBoardStore(getCurrentFen)
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {
