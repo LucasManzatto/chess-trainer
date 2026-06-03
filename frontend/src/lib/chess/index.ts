@@ -1,5 +1,4 @@
 export type * from './types'
-export * from './game'
 export * from './pgn'
 export * from './analysis'
 export { classifyMove, cpToWinPercent, computeAccuracy } from '../../features/engine/evaluation'

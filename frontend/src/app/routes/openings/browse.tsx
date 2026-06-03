@@ -5,12 +5,11 @@ import { OpeningsStoreProvider } from '../../../features/openings/store/Openings
 import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
 import { useNextMoveShapes } from './hooks/useNextMoveShapes'
 import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
-import { useSyncBoardToOpening } from './hooks/useSyncBoardToOpening'
 import { useFilteredOpenings } from './hooks/useFilteredOpenings'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
-import { useOpeningsStore, getSelectedOpening } from '../../../features/openings/store/openingsStore'
+import { getSelectedOpening, useOpeningsStore } from '../../../features/openings/store/openingsStore'
 
 export const Route = createFileRoute('/openings/browse')({
   component: BrowseV2Page,
@@ -33,7 +32,6 @@ function BrowseV2PageInner() {
   const displayed = useFilteredOpenings(search)
 
   useNextMoveShapes(displayed)
-  useSyncBoardToOpening(displayed)
 
   const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
