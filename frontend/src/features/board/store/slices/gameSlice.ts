@@ -32,6 +32,10 @@ export function getMoves(history: HistoryEntry[]): MovePair[] {
   return pairs
 }
 
+export function getPlayedMoves(state: Pick<GameSlice, 'history' | 'currentMoveIndex'>): string[] {
+  return state.history.slice(0, state.currentMoveIndex + 1).map(e => e.san)
+}
+
 export function getCurrentFen(state: Pick<GameSlice, 'lastExternalFen' | 'history' | 'currentMoveIndex'>): string {
   return state.lastExternalFen ?? getFenAtIndex(state.history, state.currentMoveIndex)
 }

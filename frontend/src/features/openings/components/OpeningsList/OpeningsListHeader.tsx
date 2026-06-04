@@ -1,20 +1,12 @@
 import { useShallow } from 'zustand/react/shallow'
 import { useOpeningsStore } from '../../store/openingsStore'
 
-type ViewMode = 'list' | 'name' | 'move'
-
 interface OpeningsListHeaderProps {
-  viewMode: ViewMode
-  onViewModeChange: (mode: ViewMode) => void
+  filterFavorites: boolean
+  onFilterFavoritesChange: (v: boolean) => void
 }
 
-const VIEW_LABELS: Record<ViewMode, string> = {
-  list: 'List',
-  name: 'Name',
-  move: 'Move',
-}
-
-export function OpeningsListHeader({ viewMode, onViewModeChange }: OpeningsListHeaderProps) {
+export function OpeningsListHeader({ filterFavorites, onFilterFavoritesChange }: OpeningsListHeaderProps) {
   const { historyIndex, historyLength } = useOpeningsStore(useShallow(s => ({
     historyIndex: s.historyIndex,
     historyLength: s.selectionHistory.length,
@@ -60,27 +52,16 @@ export function OpeningsListHeader({ viewMode, onViewModeChange }: OpeningsListH
 
       <div className="flex items-center gap-1 py-2">
         <button
-          className="text-base px-1.5 py-0.5 rounded transition-colors text-white/20 hover:text-amber-300/60"
-          title="Favorites"
+          onClick={() => onFilterFavoritesChange(!filterFavorites)}
+          className={`text-base px-1.5 py-0.5 rounded transition-colors ${
+            filterFavorites
+              ? 'text-amber-400 hover:text-amber-300'
+              : 'text-white/20 hover:text-amber-300/60'
+          }`}
+          title={filterFavorites ? 'Show all' : 'Show favorites only'}
         >
           ★
         </button>
-        <div className="w-px h-4 bg-white/10 mx-1" />
-        <div className="flex items-center bg-white/[0.05] rounded-md p-0.5 gap-0.5">
-          {(['list', 'name', 'move'] as const).map(mode => (
-            <button
-              key={mode}
-              onClick={() => onViewModeChange(mode)}
-              className={`text-xs px-2.5 py-1 rounded transition-colors ${
-                viewMode === mode
-                  ? 'bg-white/10 text-white/90'
-                  : 'text-white/35 hover:text-white/60'
-              }`}
-            >
-              {VIEW_LABELS[mode]}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   )

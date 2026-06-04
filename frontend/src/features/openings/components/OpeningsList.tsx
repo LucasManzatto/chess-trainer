@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { OpeningsListHeader } from './OpeningsList/OpeningsListHeader'
 import { OpeningsListSearchBar } from './OpeningsList/OpeningsListSearchBar'
 import { OpeningsListEntry } from './OpeningsList/OpeningsListEntry'
+import { useOpeningFavorites } from '../hooks/useOpeningFavorites'
 import type { Opening } from '../types'
-
-type ViewMode = 'list' | 'name' | 'move'
 
 type Props = {
   openings: Opening[]
@@ -13,13 +12,21 @@ type Props = {
 }
 
 export function OpeningsList({ openings, search, onSearchChange }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>('name')
+  const [filterFavorites, setFilterFavorites] = useState(false)
+  const { isFavorite } = useOpeningFavorites()
+
+  const displayed = useMemo(() =>
+    filterFavorites ? openings.filter(o => isFavorite(o.id)) : openings,
+  [openings, filterFavorites, isFavorite])
 
   return (
     <div className="flex flex-col h-full">
-      <OpeningsListHeader viewMode={viewMode} onViewModeChange={setViewMode} />
+      <OpeningsListHeader
+        filterFavorites={filterFavorites}
+        onFilterFavoritesChange={setFilterFavorites}
+      />
       <OpeningsListSearchBar value={search} onChange={onSearchChange} />
-      <OpeningsListEntry viewMode={viewMode} openings={openings} />
+      <OpeningsListEntry openings={displayed} />
     </div>
   )
 }

@@ -3,30 +3,35 @@ import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Opening } from '../../../../features/openings/types'
-import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen } from '../../../../features/board'
+import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getPlayedMoves } from '../../../../features/board'
+import { isPrefix } from '../../../../features/openings/utils/movesMatch'
 
 export function useNextMoveShapes(openings: Opening[]) {
   const chessBoardStore = useChessBoardStoreApi()
-  const nextMoveIndex = useChessBoardStore(s => s.currentMoveIndex + 1)
   const currentFen = useChessBoardStore(getCurrentFen)
+  const playedMovesKey = useChessBoardStore(s => getPlayedMoves(s).join(','))
 
   useEffect(() => {
+    const playedMoves = playedMovesKey ? playedMovesKey.split(',') : []
     const chess = new Chess(currentFen)
     const seen = new Set<string>()
     const shapes: DrawShape[] = []
 
     for (const opening of openings) {
-      const nextSan = opening.moves[nextMoveIndex]
+      if (!isPrefix(playedMoves, opening)) continue
+      const nextSan = opening.moves[playedMoves.length]
       if (!nextSan || seen.has(nextSan)) continue
       seen.add(nextSan)
 
-      const move = chess.move(nextSan)
-      if (move) {
+      try {
+        const move = chess.move(nextSan)
         shapes.push({ orig: move.from as Key, dest: move.to as Key, brush: 'hint' })
         chess.undo()
+      } catch {
+        // not valid from current position
       }
     }
 
     chessBoardStore.getState().setHintShapes(shapes)
-  }, [openings, nextMoveIndex, currentFen, chessBoardStore])
+  }, [openings, playedMovesKey, currentFen, chessBoardStore])
 }
