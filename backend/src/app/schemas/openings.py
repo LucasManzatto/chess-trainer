@@ -68,3 +68,18 @@ class DrillAddResponse(BaseModel):
 class FavoriteResponse(BaseModel):
     opening_id: int
     is_favorite: bool
+
+
+class MoveStat(BaseModel):
+    san: str
+    uci: str
+    white: int
+    draws: int
+    black: int
+    total: int
+    percentage: float
+
+
+class MoveStatsResponse(BaseModel):
+    moves: list[MoveStat]
+    total_games: int

@@ -1,7 +1,8 @@
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -60,3 +61,11 @@ class OpeningProgress(Base):
     due_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
     last_reviewed: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PositionMoveStats(Base):
+    __tablename__ = "position_move_stats"
+
+    moves: Mapped[list[str]] = mapped_column(ARRAY(Text), primary_key=True)
+    stats: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

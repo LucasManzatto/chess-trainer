@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+import httpx
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...auth import get_current_user_id
@@ -9,6 +10,7 @@ from ...schemas.openings import (
     DrillAddResponse,
     DrillQueueItem,
     FavoriteResponse,
+    MoveStatsResponse,
     OpeningCommentCreate,
     OpeningCommentResponse,
     OpeningCommentUpdate,
@@ -20,6 +22,7 @@ from ...schemas.openings import (
 from ...services import comments
 from ...services import drill as drill_service
 from ...services import favorites as favorites_service
+from ...services import move_stats as move_stats_service
 
 router = APIRouter(prefix="/openings", tags=["openings"])
 
@@ -140,3 +143,20 @@ async def toggle_favorite(
     opening_id: int, session: Session, user_id: UserId
 ) -> FavoriteResponse:
     return await favorites_service.toggle_favorite(session, user_id, opening_id)
+
+
+# ---------------------------------------------------------------------------
+# Move statistics (Lichess Opening Explorer)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/move-stats", response_model=MoveStatsResponse)
+async def get_move_stats(
+    request: Request,
+    session: Session,
+    user_id: UserId,
+    moves: Annotated[str, Query(description="Comma-separated SAN moves, empty for starting position")] = "",
+) -> MoveStatsResponse:
+    http_client: httpx.AsyncClient = request.app.state.http_client
+    moves_list = [m for m in moves.split(",") if m]
+    return await move_stats_service.get_move_stats(session, http_client, moves_list)
