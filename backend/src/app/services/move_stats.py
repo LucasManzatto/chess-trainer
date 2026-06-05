@@ -1,12 +1,18 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import logging
+
 import httpx
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import Text, cast, select
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
+log = logging.getLogger(__name__)
+
+from ..config import settings
 from ..models.openings import PositionMoveStats
 from ..schemas.openings import MoveStat, MoveStatsResponse
 
@@ -39,29 +45,36 @@ async def get_move_stats(
     moves: list[str],
 ) -> MoveStatsResponse:
     result = await session.execute(
-        select(PositionMoveStats).where(PositionMoveStats.moves == moves)
+        select(PositionMoveStats).where(PositionMoveStats.moves == cast(moves, ARRAY(Text())))
     )
     cached = result.scalar_one_or_none()
 
     if cached and datetime.now(UTC) - cached.fetched_at.astimezone(UTC) < CACHE_TTL:
         return _build_response(cached.stats)
 
-    params: dict[str, str] = {
+    lichess_params: dict[str, str] = {
         "ratings": "2000,2200,2500",
         "speeds": "blitz,rapid,classical",
     }
     if moves:
-        params["play"] = ",".join(moves)
+        lichess_params["play"] = ",".join(moves)
+
+    headers = {"Authorization": f"Bearer {settings.lichess_token}"} if settings.lichess_token else {}
 
     try:
-        resp = await client.get(LICHESS_EXPLORER, params=params)
+        resp = await client.get(LICHESS_EXPLORER, params=lichess_params, headers=headers)
         resp.raise_for_status()
+        data = resp.json()
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Lichess Explorer returned {e.response.status_code}",
         ) from e
-    data = resp.json()
+    except httpx.DecodingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Lichess Explorer returned malformed JSON",
+        ) from e
 
     stats = {
         "white": data.get("white", 0),

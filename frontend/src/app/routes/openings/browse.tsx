@@ -3,13 +3,13 @@ import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider,
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
 import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
-import { useNextMoveShapes } from './hooks/useNextMoveShapes'
 import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
 import { useFilteredOpenings } from './hooks/useFilteredOpenings'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 import { getSelectedOpening, useOpeningsStore } from '../../../features/openings/store/openingsStore'
+import { useMoveStatsShapes } from './hooks/useMoveStatsShapes'
 
 export const Route = createFileRoute('/openings/browse')({
   component: BrowseV2Page,
@@ -31,7 +31,7 @@ function BrowseV2PageInner() {
   const [search, setSearch] = useState('')
   const displayed = useFilteredOpenings(search)
 
-  useNextMoveShapes(displayed)
+  useMoveStatsShapes()
 
   const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)

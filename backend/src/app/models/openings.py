@@ -66,6 +66,7 @@ class OpeningProgress(Base):
 class PositionMoveStats(Base):
     __tablename__ = "position_move_stats"
 
-    moves: Mapped[list[str]] = mapped_column(ARRAY(Text), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    moves: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, unique=True)
     stats: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

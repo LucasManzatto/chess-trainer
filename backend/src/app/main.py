@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -14,8 +15,13 @@ from .exception_handlers import app_error_handler
 from .exceptions import AppError
 
 
+log = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    if not settings.lichess_token:
+        log.warning("LICHESS_TOKEN not set — Opening Explorer requests will return 401")
     app.state.http_client = httpx.AsyncClient(follow_redirects=True)
     await init_db()
     yield
