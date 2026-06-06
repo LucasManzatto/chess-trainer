@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useChessBoardStore } from './store/chessBoardStore'
 import { useBoardSettings } from './store/boardSettingsStore'
-import { GearIcon, FlipIcon, EyeIcon, CloseIcon, ResetIcon, BestMoveIcon } from '../../components/icons'
+import { GearIcon, FlipIcon, EyeIcon, CloseIcon, ResetIcon, BestMoveIcon, WinrateIcon, FrequencyIcon } from '../../components/icons'
 
 export function ChessBoardSettings() {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -15,6 +15,8 @@ export function ChessBoardSettings() {
   const setShowBestMove = useBoardSettings(s => s.setShowBestMove)
   const boardSize = useBoardSettings(s => s.boardSize)
   const setBoardSize = useBoardSettings(s => s.setBoardSize)
+  const moveStatDisplay = useBoardSettings(s => s.moveStatDisplay)
+  const setMoveStatDisplay = useBoardSettings(s => s.setMoveStatDisplay)
 
   return (
     <>
@@ -46,6 +48,13 @@ export function ChessBoardSettings() {
           title={showBestMove ? 'Hide best move' : 'Show best move'}
         >
           <BestMoveIcon size={14} />
+        </button>
+        <button
+          className="p-1.5 rounded bg-black/40 hover:bg-black/60 transition-colors text-white"
+          onClick={() => setMoveStatDisplay(moveStatDisplay === 'winrate' ? 'frequency' : 'winrate')}
+          title={moveStatDisplay === 'winrate' ? 'Showing win rate — click for frequency' : 'Showing frequency — click for win rate'}
+        >
+          {moveStatDisplay === 'winrate' ? <WinrateIcon size={14} /> : <FrequencyIcon size={14} />}
         </button>
         <button
           className="p-1.5 rounded bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors"

@@ -6,7 +6,7 @@ import type { MoveStat } from '../../../../features/engine/api'
 import { arrowTokens } from '../../../../features/engine/arrowTokens'
 import { useChessBoardStore, useChessBoardStoreApi, getPlayedMoves } from '../../../../features/board'
 import { useMoveStats } from '../../../../features/engine/hooks/useMoveStats'
-import { useBoardSettings } from '../../../../features/board/store/boardSettingsStore'
+import { useBoardSettings, type MoveStatDisplay } from '../../../../features/board/store/boardSettingsStore'
 
 // Lichess Explorer requires UCI (e2e4), board store gives SAN (e4).
 // Returns both the UCI move list and the FEN after replaying all moves,
@@ -70,7 +70,13 @@ function buildOpponentShapes(moves: MoveStat[], chess: Chess, sq: number): Shape
   return { shapes, brushes }
 }
 
-function buildMineShapes(moves: MoveStat[], chess: Chess, sq: number, color: 'white' | 'black'): ShapeBundle {
+function buildMineShapes(
+  moves: MoveStat[],
+  chess: Chess,
+  sq: number,
+  color: 'white' | 'black',
+  display: MoveStatDisplay,
+): ShapeBundle {
   const t = arrowTokens.mine
   const lineWidth = t.thicknessPx(sq)
   const shapes: DrawShape[] = []
@@ -81,7 +87,17 @@ function buildMineShapes(moves: MoveStat[], chess: Chess, sq: number, color: 'wh
       const move = chess.move(stat.san)
       let key: string
 
-      if (stat.total < t.minGamesToTrust) {
+      if (display === 'frequency' && stat.total < t.minGamesToTrust) {
+        key = 'mine-freq-low'
+        if (!brushes[key]) {
+          brushes[key] = { key, color: t.lowSample.stroke, opacity: 0.5, lineWidth: t.lowSample.strokeWidthPx }
+        }
+      } else if (display === 'frequency') {
+        key = 'mine-freq'
+        if (!brushes[key]) {
+          brushes[key] = { key, color: arrowTokens.opponent.color, opacity: 0.85, lineWidth }
+        }
+      } else if (stat.total < t.minGamesToTrust) {
         key = 'mine-low'
         if (!brushes[key]) {
           brushes[key] = { key, color: t.lowSample.stroke, opacity: 0.7, lineWidth: t.lowSample.strokeWidthPx }
@@ -95,13 +111,17 @@ function buildMineShapes(moves: MoveStat[], chess: Chess, sq: number, color: 'wh
         }
       }
 
-      const wr = calcWinrate(stat, color)
+      const label =
+        display === 'frequency'
+          ? `${Math.round(stat.percentage)}%`
+          : `${Math.round(calcWinrate(stat, color))}%`
+
       shapes.push({
         orig: move.from as Key,
         dest: move.to as Key,
         brush: key,
-        modifiers: { hilite: t.outline.color },
-        label: { text: `${Math.round(wr)}%` },
+        modifiers: display === 'frequency' ? undefined : { hilite: t.outline.color },
+        label: { text: label },
       })
       chess.undo()
     } catch {
@@ -117,6 +137,7 @@ export function useMoveStatsShapes() {
   const playedMovesKey = useChessBoardStore(s => getPlayedMoves(s).join('|'))
   const orientation = useChessBoardStore(s => s.orientation)
   const boardSize = useBoardSettings(s => s.boardSize)
+  const moveStatDisplay = useBoardSettings(s => s.moveStatDisplay)
 
   const { uciMoves, fen } = useMemo(
     () => sanArrayToUciAndFen(playedMovesKey ? playedMovesKey.split('|') : []),
@@ -139,13 +160,17 @@ export function useMoveStatsShapes() {
     let bundle: ShapeBundle
     if (isUserTurn) {
       const sorted = [...data.moves]
-        .sort((a, b) => calcScore(b, orientation) - calcScore(a, orientation))
+        .sort((a, b) =>
+          moveStatDisplay === 'frequency'
+            ? b.percentage - a.percentage
+            : calcScore(b, orientation) - calcScore(a, orientation),
+        )
         .slice(0, 5)
-      bundle = buildMineShapes(sorted, chess, sq, orientation)
+      bundle = buildMineShapes(sorted, chess, sq, orientation, moveStatDisplay)
     } else {
       bundle = buildOpponentShapes(data.moves, chess, sq)
     }
 
     chessBoardStore.getState().setHintShapes(bundle.shapes, bundle.brushes)
-  }, [data, fen, orientation, boardSize, chessBoardStore])
+  }, [data, fen, orientation, boardSize, moveStatDisplay, chessBoardStore])
 }

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 
 export type BoardTheme = 'green' | 'brown' | 'blue' | 'purple' | 'ic'
 export type PieceSet = 'cburnett' | 'merida' | 'alpha' | 'pirouetti' | 'chessnut' | 'chess7'
+export type MoveStatDisplay = 'winrate' | 'frequency'
 
 type BoardSettings = {
   boardSize: number
@@ -12,6 +13,7 @@ type BoardSettings = {
   theme: BoardTheme
   pieceSet: PieceSet
   soundEnabled: boolean
+  moveStatDisplay: MoveStatDisplay
 }
 
 type BoardSettingsActions = {
@@ -22,6 +24,7 @@ type BoardSettingsActions = {
   setTheme: (theme: BoardTheme) => void
   setPieceSet: (pieceSet: PieceSet) => void
   setSoundEnabled: (enabled: boolean) => void
+  setMoveStatDisplay: (display: MoveStatDisplay) => void
 }
 
 export type BoardSettingsStore = BoardSettings & BoardSettingsActions
@@ -36,6 +39,7 @@ export const useBoardSettings = create<BoardSettingsStore>()(
       theme: 'green',
       pieceSet: 'cburnett',
       soundEnabled: true,
+      moveStatDisplay: 'winrate',
 
       setBoardSize: (boardSize) => set({ boardSize }),
       setShowThreats: (showThreats) => set({ showThreats }),
@@ -44,6 +48,7 @@ export const useBoardSettings = create<BoardSettingsStore>()(
       setTheme: (theme) => set({ theme }),
       setPieceSet: (pieceSet) => set({ pieceSet }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
+      setMoveStatDisplay: (moveStatDisplay) => set({ moveStatDisplay }),
     }),
     { name: 'board-settings' },
   ),
