@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.v1.games import router as games_router
 from .api.v1.openings import router as openings_router
 from .api.v1.profile import router as profile_router
+from .api.v1.train import router as train_router
 from .config import settings
 from .db import init_db, teardown_db
 from .exception_handlers import app_error_handler
@@ -43,6 +44,7 @@ app.add_middleware(
 app.include_router(openings_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
 app.include_router(games_router, prefix="/api/v1")
+app.include_router(train_router, prefix="/api/v1")
 
 
 @app.get("/health")

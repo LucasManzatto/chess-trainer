@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -61,6 +61,29 @@ class OpeningProgress(Base):
     due_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
     last_reviewed: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class RepertoireCard(Base):
+    __tablename__ = "repertoire_cards"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=func.gen_random_uuid())
+    user_id: Mapped[str] = mapped_column(Text)
+    position_key: Mapped[str] = mapped_column(Text)
+    fen: Mapped[str] = mapped_column(Text)
+    side: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    line: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    opening_eco: Mapped[str | None] = mapped_column(Text, nullable=True)
+    opening_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    plan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ease: Mapped[float] = mapped_column(Float, default=2.5)
+    interval_days: Mapped[float] = mapped_column(Float, default=1.0)
+    due: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    reps: Mapped[int] = mapped_column(Integer, default=0)
+    lapses: Mapped[int] = mapped_column(Integer, default=0)
+    state: Mapped[str] = mapped_column(Text, default="new")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class PositionMoveStats(Base):
