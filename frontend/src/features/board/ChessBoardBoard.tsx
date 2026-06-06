@@ -3,7 +3,7 @@ import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key, Dests } from '@lichess-org/chessground/types'
-import type { DrawShape } from '@lichess-org/chessground/draw'
+import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
 import { getCurrentFen } from './store/slices/gameSlice'
@@ -33,6 +33,7 @@ type ConfigParams = {
   dests: Dests
   lastEntry: HistoryEntry | undefined
   shapes: DrawShape[] | undefined
+  extraBrushes: Record<string, DrawBrush>
   onMove: (orig: Key, dest: Key) => void
 }
 
@@ -66,7 +67,7 @@ function getAllShapes(shapes: DrawShape[], hintShapes: DrawShape[], evalBestMove
   return [...shapes, ...hintShapes, ...bestMoveShape]
 }
 
-function getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntry, shapes, onMove }: ConfigParams): Config {
+function getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntry, shapes, extraBrushes, onMove }: ConfigParams): Config {
   return {
     fen,
     orientation,
@@ -83,7 +84,7 @@ function getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntr
     },
     drawable: {
       autoShapes: shapes,
-      brushes: BRUSHES,
+      brushes: { ...BRUSHES, ...extraBrushes },
     },
     animation: { enabled: true, duration: 300 },
     highlight: { lastMove: true, check: true },
@@ -104,6 +105,7 @@ export function ChessBoardBoard() {
   const interactive = useChessBoardStore(s => s.interactive)
   const shapes = useChessBoardStore(s => s.shapes)
   const hintShapes = useChessBoardStore(s => s.hintShapes)
+  const hintBrushes = useChessBoardStore(s => s.hintBrushes)
   const fen = useChessBoardStore(getCurrentFen)
   const boardSize = useBoardSettings(s => s.boardSize)
   const showBestMove = useBoardSettings(s => s.showBestMove)
@@ -124,8 +126,8 @@ export function ChessBoardBoard() {
   )
 
   const config = useMemo(
-    () => getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntry, shapes: allShapes, onMove: onMoveHandler }),
-    [fen, orientation, turn, chess, interactive, dests, lastEntry, allShapes, onMoveHandler],
+    () => getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntry, shapes: allShapes, extraBrushes: hintBrushes, onMove: onMoveHandler }),
+    [fen, orientation, turn, chess, interactive, dests, lastEntry, allShapes, hintBrushes, onMoveHandler],
   )
 
   // Init once
