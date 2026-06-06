@@ -44,20 +44,20 @@ describe('getFenAtIndex', () => {
   const history = buildHistoryFromMoves(['e4', 'e5'])
 
   it('returns starting FEN for index -1', () => {
-    expect(getFenAtIndex(history, -1)).toBe(STARTING_FEN)
+    expect(getFenAtIndex({ history, currentMoveIndex: -1 })).toBe(STARTING_FEN)
   })
 
   it('returns starting FEN for empty history', () => {
-    expect(getFenAtIndex([], -1)).toBe(STARTING_FEN)
+    expect(getFenAtIndex({ history: [], currentMoveIndex: -1 })).toBe(STARTING_FEN)
   })
 
   it('returns FEN for last index', () => {
-    expect(getFenAtIndex(history, history.length - 1)).toBe(history[1].fen)
+    expect(getFenAtIndex({ history, currentMoveIndex: history.length - 1 })).toBe(history[1].fen)
   })
 
   it('returns correct FEN for valid index', () => {
-    expect(getFenAtIndex(history, 0)).toBe(history[0].fen)
-    expect(getFenAtIndex(history, 1)).toBe(history[1].fen)
+    expect(getFenAtIndex({ history, currentMoveIndex: 0 })).toBe(history[0].fen)
+    expect(getFenAtIndex({ history, currentMoveIndex: 1 })).toBe(history[1].fen)
   })
 })
 

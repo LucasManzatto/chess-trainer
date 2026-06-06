@@ -15,18 +15,18 @@ export function buildHistoryFromMoves(moves: string[]): HistoryEntry[] {
   })
 }
 
-export function getFenAtIndex(history: HistoryEntry[], index: number): string {
-  if (history.length === 0 || index < 0) return INITIAL_FEN
-  return history[index]?.fen ?? INITIAL_FEN
+export function getFenAtIndex(state: Pick<GameSlice, 'history' | 'currentMoveIndex'>): string {
+  if (state.history.length === 0 || state.currentMoveIndex < 0) return INITIAL_FEN
+  return state.history[state.currentMoveIndex]?.fen ?? INITIAL_FEN
 }
 
-export function getMoves(history: HistoryEntry[]): MovePair[] {
+export function getMoves(state: Pick<GameSlice, 'history'>): MovePair[] {
   const pairs: MovePair[] = []
-  for (let i = 0; i < history.length; i += 2) {
+  for (let i = 0; i < state.history.length; i += 2) {
     pairs.push({
       moveNumber: Math.floor(i / 2) + 1,
-      white: history[i].san,
-      black: history[i + 1]?.san ?? null,
+      white: state.history[i].san,
+      black: state.history[i + 1]?.san ?? null,
     })
   }
   return pairs
@@ -37,14 +37,14 @@ export function getPlayedMoves(state: Pick<GameSlice, 'history' | 'currentMoveIn
 }
 
 export function getCurrentFen(state: Pick<GameSlice, 'lastExternalFen' | 'history' | 'currentMoveIndex'>): string {
-  return state.lastExternalFen ?? getFenAtIndex(state.history, state.currentMoveIndex)
+  return state.lastExternalFen ?? getFenAtIndex(state)
 }
 
-export function getActiveMove(currentMoveIndex: number): ActiveMove | undefined {
-  if (currentMoveIndex < 0) return undefined
+export function getActiveMove(state: Pick<GameSlice, 'currentMoveIndex'>): ActiveMove | undefined {
+  if (state.currentMoveIndex < 0) return undefined
   return {
-    moveNumber: Math.floor(currentMoveIndex / 2) + 1,
-    color: currentMoveIndex % 2 === 0 ? 'white' : 'black',
+    moveNumber: Math.floor(state.currentMoveIndex / 2) + 1,
+    color: state.currentMoveIndex % 2 === 0 ? 'white' : 'black',
   }
 }
 
@@ -121,7 +121,7 @@ export const createGameSlice: StateCreator<ChessBoardStoreType, [], [], GameSlic
 
   applyMove: (orig, dest) => {
     const { history, currentMoveIndex } = get()
-    const currentFen = getFenAtIndex(history, currentMoveIndex)
+    const currentFen = getFenAtIndex({ history, currentMoveIndex })
     const result = applyMoveToPosition(currentFen, history, currentMoveIndex, orig, dest)
     if (!result) return null
     set({ history: result.history, currentMoveIndex: result.newIndex, lastExternalFen: null })

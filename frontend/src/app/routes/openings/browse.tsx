@@ -3,13 +3,12 @@ import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider,
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
 import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
-import { useSyncOpeningToBoard } from './hooks/useSyncOpeningToBoard'
-import { useFilteredOpenings } from './hooks/useFilteredOpenings'
+import { useSyncOpeningToBoard, useFilteredOpenings, useMoveStatsShapes } from './hooks'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 import { getSelectedOpening, useOpeningsStore } from '../../../features/openings/store/openingsStore'
-import { useMoveStatsShapes } from './hooks/useMoveStatsShapes'
+
 
 export const Route = createFileRoute('/openings/browse')({
   component: BrowseV2Page,
@@ -33,13 +32,12 @@ function BrowseV2PageInner() {
 
   useMoveStatsShapes()
 
-  const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
   const selectedOpening = useOpeningsStore(getSelectedOpening)
 
-  const moves = getMoves(history)
-  const activeMove = getActiveMove(currentMoveIndex)
+  const moves = useChessBoardStore(getMoves)
+  const activeMove = useChessBoardStore(getActiveMove)
   const currentFen = useChessBoardStore(getCurrentFen)
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {

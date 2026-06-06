@@ -68,7 +68,11 @@ async def _run_migrations(engine: AsyncEngine) -> None:
 async def init_db() -> None:
     global _engine, _session_factory
     url, connect_args = _async_url_and_connect_args()
-    _engine = create_async_engine(url, connect_args=connect_args)
+    _engine = create_async_engine(
+        url,
+        connect_args={**connect_args, "timeout": 30},  # Neon cold-start can take ~10s
+        pool_pre_ping=True,  # re-verify connection before use, handles idle drops
+    )
     _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
     await _run_migrations(_engine)
 
