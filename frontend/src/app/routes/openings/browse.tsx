@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
-import { ChessBoardHeader } from '../../../features/openings/components/ChessBoardHeader'
-import { useSyncOpeningToBoard, useFilteredOpenings, useMoveStatsShapes } from './hooks'
+import { useSyncOpeningToBoard, useFilteredOpenings, useMoveStatsShapes, useCurrentOpening } from './hooks'
 import { OpeningsList } from '../../../features/openings/components/OpeningsList'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
@@ -31,13 +30,15 @@ function BrowseV2PageInner() {
   const displayed = useFilteredOpenings(search)
 
   useMoveStatsShapes()
+  const currentOpening = useCurrentOpening()
 
+  const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
   const selectedOpening = useOpeningsStore(getSelectedOpening)
 
-  const moves = useChessBoardStore(getMoves)
-  const activeMove = useChessBoardStore(getActiveMove)
+  const moves = useMemo(() => getMoves({ history }), [history])
+  const activeMove = getActiveMove({ currentMoveIndex })
   const currentFen = useChessBoardStore(getCurrentFen)
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {
@@ -51,7 +52,13 @@ function BrowseV2PageInner() {
       </section>
 
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <ChessBoard header={<ChessBoardHeader />} />
+        <ChessBoard header={
+          currentOpening && (
+            <span className="text-white/60 text-lg font-medium tracking-wide">
+              {currentOpening.name}
+            </span>
+          )
+        } />
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">

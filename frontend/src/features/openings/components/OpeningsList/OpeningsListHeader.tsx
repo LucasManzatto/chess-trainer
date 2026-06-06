@@ -18,14 +18,27 @@ export function OpeningsListHeader({ filterFavorites, onFilterFavoritesChange }:
   const canGoForward = historyIndex < historyLength - 1
 
   return (
-    <div className="px-4 flex flex-col border-b border-white/[0.08]">
+    <div className="px-4 border-b border-white/[0.08]">
       <div className="h-11 flex items-center justify-between">
-        <span
-          className="text-white/80 font-semibold tracking-tight"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '13px' }}
-        >
-          Openings
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="text-white/80 font-semibold tracking-tight"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '13px' }}
+          >
+            Openings
+          </span>
+          <button
+            onClick={() => onFilterFavoritesChange(!filterFavorites)}
+            className={`text-base px-1.5 py-0.5 rounded transition-colors ${
+              filterFavorites
+                ? 'text-amber-400 hover:text-amber-300'
+                : 'text-white/20 hover:text-amber-300/60'
+            }`}
+            title={filterFavorites ? 'Show all' : 'Show favorites only'}
+          >
+            ★
+          </button>
+        </div>
         <div className="flex items-center gap-1">
           <button
             onClick={navigateBack}
@@ -48,20 +61,6 @@ export function OpeningsListHeader({ filterFavorites, onFilterFavoritesChange }:
             </svg>
           </button>
         </div>
-      </div>
-
-      <div className="flex items-center gap-1 py-2">
-        <button
-          onClick={() => onFilterFavoritesChange(!filterFavorites)}
-          className={`text-base px-1.5 py-0.5 rounded transition-colors ${
-            filterFavorites
-              ? 'text-amber-400 hover:text-amber-300'
-              : 'text-white/20 hover:text-amber-300/60'
-          }`}
-          title={filterFavorites ? 'Show all' : 'Show favorites only'}
-        >
-          ★
-        </button>
       </div>
     </div>
   )

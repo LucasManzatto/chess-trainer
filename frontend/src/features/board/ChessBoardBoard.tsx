@@ -59,8 +59,8 @@ function getDests(chess: Chess, interactive: boolean): Dests {
 
 // ─── Board config helpers ─────────────────────────────────────────────────────
 
-function getAllShapes(shapes: DrawShape[], hintShapes: DrawShape[], evalBestMove: string | undefined): DrawShape[] {
-  const bestMoveShape: DrawShape[] = evalBestMove
+function getAllShapes(shapes: DrawShape[], hintShapes: DrawShape[], evalBestMove: string | undefined, showBestMove: boolean): DrawShape[] {
+  const bestMoveShape: DrawShape[] = showBestMove && evalBestMove
     ? [{ orig: evalBestMove.slice(0, 2) as Key, dest: evalBestMove.slice(2, 4) as Key, brush: 'eval' }]
     : []
   return [...shapes, ...hintShapes, ...bestMoveShape]
@@ -106,6 +106,7 @@ export function ChessBoardBoard() {
   const hintShapes = useChessBoardStore(s => s.hintShapes)
   const fen = useChessBoardStore(getCurrentFen)
   const boardSize = useBoardSettings(s => s.boardSize)
+  const showBestMove = useBoardSettings(s => s.showBestMove)
   const evalBestMove = useChessBoardStore(s => s.evalBestMove)
   const chess = useMemo(() => new Chess(fen), [fen])
   const turn = getTurn(chess)
@@ -118,8 +119,8 @@ export function ChessBoardBoard() {
   )
 
   const allShapes = useMemo(
-    () => getAllShapes(shapes, hintShapes, evalBestMove),
-    [shapes, hintShapes, evalBestMove],
+    () => getAllShapes(shapes, hintShapes, evalBestMove, showBestMove),
+    [shapes, hintShapes, evalBestMove, showBestMove],
   )
 
   const config = useMemo(

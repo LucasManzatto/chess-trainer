@@ -8,6 +8,7 @@ type BoardSettings = {
   boardSize: number
   showThreats: boolean
   showCoords: boolean
+  showBestMove: boolean
   theme: BoardTheme
   pieceSet: PieceSet
   soundEnabled: boolean
@@ -17,6 +18,7 @@ type BoardSettingsActions = {
   setBoardSize: (boardSize: number) => void
   setShowThreats: (show: boolean) => void
   setShowCoords: (show: boolean) => void
+  setShowBestMove: (show: boolean) => void
   setTheme: (theme: BoardTheme) => void
   setPieceSet: (pieceSet: PieceSet) => void
   setSoundEnabled: (enabled: boolean) => void
@@ -30,6 +32,7 @@ export const useBoardSettings = create<BoardSettingsStore>()(
       boardSize: 480,
       showThreats: false,
       showCoords: true,
+      showBestMove: true,
       theme: 'green',
       pieceSet: 'cburnett',
       soundEnabled: true,
@@ -37,6 +40,7 @@ export const useBoardSettings = create<BoardSettingsStore>()(
       setBoardSize: (boardSize) => set({ boardSize }),
       setShowThreats: (showThreats) => set({ showThreats }),
       setShowCoords: (showCoords) => set({ showCoords }),
+      setShowBestMove: (showBestMove) => set({ showBestMove }),
       setTheme: (theme) => set({ theme }),
       setPieceSet: (pieceSet) => set({ pieceSet }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),

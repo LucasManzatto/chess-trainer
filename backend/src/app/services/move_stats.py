@@ -53,8 +53,8 @@ async def get_move_stats(
         return _build_response(cached.stats)
 
     lichess_params: dict[str, str] = {
-        "ratings": "2000,2200,2500",
-        "speeds": "blitz,rapid,classical",
+        "ratings": "1600,1800",
+        "speeds": "rapid,classical",
     }
     if moves:
         lichess_params["play"] = ",".join(moves)
