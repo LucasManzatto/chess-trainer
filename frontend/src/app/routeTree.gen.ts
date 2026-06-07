@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
 import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
 import { Route as PuzzlesPuzzleIdRouteImport } from './routes/puzzles/$puzzleId'
+import { Route as OpeningsTrainRouteImport } from './routes/openings/train'
 import { Route as OpeningsBrowseRouteImport } from './routes/openings/browse'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
@@ -52,6 +53,11 @@ const PuzzlesPuzzleIdRoute = PuzzlesPuzzleIdRouteImport.update({
   id: '/puzzles/$puzzleId',
   path: '/puzzles/$puzzleId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OpeningsTrainRoute = OpeningsTrainRouteImport.update({
+  id: '/train',
+  path: '/train',
+  getParentRoute: () => OpeningsRoute,
 } as any)
 const OpeningsBrowseRoute = OpeningsBrowseRouteImport.update({
   id: '/browse',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
+  '/openings/train': typeof OpeningsTrainRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
+  '/openings/train': typeof OpeningsTrainRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings': typeof OpeningsIndexRoute
   '/puzzles': typeof PuzzlesIndexRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
+  '/openings/train': typeof OpeningsTrainRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
+    | '/openings/train'
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
+    | '/openings/train'
     | '/puzzles/$puzzleId'
     | '/openings'
     | '/puzzles'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
+    | '/openings/train'
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/puzzles/$puzzleId'
       preLoaderRoute: typeof PuzzlesPuzzleIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/openings/train': {
+      id: '/openings/train'
+      path: '/train'
+      fullPath: '/openings/train'
+      preLoaderRoute: typeof OpeningsTrainRouteImport
+      parentRoute: typeof OpeningsRoute
     }
     '/openings/browse': {
       id: '/openings/browse'
@@ -329,11 +348,13 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface OpeningsRouteChildren {
   OpeningsBrowseRoute: typeof OpeningsBrowseRoute
+  OpeningsTrainRoute: typeof OpeningsTrainRoute
   OpeningsIndexRoute: typeof OpeningsIndexRoute
 }
 
 const OpeningsRouteChildren: OpeningsRouteChildren = {
   OpeningsBrowseRoute: OpeningsBrowseRoute,
+  OpeningsTrainRoute: OpeningsTrainRoute,
   OpeningsIndexRoute: OpeningsIndexRoute,
 }
 
