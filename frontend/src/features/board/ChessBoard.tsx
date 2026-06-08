@@ -9,6 +9,7 @@ import { usePositionEvaluation } from './hooks/usePositionEvaluation'
 
 type Props = {
   header?: ReactNode
+  overlay?: ReactNode
   showEvalBar?: boolean
   showSettings?: boolean
 }
@@ -25,7 +26,7 @@ function useEvaluation() {
   return { isLoading }
 }
 
-export function ChessBoard({ header, showEvalBar = true, showSettings = true }: Props) {
+export function ChessBoard({ header, overlay, showEvalBar = true, showSettings = true }: Props) {
   const { isLoading } = useEvaluation()
   const boardSize = useBoardSettings(s => s.boardSize)
   const evalScore = useChessBoardStore(s => s.evalScore)
@@ -40,7 +41,7 @@ export function ChessBoard({ header, showEvalBar = true, showSettings = true }: 
           </div>
         )}
         <div className="relative">
-          <ChessBoardBoard />
+          <ChessBoardBoard overlay={overlay} />
           {showSettings && <ChessBoardSettings />}
         </div>
       </div>

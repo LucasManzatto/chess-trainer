@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useMemo, useCallback, type ReactNode } from 'react'
 import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
@@ -94,7 +94,11 @@ function getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntr
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ChessBoardBoard() {
+type ChessBoardBoardProps = {
+  overlay?: ReactNode
+}
+
+export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   const elRef = useRef<HTMLDivElement>(null)
   const apiRef = useRef<Api | null>(null)
   const store = useChessBoardStoreApi()
@@ -162,6 +166,7 @@ export function ChessBoardBoard() {
   return (
     <div className="relative">
       <div ref={elRef} style={{ width: boardSize, height: boardSize }} />
+      {overlay}
       {/* TODO: promotion dialog */}
       {/* TODO: threat overlay */}
     </div>
