@@ -19,6 +19,7 @@ export function AddToDrill({ card, className }: Props) {
 
   return (
     <button
+      type="button"
       className={className}
       disabled={isPending}
       onClick={handleClick}

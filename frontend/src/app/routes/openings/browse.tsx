@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import { Chess } from 'chess.js'
 import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
@@ -11,7 +10,7 @@ import { getSelectedOpening, useOpeningsStore } from '../../../features/openings
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import type { CardCreate } from '../../../features/train/types'
 
-const INITIAL_FEN = new Chess().fen()
+const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 
 export const Route = createFileRoute('/openings/browse')({
@@ -55,7 +54,7 @@ function BrowseV2PageInner() {
       position_key: fen.split(' ').slice(0, 4).join(' '),
       fen,
       side,
-      answer: entry.from + entry.to,
+      answer: entry.from + entry.to + (entry.san.match(/=([QRBN])/)?.[1].toLowerCase() ?? ''),
       line: history.slice(0, currentMoveIndex).map(e => e.san),
       opening_eco: selectedOpening?.eco ?? null,
       opening_name: selectedOpening?.name ?? null,
@@ -77,7 +76,7 @@ function BrowseV2PageInner() {
           header={
             <div className="relative flex items-center justify-center w-full px-1">
               <span className="text-white/60 text-lg font-medium tracking-wide">
-                {currentOpening?.name ?? ''}
+                {currentOpening?.name ?? ' '}
               </span>
               {drillCard && (
                 <div className="absolute right-0">

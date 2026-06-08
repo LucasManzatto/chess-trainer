@@ -84,7 +84,6 @@ async def commit_move(
     result = await session.execute(stmt)
     row = result.scalar_one()
     await session.commit()
-    await session.refresh(row)
     return CardResponse.model_validate(row)
 
 
@@ -145,7 +144,6 @@ async def review_card(
     # updated_at is managed by the DB onupdate trigger; no Python assignment needed
 
     await session.commit()
-    await session.refresh(card)
     return CardResponse.model_validate(card)
 
 

@@ -7,6 +7,7 @@ import { TrainHeader } from '../../../features/train/components/TrainHeader'
 import { CardInfo } from '../../../features/train/components/CardInfo'
 import { MoveReveal } from '../../../features/train/components/MoveReveal'
 import { SessionSummary } from '../../../features/train/components/SessionSummary'
+import { useDrillBoard } from './hooks'
 
 export const Route = createFileRoute('/openings/train')({
   component: TrainPage,
@@ -23,6 +24,7 @@ function TrainPage() {
 }
 
 function TrainPageInner() {
+  useDrillBoard()
   const phase = useTrainStore(s => s.phase)
 
   if (phase.type === 'idle') {

@@ -16,11 +16,9 @@ const GRADES: { label: string; grade: Grade; interval: string; color: string }[]
 
 function useMoveReveal() {
   const phase = useTrainStore(s => s.phase)
-  const { setPhase, markSeen, recordResult } = useTrainStore(s => ({
-    setPhase: s.setPhase,
-    markSeen: s.markSeen,
-    recordResult: s.recordResult,
-  }))
+  const setPhase = useTrainStore(s => s.setPhase)
+  const markSeen = useTrainStore(s => s.markSeen)
+  const recordResult = useTrainStore(s => s.recordResult)
   const storeApi = useTrainStoreApi()
   const { mutate: reviewCard } = useReviewCard()
 
@@ -29,17 +27,11 @@ function useMoveReveal() {
 
   const handleGrade = useCallback((grade: Grade) => {
     if (!card) return
-    reviewCard(
-      { position_key: card.position_key, grade },
-      {
-        onSuccess: () => {
-          recordResult(correct)
-          markSeen(card.position_key)
-          const next = getNextCard(storeApi.getState())
-          setPhase(next ? { type: 'awaiting_move', card: next, quizLineLength: next.line.length } : { type: 'done' })
-        },
-      },
-    )
+    recordResult(correct)
+    markSeen(card.position_key)
+    const next = getNextCard(storeApi.getState())
+    setPhase(next ? { type: 'awaiting_move', card: next, quizLineLength: next.line.length } : { type: 'done' })
+    reviewCard({ position_key: card.position_key, grade })
   }, [card, correct, reviewCard, recordResult, markSeen, storeApi, setPhase])
 
   return { phase, correct, handleGrade }
