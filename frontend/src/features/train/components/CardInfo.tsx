@@ -1,11 +1,10 @@
-import { useTrainStore } from '../store/trainStore'
+import type { RepertoireCard } from '../types'
 
-export function CardInfo() {
-  const phase = useTrainStore(s => s.phase)
+interface CardInfoProps {
+  card: RepertoireCard
+}
 
-  if (phase.type !== 'awaiting_move' && phase.type !== 'revealed') return null
-
-  const { card } = phase
+export function CardInfo({ card }: CardInfoProps) {
   const lastMoveIndex = card.line.length - 1
 
   return (

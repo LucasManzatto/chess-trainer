@@ -1,5 +1,5 @@
 import { request } from '../../../lib/api'
-import type { CardCreate, CardDelete, CardReview, CoverageStats, RepertoireCard } from '../types'
+import type { CardCreate, CardDelete, CardReview, CoverageStats, RepertoireCard, TrainStats } from '../types'
 
 export const trainApi = {
   /** List all repertoire cards, optionally filtered by side. */
@@ -38,4 +38,12 @@ export const trainApi = {
   /** Count of committed cards per side. */
   getCoverage: (signal?: AbortSignal) =>
     request<CoverageStats>('/api/v1/train/coverage', { signal }),
+
+  /** Reset all cards to initial SRS state (ease 2.5, due now, state "new"). */
+  resetCards: () =>
+    request<void>('/api/v1/train/cards/reset', { method: 'POST' }),
+
+  /** SRS stats: totals by state + due count. */
+  getStats: (signal?: AbortSignal) =>
+    request<TrainStats>('/api/v1/train/stats', { signal }),
 }

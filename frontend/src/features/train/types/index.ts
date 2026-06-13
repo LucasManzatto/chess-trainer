@@ -43,3 +43,12 @@ export type CoverageStats = {
   black: number
   total: number
 }
+
+export type TrainStats = {
+  total: number
+  due: number
+  new: number
+  learning: number
+  review: number
+  relearning: number
+}

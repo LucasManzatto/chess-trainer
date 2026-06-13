@@ -1,46 +1,25 @@
-import { useCallback } from 'react'
-import { useTrainStore, useTrainStoreApi, getNextCard } from '../store/trainStore'
 import { useReviewCard } from '../hooks/useReviewCard'
-import type { CardReview } from '../types'
+import type { CardReview, RepertoireCard } from '../types'
 
 type Grade = CardReview['grade']
 
 // Grades 1 and 4 are valid API values but intentionally omitted — UI uses a simplified 4-step scale.
 const GRADES: { label: string; grade: Grade; interval: string; color: string }[] = [
-  { label: 'Again', grade: 0, interval: '10m', color: 'text-red-400 border-red-400/30 hover:bg-red-400/10' },
+  { label: 'Again', grade: 0, interval: '5s', color: 'text-red-400 border-red-400/30 hover:bg-red-400/10' },
   { label: 'Hard',  grade: 2, interval: '1d',  color: 'text-orange-400 border-orange-400/30 hover:bg-orange-400/10' },
   { label: 'Good',  grade: 3, interval: '3d',  color: 'text-green-400 border-green-400/30 hover:bg-green-400/10' },
   { label: 'Easy',  grade: 5, interval: '7d',  color: 'text-sky-400 border-sky-400/30 hover:bg-sky-400/10' },
 ]
 // TODO: compute interval hints from card.interval_days + card.ease (SM-2 estimates)
 
-function useMoveReveal() {
-  const phase = useTrainStore(s => s.phase)
-  const setPhase = useTrainStore(s => s.setPhase)
-  const markSeen = useTrainStore(s => s.markSeen)
-  const recordResult = useTrainStore(s => s.recordResult)
-  const storeApi = useTrainStoreApi()
-  const { mutate: reviewCard } = useReviewCard()
-
-  const card = phase.type === 'revealed' ? phase.card : null
-  const correct = phase.type === 'revealed' ? phase.correct : false
-
-  const handleGrade = useCallback((grade: Grade) => {
-    if (!card) return
-    recordResult(correct)
-    markSeen(card.position_key)
-    const next = getNextCard(storeApi.getState())
-    setPhase(next ? { type: 'awaiting_move', card: next, quizLineLength: next.line.length } : { type: 'done' })
-    reviewCard({ position_key: card.position_key, grade })
-  }, [card, correct, reviewCard, recordResult, markSeen, storeApi, setPhase])
-
-  return { phase, correct, handleGrade }
+interface MoveRevealProps {
+  correct: boolean
+  card: RepertoireCard | null
+  onGrade: () => void
 }
 
-export function MoveReveal() {
-  const { phase, correct, handleGrade } = useMoveReveal()
-
-  if (phase.type !== 'revealed') return null
+export function MoveReveal({ correct, card, onGrade }: MoveRevealProps) {
+  const { mutate: reviewCard } = useReviewCard()
 
   return (
     <div className="flex flex-col gap-4 w-full select-none">
@@ -71,7 +50,10 @@ export function MoveReveal() {
         {GRADES.map(({ label, interval, color, grade }) => (
           <button
             key={label}
-            onClick={() => handleGrade(grade)}
+            onClick={() => {
+              if (card) reviewCard({ position_key: card.position_key, grade })
+              onGrade()
+            }}
             className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg border transition-colors ${color}`}
           >
             <span className="text-xs font-semibold">{label}</span>

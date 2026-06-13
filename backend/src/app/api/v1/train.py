@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...auth import get_current_user_id
 from ...db import get_session
-from ...schemas.train import CardCreate, CardDelete, CardResponse, CardReview, CoverageResponse
+from ...schemas.train import CardCreate, CardDelete, CardResponse, CardReview, CoverageResponse, StatsResponse
 from ...services import train as train_service
 
 router = APIRouter(prefix="/train", tags=["train"])
@@ -59,6 +59,16 @@ async def review_card(
     return await train_service.review_card(session, user_id, body.position_key, body.grade)
 
 
+@router.post("/cards/reset", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_cards(session: Session, user_id: UserId) -> None:
+    await train_service.reset_cards(session, user_id)
+
+
 @router.get("/coverage", response_model=CoverageResponse)
 async def get_coverage(session: Session, user_id: UserId) -> CoverageResponse:
     return await train_service.get_coverage(session, user_id)
+
+
+@router.get("/stats", response_model=StatsResponse)
+async def get_stats(session: Session, user_id: UserId) -> StatsResponse:
+    return await train_service.get_stats(session, user_id)

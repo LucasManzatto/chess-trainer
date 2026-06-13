@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ChessBoard, ChessBoardProvider } from '../../../features/board'
 import { TrainStoreProvider } from '../../../features/train/store/TrainStoreProvider'
-import { useTrainStore } from '../../../features/train/store/trainStore'
 import { TrainSetup } from '../../../features/train/components/TrainSetup'
 import { TrainHeader } from '../../../features/train/components/TrainHeader'
 import { CardInfo } from '../../../features/train/components/CardInfo'
@@ -24,13 +23,14 @@ function TrainPage() {
 }
 
 function TrainPageInner() {
-  useDrillBoard()
-  const phase = useTrainStore(s => s.phase)
+  const { phase, setPhase, currentCard, isCorrect, mode, setMode } = useDrillBoard()
+
+  const goIdle = () => setPhase({ type: 'idle' })
 
   if (phase.type === 'idle') {
     return (
       <div className="flex flex-1 items-center justify-center min-h-0 overflow-auto">
-        <TrainSetup />
+        <TrainSetup mode={mode} setMode={setMode} setPhase={setPhase} />
       </div>
     )
   }
@@ -46,27 +46,28 @@ function TrainPageInner() {
   if (phase.type === 'done') {
     return (
       <div className="flex flex-1 items-center justify-center min-h-0 overflow-auto">
-        <SessionSummary />
+        <SessionSummary onTrainAgain={() => setPhase({ type: 'loading' })} onBack={goIdle} />
       </div>
     )
   }
 
-  // awaiting_move | revealed
+  if (!currentCard) return null
+
   return (
     <div className="grid grid-cols-[300px_1fr_280px] gap-5 p-6 h-full w-full overflow-hidden">
       {/* Col 1 — card info */}
       <section className="flex flex-col min-h-0 overflow-y-auto bg-white/[0.055] border border-white/[0.09] rounded p-4">
-        <CardInfo />
+        <CardInfo card={currentCard} />
       </section>
 
       {/* Col 2 — chess board */}
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <ChessBoard showEvalBar={false} showSettings={false} header={<TrainHeader />} />
+        <ChessBoard showEvalBar={false} showSettings={false} header={<TrainHeader mode={mode} onBack={goIdle} />} />
       </section>
 
       {/* Col 3 — grade panel */}
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded p-4">
-        <MoveReveal />
+        {phase.type === 'revealed' && <MoveReveal correct={isCorrect ?? false} card={currentCard} onGrade={() => setPhase({ type: 'done' })} />}
       </section>
     </div>
   )

@@ -48,3 +48,12 @@ class CoverageResponse(BaseModel):
     white: int
     black: int
     total: int
+
+
+class StatsResponse(BaseModel):
+    total: int
+    due: int
+    new: int
+    learning: int
+    review: int
+    relearning: int

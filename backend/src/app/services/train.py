@@ -6,10 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..exceptions import NotFoundError
 from ..models.openings import RepertoireCard
-from ..schemas.train import CardCreate, CardResponse, CoverageResponse
+from ..schemas.train import CardCreate, CardResponse, CoverageResponse, StatsResponse
 from .drill import compute_sm2
 
-_LEARNING_RELEARN_INTERVAL = 1.0
+_GRADE_INTERVAL: dict[int, timedelta] = {
+    0: timedelta(seconds=5),
+    2: timedelta(days=1),
+    3: timedelta(days=3),
+    5: timedelta(days=7),
+}
 
 
 def _next_state(current: str, grade: int) -> str:
@@ -119,7 +124,7 @@ async def review_card(
     if card is None:
         raise NotFoundError("Card not found")
 
-    new_ef, new_interval_int, new_reps = compute_sm2(
+    new_ef, _, new_reps = compute_sm2(
         ease_factor=card.ease,
         interval_days=int(card.interval_days),
         repetitions=card.reps,
@@ -127,24 +132,67 @@ async def review_card(
     )
     new_state = _next_state(card.state, grade)
 
-    if new_state in ("learning", "relearning"):
-        # Override SM-2's computed interval — short-circuit back to 1 day
-        # so the card surfaces again tomorrow regardless of prior ease.
-        new_interval = _LEARNING_RELEARN_INTERVAL
-        if new_state == "relearning":
-            card.lapses += 1
-    else:
-        new_interval = float(new_interval_int)
+    if new_state == "relearning":
+        card.lapses += 1
+
+    delta = _GRADE_INTERVAL[grade]
 
     card.ease = new_ef
-    card.interval_days = new_interval
+    card.interval_days = delta.total_seconds() / 86400
     card.reps = new_reps
     card.state = new_state
-    card.due = datetime.now(UTC) + timedelta(days=new_interval)
+    card.due = datetime.now(UTC) + delta
     # updated_at is managed by the DB onupdate trigger; no Python assignment needed
 
     await session.commit()
     return CardResponse.model_validate(card)
+
+
+async def reset_cards(
+    session: AsyncSession,
+    user_id: str,
+) -> None:
+    result = await session.execute(
+        select(RepertoireCard).where(RepertoireCard.user_id == user_id)
+    )
+    cards = result.scalars().all()
+    now = datetime.now(UTC)
+    for card in cards:
+        card.ease = 2.5
+        card.interval_days = 1.0
+        card.reps = 0
+        card.lapses = 0
+        card.state = "new"
+        card.due = now
+    await session.commit()
+
+
+async def get_stats(
+    session: AsyncSession,
+    user_id: str,
+) -> StatsResponse:
+    now = datetime.now(UTC)
+    result = await session.execute(
+        select(RepertoireCard.state, func.count().label("cnt"))
+        .where(RepertoireCard.user_id == user_id)
+        .group_by(RepertoireCard.state)
+    )
+    by_state = {row.state: row.cnt for row in result}
+
+    due_count = await session.scalar(
+        select(func.count())
+        .where(RepertoireCard.user_id == user_id, RepertoireCard.due <= now)
+    )
+
+    total = sum(by_state.values())
+    return StatsResponse(
+        total=total,
+        due=due_count or 0,
+        new=by_state.get("new", 0),
+        learning=by_state.get("learning", 0),
+        review=by_state.get("review", 0),
+        relearning=by_state.get("relearning", 0),
+    )
 
 
 async def get_coverage(
