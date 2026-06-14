@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ChessBoard, ChessBoardProvider } from '../../../features/board'
+import { useMemo } from 'react'
+import { ChessBoard, ChessBoardProvider, getMoves, getActiveMove, useChessBoardStore } from '../../../features/board'
 import { TrainStoreProvider } from '../../../features/train/store/TrainStoreProvider'
 import { TrainSetup } from '../../../features/train/components/TrainSetup'
 import { TrainHeader } from '../../../features/train/components/TrainHeader'
-import { CardInfo } from '../../../features/train/components/CardInfo'
-import { MoveReveal } from '../../../features/train/components/MoveReveal'
 import { SessionSummary } from '../../../features/train/components/SessionSummary'
+import { CorrectBanner, GradeButtons } from '../../../features/train/components/MoveReveal'
+import { MovesList } from '../../../components/MovesList/MovesList'
 import { useDrillBoard } from './hooks'
 
 export const Route = createFileRoute('/openings/train')({
@@ -24,6 +25,15 @@ function TrainPage() {
 
 function TrainPageInner() {
   const { phase, setPhase, currentCard, isCorrect, mode, setMode } = useDrillBoard()
+  const history = useChessBoardStore(s => s.history)
+  const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
+  const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
+  const moves = useMemo(() => getMoves({ history }), [history])
+  const activeMove = getActiveMove({ currentMoveIndex })
+
+  function onMoveClick(moveNumber: number, color: 'white' | 'black') {
+    navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
+  }
 
   const goIdle = () => setPhase({ type: 'idle' })
 
@@ -53,21 +63,24 @@ function TrainPageInner() {
 
   if (!currentCard) return null
 
+  const revealed = phase.type === 'revealed'
+
   return (
-    <div className="grid grid-cols-[300px_1fr_280px] gap-5 p-6 h-full w-full overflow-hidden">
-      {/* Col 1 — card info */}
-      <section className="flex flex-col min-h-0 overflow-y-auto bg-white/[0.055] border border-white/[0.09] rounded p-4">
-        <CardInfo card={currentCard} />
+    <div className="flex items-center justify-center gap-5 p-6 h-full w-full overflow-hidden">
+      <section className="relative flex flex-col items-center justify-center min-h-0 h-full rounded flex-1 max-w-2xl">
+        <ChessBoard
+          showEvalBar={false}
+          showSettings={false}
+          header={<TrainHeader mode={mode} onBack={goIdle} />}
+        />
+        {revealed && <CorrectBanner correct={isCorrect ?? false} />}
+        <div className={`w-full mt-3${!revealed ? ' invisible' : ''}`}>
+          <GradeButtons card={currentCard} onGrade={() => setPhase({ type: 'done' })} />
+        </div>
       </section>
 
-      {/* Col 2 — chess board */}
-      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <ChessBoard showEvalBar={false} showSettings={false} header={<TrainHeader mode={mode} onBack={goIdle} />} />
-      </section>
-
-      {/* Col 3 — grade panel */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded p-4">
-        {phase.type === 'revealed' && <MoveReveal correct={isCorrect ?? false} card={currentCard} onGrade={() => setPhase({ type: 'done' })} />}
+      <section className="flex flex-col min-h-0 h-full w-[220px] overflow-hidden border border-white/[0.09] rounded">
+        <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} />
       </section>
     </div>
   )
