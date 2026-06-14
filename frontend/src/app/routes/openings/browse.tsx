@@ -46,17 +46,6 @@ function BrowseV2PageInner() {
   const activeMove = getActiveMove({ currentMoveIndex })
   const currentFen = useChessBoardStore(getCurrentFen)
 
-  const cardMoveIndices = useMemo(() => {
-    const positionKeys = new Set(allCards.map(c => c.position_key))
-    const indices = new Set<number>()
-    history.forEach((_entry, i) => {
-      const fen = i > 0 ? history[i - 1].fen : INITIAL_FEN
-      const posKey = fen.split(' ').slice(0, 4).join(' ')
-      if (positionKeys.has(posKey)) indices.add(i)
-    })
-    return indices
-  }, [history, allCards])
-
   const drillCard = useMemo((): CardCreate | null => {
     if (currentMoveIndex < 0) return null
     const entry = history[currentMoveIndex]
@@ -109,7 +98,7 @@ function BrowseV2PageInner() {
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} cardMoveIndices={cardMoveIndices} />
+        <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} />
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">

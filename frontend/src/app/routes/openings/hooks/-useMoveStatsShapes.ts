@@ -7,6 +7,7 @@ import { arrowTokens } from '../../../../features/engine/arrowTokens'
 import { useChessBoardStore, useChessBoardStoreApi, getPlayedMoves } from '../../../../features/board'
 import { useMoveStats } from '../../../../features/engine/hooks/useMoveStats'
 import { useBoardSettings, type MoveStatDisplay } from '../../../../features/board/store/boardSettingsStore'
+import { useRepertoireCards } from '../../../../features/train/hooks'
 
 // Lichess Explorer requires UCI (e2e4), board store gives SAN (e4).
 // Returns both the UCI move list and the FEN after replaying all moves,
@@ -76,18 +77,27 @@ function buildMineShapes(
   sq: number,
   color: 'white' | 'black',
   display: MoveStatDisplay,
+  drillMoves: Set<string>,
 ): ShapeBundle {
   const t = arrowTokens.mine
   const lineWidth = t.thicknessPx(sq)
+  const DRILL_BRUSH_KEY = 'mine-drill'
   const shapes: DrawShape[] = []
   const brushes: Record<string, DrawBrush> = {}
 
   for (const stat of moves) {
     try {
       const move = chess.move(stat.san)
+      const uci = move.from + move.to + (move.promotion ?? '')
+      const isDrill = drillMoves.has(uci)
       let key: string
 
-      if (display === 'frequency' && stat.total < t.minGamesToTrust) {
+      if (isDrill) {
+        key = DRILL_BRUSH_KEY
+        if (!brushes[key]) {
+          brushes[key] = { key, color: '#22c55e', opacity: 0.9, lineWidth }
+        }
+      } else if (display === 'frequency' && stat.total < t.minGamesToTrust) {
         key = 'mine-freq-low'
         if (!brushes[key]) {
           brushes[key] = { key, color: t.lowSample.stroke, opacity: 0.5, lineWidth: t.lowSample.strokeWidthPx }
@@ -145,6 +155,16 @@ export function useMoveStatsShapes() {
   )
 
   const { data } = useMoveStats(uciMoves)
+  const { data: allCards = [] } = useRepertoireCards()
+
+  const drillMoves = useMemo(() => {
+    const posKey = fen.split(' ').slice(0, 4).join(' ')
+    const set = new Set<string>()
+    for (const card of allCards) {
+      if (card.position_key === posKey) set.add(card.answer)
+    }
+    return set
+  }, [fen, allCards])
 
   useEffect(() => {
     if (!data) {
@@ -166,11 +186,11 @@ export function useMoveStatsShapes() {
             : calcScore(b, orientation) - calcScore(a, orientation),
         )
         .slice(0, 5)
-      bundle = buildMineShapes(sorted, chess, sq, orientation, moveStatDisplay)
+      bundle = buildMineShapes(sorted, chess, sq, orientation, moveStatDisplay, drillMoves)
     } else {
       bundle = buildOpponentShapes(data.moves, chess, sq)
     }
 
     chessBoardStore.getState().setHintShapes(bundle.shapes, bundle.brushes)
-  }, [data, fen, orientation, boardSize, moveStatDisplay, chessBoardStore])
+  }, [data, fen, orientation, boardSize, moveStatDisplay, chessBoardStore, drillMoves])
 }

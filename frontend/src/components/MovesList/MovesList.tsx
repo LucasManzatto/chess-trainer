@@ -6,10 +6,9 @@ type Props = {
   moves?: MovePair[]
   activeMove?: ActiveMove
   onMoveClick?: (moveNumber: number, color: 'white' | 'black') => void
-  cardMoveIndices?: Set<number>
 }
 
-export function MovesList({ moves = [], activeMove, onMoveClick, cardMoveIndices }: Props) {
+export function MovesList({ moves = [], activeMove, onMoveClick }: Props) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <MovesHeader />
@@ -22,8 +21,6 @@ export function MovesList({ moves = [], activeMove, onMoveClick, cardMoveIndices
         ) : (
           <div className="flex flex-col py-1">
             {moves.map(({ moveNumber, white, black }) => {
-              const whiteIdx = (moveNumber - 1) * 2
-              const blackIdx = whiteIdx + 1
               return (
                 <div key={moveNumber} className="grid grid-cols-[28px_1fr_1fr] text-sm">
                   <span className="flex items-center px-2 py-1 text-xs text-white/25 select-none tabular-nums">
@@ -32,14 +29,12 @@ export function MovesList({ moves = [], activeMove, onMoveClick, cardMoveIndices
                   <MoveButton
                     san={white}
                     active={activeMove?.moveNumber === moveNumber && activeMove.color === 'white'}
-                    hasCard={cardMoveIndices?.has(whiteIdx) ?? false}
                     onClick={() => onMoveClick?.(moveNumber, 'white')}
                   />
                   {black != null ? (
                     <MoveButton
                       san={black}
                       active={activeMove?.moveNumber === moveNumber && activeMove.color === 'black'}
-                      hasCard={cardMoveIndices?.has(blackIdx) ?? false}
                       onClick={() => onMoveClick?.(moveNumber, 'black')}
                     />
                   ) : (
@@ -71,20 +66,17 @@ function MovesHeader() {
 type MoveButtonProps = {
   san: string
   active: boolean
-  hasCard: boolean
   onClick: () => void
 }
 
-function MoveButton({ san, active, hasCard, onClick }: MoveButtonProps) {
+function MoveButton({ san, active, onClick }: MoveButtonProps) {
   return (
     <button
       onClick={onClick}
       className={`text-left px-2 py-1 rounded transition-colors font-mono text-sm ${
         active
           ? 'bg-amber-500/20 text-amber-200'
-          : hasCard
-            ? 'bg-white/[0.08] text-white/70 hover:bg-white/[0.12] hover:text-white/90'
-            : 'text-white/60 hover:bg-white/[0.07] hover:text-white/90'
+          : 'text-white/60 hover:bg-white/[0.07] hover:text-white/90'
       }`}
     >
       {san}
