@@ -1,20 +1,36 @@
 import { toast } from 'sonner'
 import { useCommitMove } from '../hooks'
-import type { CardCreate } from '../types'
+import { useDeleteCard } from '../hooks/useDeleteCard'
+import type { CardCreate, RepertoireCard } from '../types'
 
 type Props = {
   card: CardCreate
+  existingCard: RepertoireCard | null
   className?: string
 }
 
-export function AddToDrill({ card, className }: Props) {
-  const { mutate, isPending } = useCommitMove()
+export function AddToDrill({ card, existingCard, className }: Props) {
+  const { mutate: commitMove, isPending: isAdding } = useCommitMove()
+  const { mutate: deleteCard, isPending: isRemoving } = useDeleteCard()
 
-  function handleClick() {
-    mutate(card, {
-      onSuccess: () => toast.success('Added to drill'),
-      onError: () => toast.error('Failed to add to drill'),
-    })
+  const isPending = isAdding || isRemoving
+
+  if (existingCard) {
+    return (
+      <button
+        type="button"
+        className="bg-red-700/60 hover:bg-red-600/70 disabled:opacity-50 text-red-200 text-xs font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer"
+        disabled={isPending}
+        onClick={() =>
+          deleteCard(existingCard.position_key, {
+            onSuccess: () => toast.success('Removed from drill'),
+            onError: () => toast.error('Failed to remove from drill'),
+          })
+        }
+      >
+        {isRemoving ? 'Removing…' : 'Remove from Drill'}
+      </button>
+    )
   }
 
   return (
@@ -22,9 +38,14 @@ export function AddToDrill({ card, className }: Props) {
       type="button"
       className={className}
       disabled={isPending}
-      onClick={handleClick}
+      onClick={() =>
+        commitMove(card, {
+          onSuccess: () => toast.success('Added to drill'),
+          onError: () => toast.error('Failed to add to drill'),
+        })
+      }
     >
-      {isPending ? 'Adding…' : 'Add to Drill'}
+      {isAdding ? 'Adding…' : 'Add to Drill'}
     </button>
   )
 }

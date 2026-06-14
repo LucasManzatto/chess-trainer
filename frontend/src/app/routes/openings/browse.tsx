@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { getMoves, getActiveMove, getCurrentFen, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
+import { getMoves, getActiveMove, getCurrentFen, INITIAL_FEN, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
 import { useSyncOpeningToBoard, useFilteredOpenings, useMoveStatsShapes, useCurrentOpening } from './hooks'
@@ -8,9 +8,8 @@ import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 import { getSelectedOpening, useOpeningsStore } from '../../../features/openings/store/openingsStore'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
+import { useRepertoireCards } from '../../../features/train/hooks/useRepertoireCards'
 import type { CardCreate } from '../../../features/train/types'
-
-const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 
 export const Route = createFileRoute('/openings/browse')({
@@ -41,9 +40,22 @@ function BrowseV2PageInner() {
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
   const selectedOpening = useOpeningsStore(getSelectedOpening)
 
+  const { data: allCards = [] } = useRepertoireCards()
+
   const moves = useMemo(() => getMoves({ history }), [history])
   const activeMove = getActiveMove({ currentMoveIndex })
   const currentFen = useChessBoardStore(getCurrentFen)
+
+  const cardMoveIndices = useMemo(() => {
+    const positionKeys = new Set(allCards.map(c => c.position_key))
+    const indices = new Set<number>()
+    history.forEach((_entry, i) => {
+      const fen = i > 0 ? history[i - 1].fen : INITIAL_FEN
+      const posKey = fen.split(' ').slice(0, 4).join(' ')
+      if (positionKeys.has(posKey)) indices.add(i)
+    })
+    return indices
+  }, [history, allCards])
 
   const drillCard = useMemo((): CardCreate | null => {
     if (currentMoveIndex < 0) return null
@@ -60,6 +72,10 @@ function BrowseV2PageInner() {
       opening_name: selectedOpening?.name ?? null,
     }
   }, [currentMoveIndex, history, selectedOpening])
+
+  const existingCard = drillCard
+    ? allCards.find(c => c.position_key === drillCard.position_key) ?? null
+    : null
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {
     navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
@@ -82,6 +98,7 @@ function BrowseV2PageInner() {
                 <div className="absolute right-0">
                   <AddToDrill
                     card={drillCard}
+                    existingCard={existingCard}
                     className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer"
                   />
                 </div>
@@ -92,7 +109,7 @@ function BrowseV2PageInner() {
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} />
+        <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} cardMoveIndices={cardMoveIndices} />
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">

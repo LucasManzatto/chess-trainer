@@ -5,7 +5,7 @@ import type { ChessBoardStoreType } from '../chessBoardStore'
 
 // ─── Pure chess utilities ─────────────────────────────────────────────────────
 
-const INITIAL_FEN = new Chess().fen()
+export const INITIAL_FEN = new Chess().fen()
 
 export function buildHistoryFromMoves(moves: string[]): HistoryEntry[] {
   const engine = new Chess()
