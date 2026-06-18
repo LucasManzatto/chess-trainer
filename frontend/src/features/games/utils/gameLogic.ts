@@ -1,11 +1,11 @@
-import type { Opening } from '../../openings/types'
+import type { Position } from '../../openings/types'
 
-export type OpeningMatch = { opening: Opening; moveCount: number }
+export type OpeningMatch = { opening: Position; moveCount: number }
 
 export function computeOpeningMatch(
   gameMoves: string[],
   gameEco: string | null,
-  openings: Opening[],
+  openings: Position[],
 ): OpeningMatch | null {
   if (!gameEco) return null
   let best: OpeningMatch | null = null
@@ -21,7 +21,7 @@ export function computeOpeningMatch(
 export function computeOpeningMoveCount(
   gameMoves: string[],
   gameEco: string | null,
-  openings: Opening[],
+  openings: Position[],
 ): number {
   return computeOpeningMatch(gameMoves, gameEco, openings)?.moveCount ?? 0
 }

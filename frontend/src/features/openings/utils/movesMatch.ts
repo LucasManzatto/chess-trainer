@@ -1,4 +1,4 @@
-import type { Opening } from '../types'
+import type { Position as Opening } from '../types'
 
 /** played moves are a prefix of opening.moves */
 export const isPrefix = (played: string[], opening: Opening) =>

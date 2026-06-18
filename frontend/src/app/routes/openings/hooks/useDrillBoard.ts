@@ -35,7 +35,10 @@ export function useDrillBoard() {
   // still in loading doesn't re-fire and pick a different card mid-transition.
   useEffect(() => {
     if (phase.type !== 'loading') return
-    const cards = dueCardsRef.current
+    // dueCardsRef may still hold the just-graded card if its optimistic
+    // cache removal (in useReviewCard's onMutate) hasn't landed yet —
+    // exclude it explicitly so we never re-show the card we just answered.
+    const cards = dueCardsRef.current.filter(c => c.position_key !== currentCard?.position_key)
     console.log('[train] phase: loading', { dueCards: cards.length })
     const card = cards[0] ?? null
     if (!card) {
@@ -44,7 +47,7 @@ export function useDrillBoard() {
     }
     setCurrentCard(card)
     setPhase({ type: 'awaiting_move' })
-  }, [phase])
+  }, [phase, currentCard])
 
   // ── awaiting_move ──────────────────────────────────────────────────────────
   // Sets up the board for the current card and subscribes to the board store

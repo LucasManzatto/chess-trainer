@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Seed openings from lichess-org/chess-openings dataset.
+Seed positions from lichess-org/chess-openings dataset.
 
 Usage:
     DATABASE_URL=postgresql://... python backend/scripts/seed_openings.py
 
 Outputs:
-    - Inserts all openings into the `openings` table
-    - Writes frontend/public/openings.json
+    - Upserts all openings into the `positions` table
+    - Writes frontend/public/positions.json
 """
 
 import asyncio
@@ -53,12 +53,6 @@ async def fetch_tsv(client: httpx.AsyncClient, letter: str) -> list[dict]:
     return list(reader)
 
 
-async def run_migration(conn: asyncpg.Connection) -> None:
-    migrations_dir = Path(__file__).parent.parent / "migrations"
-    sql = (migrations_dir / "001_openings.sql").read_text()
-    await conn.execute(sql)
-
-
 async def main() -> None:
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
@@ -75,7 +69,7 @@ async def main() -> None:
 
     print(f"Total: {len(all_rows)} openings. Computing FENs...")
 
-    openings: list[dict] = []
+    positions: list[dict] = []
     skipped = 0
     for row in all_rows:
         eco = row.get("eco", "").strip()
@@ -90,40 +84,31 @@ async def main() -> None:
             skipped += 1
             continue
         fen, moves = result
-        openings.append({"eco": eco, "name": name, "pgn": pgn, "fen": fen, "moves": moves})
+        positions.append({"fen": fen, "eco": eco, "name": name, "pgn": pgn, "moves": moves})
 
-    print(f"Parsed {len(openings)} openings ({skipped} skipped).")
+    print(f"Parsed {len(positions)} positions ({skipped} skipped).")
 
     print("Connecting to database...")
     conn = await asyncpg.connect(database_url)
     try:
-        print("Running migration...")
-        await run_migration(conn)
-
-        print("Inserting openings (UPSERT by eco+name)...")
-        await conn.execute("TRUNCATE openings RESTART IDENTITY CASCADE")
+        print("Upserting positions...")
         await conn.executemany(
             """
-            INSERT INTO openings (eco, name, pgn, fen, moves)
+            INSERT INTO positions (fen, eco, name, pgn, moves)
             VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (fen) DO UPDATE SET eco = EXCLUDED.eco, name = EXCLUDED.name,
+                pgn = EXCLUDED.pgn, moves = EXCLUDED.moves
             """,
-            [(o["eco"], o["name"], o["pgn"], o["fen"], o["moves"]) for o in openings],
+            [(p["fen"], p["eco"], p["name"], p["pgn"], p["moves"]) for p in positions],
         )
-
-        # Fetch back with DB-assigned IDs
-        rows = await conn.fetch("SELECT id, eco, name, pgn, fen, moves FROM openings ORDER BY id")
-        db_openings = [
-            {"id": r["id"], "eco": r["eco"], "name": r["name"], "pgn": r["pgn"], "fen": r["fen"], "moves": list(r["moves"])}
-            for r in rows
-        ]
-        print(f"Inserted {len(db_openings)} rows.")
+        print(f"Upserted {len(positions)} rows.")
     finally:
         await conn.close()
 
-    print("Writing frontend/public/openings.json...")
+    print("Writing frontend/public/positions.json...")
     FRONTEND_PUBLIC.mkdir(parents=True, exist_ok=True)
-    out_path = FRONTEND_PUBLIC / "openings.json"
-    out_path.write_text(json.dumps(db_openings, ensure_ascii=False))
+    out_path = FRONTEND_PUBLIC / "positions.json"
+    out_path.write_text(json.dumps(positions, ensure_ascii=False))
     print(f"Wrote {out_path} ({out_path.stat().st_size // 1024} KB).")
     print("Done.")
 

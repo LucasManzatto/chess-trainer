@@ -1,29 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { openingCommentsApi } from '../api'
-import { openingsKeys } from '../api/queryKeys'
+import { positionCommentsApi } from '../api'
+import { positionsKeys } from '../api/queryKeys'
 
-export function useOpeningComments(openingId: number) {
+export function useOpeningComments(fen: string) {
   const qc = useQueryClient()
-  const key = openingsKeys.comments(openingId)
+  const key = positionsKeys.comments(fen)
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: key,
-    queryFn: ({ signal }) => openingCommentsApi.list(openingId, signal),
+    queryFn: ({ signal }) => positionCommentsApi.list(fen, signal),
+    enabled: !!fen,
   })
 
   const add = useMutation({
-    mutationFn: (content: string) => openingCommentsApi.create(openingId, content),
+    mutationFn: (content: string) => positionCommentsApi.create(fen, content),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   })
 
   const update = useMutation({
     mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
-      openingCommentsApi.update(commentId, content),
+      positionCommentsApi.update(commentId, content),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   })
 
   const remove = useMutation({
-    mutationFn: (commentId: number) => openingCommentsApi.delete(commentId),
+    mutationFn: (commentId: number) => positionCommentsApi.delete(commentId),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   })
 

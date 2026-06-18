@@ -1,41 +1,44 @@
 import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
-import type { Opening } from '../types'
+import type { Position } from '../types'
 
 interface OpeningsState {
-  openings: Opening[]
-  selectionHistory: Opening[]
+  positions: Position[]
+  selectionHistory: Position[]
   historyIndex: number
 }
 
 interface OpeningsActions {
-  setOpenings: (openings: Opening[]) => void
-  setSelectedOpening: (opening: Opening | null) => void
+  setPositions: (positions: Position[]) => void
+  setSelectedPosition: (position: Position | null) => void
   navigateBack: () => void
   navigateForward: () => void
 }
 
 export type OpeningsStoreType = OpeningsState & OpeningsActions
 
-export function getSelectedOpening(state: OpeningsStoreType): Opening | null {
+export function getSelectedPosition(state: OpeningsStoreType): Position | null {
   return (state.historyIndex >= 0 ? state.selectionHistory[state.historyIndex] : null) ?? null
 }
 
+/** @deprecated use getSelectedPosition */
+export const getSelectedOpening = getSelectedPosition
+
 export function createOpeningsStore() {
   return createStore<OpeningsStoreType>()((set) => ({
-    openings: [],
+    positions: [],
     selectionHistory: [],
     historyIndex: -1,
 
-    setOpenings: openings => set({ openings }),
+    setPositions: positions => set({ positions }),
 
-    setSelectedOpening: opening => set(state => {
-      if (opening === null) return { selectionHistory: [], historyIndex: -1 }
-      const current = getSelectedOpening(state)
-      if (current?.id === opening.id) return {}
+    setSelectedPosition: position => set(state => {
+      if (position === null) return { selectionHistory: [], historyIndex: -1 }
+      const current = getSelectedPosition(state)
+      if (current?.fen === position.fen) return {}
 
       const truncated = state.selectionHistory.slice(0, state.historyIndex + 1)
-      const next = [...truncated, opening]
+      const next = [...truncated, position]
       return { selectionHistory: next, historyIndex: next.length - 1 }
     }),
 

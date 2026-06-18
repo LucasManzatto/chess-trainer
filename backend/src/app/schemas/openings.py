@@ -1,29 +1,31 @@
-from datetime import date, datetime
+from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class OpeningCommentCreate(BaseModel):
-    content: str
+from pydantic import BaseModel, ConfigDict
 
 
-class OpeningCommentUpdate(BaseModel):
-    content: str
+class PositionCreate(BaseModel):
+    fen: str
+    eco: str | None = None
+    name: str | None = None
+    pgn: str | None = None
+    moves: list[str] = []
 
 
-class OpeningCommentResponse(BaseModel):
+class PositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    user_id: str
-    opening_id: int
-    content: str
-    created_at: datetime
+    fen: str
+    eco: str | None
+    name: str | None
+    pgn: str | None
+    moves: list[str]
+
+
+class UserPositionSave(BaseModel):
+    fen: str
 
 
 class PositionCommentCreate(BaseModel):
-    move_index: int
-    fen: str
     content: str
 
 
@@ -36,38 +38,9 @@ class PositionCommentResponse(BaseModel):
 
     id: int
     user_id: str
-    opening_id: int
-    move_index: int
     fen: str
     content: str
     created_at: datetime
-
-
-class DrillQueueItem(BaseModel):
-    opening_id: int
-    eco: str
-    name: str
-    pgn: str
-    fen: str
-    moves: list[str]
-    ease_factor: float
-    interval_days: int
-    due_date: date
-    repetitions: int
-
-
-class ReviewRequest(BaseModel):
-    grade: int = Field(ge=0, le=5)
-
-
-class DrillAddResponse(BaseModel):
-    opening_id: int
-    due_date: date
-
-
-class FavoriteResponse(BaseModel):
-    opening_id: int
-    is_favorite: bool
 
 
 class MoveStat(BaseModel):

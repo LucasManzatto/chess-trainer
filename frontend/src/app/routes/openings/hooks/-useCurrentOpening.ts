@@ -5,6 +5,6 @@ import { matchOpening } from '../../../../features/openings/utils/movesMatch'
 
 export function useCurrentOpening() {
   const fen = useChessBoardStore(getCurrentFen)
-  const openings = useOpeningsStore(s => s.openings)
+  const openings = useOpeningsStore(s => s.positions)
   return useMemo(() => matchOpening(fen, openings), [fen, openings])
 }

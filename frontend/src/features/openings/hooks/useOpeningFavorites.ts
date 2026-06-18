@@ -1,23 +1,32 @@
 import { useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { openingFavoritesApi } from '../api'
-import { openingsKeys } from '../api/queryKeys'
+import { userPositionsApi } from '../api'
+import { positionsKeys } from '../api/queryKeys'
+import type { Position } from '../types'
 
-export function useOpeningFavorites() {
+export function useUserPositions() {
   const qc = useQueryClient()
-  const key = openingsKeys.favorites()
+  const key = positionsKeys.userPositions()
 
-  const { data: favorites = [], isLoading } = useQuery({
+  const { data: userPositions = [], isLoading } = useQuery({
     queryKey: key,
-    queryFn: ({ signal }) => openingFavoritesApi.list(signal),
+    queryFn: ({ signal }) => userPositionsApi.list(signal),
   })
 
-  const toggle = useMutation({
-    mutationFn: (openingId: number) => openingFavoritesApi.toggle(openingId),
+  const save = useMutation({
+    mutationFn: (fen: string) => userPositionsApi.save(fen),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   })
 
-  const isFavorite = useCallback((openingId: number) => favorites.includes(openingId), [favorites])
+  const remove = useMutation({
+    mutationFn: (fen: string) => userPositionsApi.remove(fen),
+    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
+  })
 
-  return { favorites, isLoading, toggle, isFavorite }
+  const isSaved = useCallback(
+    (fen: string) => userPositions.some((p: Position) => p.fen === fen),
+    [userPositions],
+  )
+
+  return { userPositions, isLoading, save, remove, isSaved }
 }

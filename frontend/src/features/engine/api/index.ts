@@ -18,6 +18,6 @@ export type MoveStatsResponse = {
 export const moveStatsApi = {
   get: (moves: string[], signal?: AbortSignal) => {
     const params = moves.length ? `?moves=${moves.join(',')}` : ''
-    return request<MoveStatsResponse>(`/api/v1/openings/move-stats${params}`, { signal })
+    return request<MoveStatsResponse>(`/api/v1/positions/move-stats${params}`, { signal })
   },
 }

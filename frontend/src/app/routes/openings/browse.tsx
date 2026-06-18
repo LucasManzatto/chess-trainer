@@ -1,12 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { getMoves, getActiveMove, getCurrentFen, INITIAL_FEN, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
-import { useSyncOpeningToBoard, useFilteredOpenings, useMoveStatsShapes, useCurrentOpening } from './hooks'
-import { OpeningsList } from '../../../features/openings/components/OpeningsList'
+import { useSyncOpeningToBoard, useMoveStatsShapes, useCurrentOpening } from './hooks'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
-import { getSelectedOpening, useOpeningsStore } from '../../../features/openings/store/openingsStore'
+import { getSelectedPosition, useOpeningsStore } from '../../../features/openings/store/openingsStore'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { useRepertoireCards } from '../../../features/train/hooks/useRepertoireCards'
 import type { CardCreate } from '../../../features/train/types'
@@ -28,17 +27,13 @@ function BrowseV2Page() {
 
 function BrowseV2PageInner() {
   useSyncOpeningToBoard()
-
-  const [search, setSearch] = useState('')
-  const displayed = useFilteredOpenings(search)
-
   useMoveStatsShapes()
   const currentOpening = useCurrentOpening()
 
   const history = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
   const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
-  const selectedOpening = useOpeningsStore(getSelectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedPosition)
 
   const { data: allCards = [] } = useRepertoireCards()
 
@@ -71,11 +66,7 @@ function BrowseV2PageInner() {
   }
 
   return (
-    <div className="grid grid-cols-[300px_1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
-      <section className="overflow-y-auto min-h-0 bg-white/[0.055] border border-white/[0.09] rounded">
-        <OpeningsList openings={displayed} search={search} onSearchChange={setSearch} />
-      </section>
-
+    <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
         <ChessBoard
           header={

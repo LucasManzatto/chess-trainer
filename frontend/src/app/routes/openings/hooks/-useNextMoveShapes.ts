@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
-import type { Opening } from '../../../../features/openings/types'
+import type { Position as Opening } from '../../../../features/openings/types'
 import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getPlayedMoves } from '../../../../features/board'
 import { isPrefix } from '../../../../features/openings/utils/movesMatch'
 

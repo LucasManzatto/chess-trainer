@@ -1,8 +1,8 @@
-import { useOpeningsStore, getSelectedOpening } from '../store/openingsStore'
+import { useOpeningsStore, getSelectedPosition } from '../store/openingsStore'
 import { useChessBoardStoreApi } from '../../board'
 
 export function ChessBoardHeader() {
-  const selectedOpening = useOpeningsStore(getSelectedOpening)
+  const selectedOpening = useOpeningsStore(getSelectedPosition)
   const boardApi = useChessBoardStoreApi()
 
   function handleReset() {

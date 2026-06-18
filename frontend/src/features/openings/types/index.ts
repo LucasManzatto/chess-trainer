@@ -1,15 +1,15 @@
-export type OpeningComment = { id: number; user_id: string; opening_id: number; content: string; created_at: string }
-export type PositionComment = { id: number; user_id: string; opening_id: number; move_index: number; fen: string; content: string; created_at: string }
-export type DrillQueueItem = { opening_id: number; eco: string; name: string; pgn: string; fen: string; moves: string[]; ease_factor: number; interval_days: number; due_date: string; repetitions: number }
-export type DrillGrade = 0 | 3 | 4 | 5
-export type FavoriteToggleResponse = { opening_id: number; is_favorite: boolean }
-export type DrillActionResponse = { opening_id: number; due_date: string }
-
-export type Opening = {
-  id: number
-  eco: string
-  name: string
-  pgn: string
+export type Position = {
   fen: string
+  eco: string | null
+  name: string | null
+  pgn: string | null
   moves: string[]
+}
+
+export type PositionComment = {
+  id: number
+  user_id: string
+  fen: string
+  content: string
+  created_at: string
 }

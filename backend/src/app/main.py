@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.v1.games import router as games_router
-from .api.v1.openings import router as openings_router
+from .api.v1.positions import router as positions_router
 from .api.v1.profile import router as profile_router
 from .api.v1.train import router as train_router
 from .config import settings
@@ -41,7 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(openings_router, prefix="/api/v1")
+app.include_router(positions_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
 app.include_router(games_router, prefix="/api/v1")
 app.include_router(train_router, prefix="/api/v1")

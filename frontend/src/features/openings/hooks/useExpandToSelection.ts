@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import type { Opening } from '../types'
+import type { Position as Opening } from '../types'
 
 export function useExpandToSelection(
   selectedOpening: Opening | null,

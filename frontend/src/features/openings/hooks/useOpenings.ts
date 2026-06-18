@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchOpenings } from '../api'
-import type { Opening } from '../types'
+import { fetchPositions } from '../api'
+import type { Position } from '../types'
 
 export function useOpenings() {
-  return useQuery<Opening[]>({
-    queryKey: ['openings'],
-    queryFn: fetchOpenings,
+  return useQuery<Position[]>({
+    queryKey: ['positions'],
+    queryFn: fetchPositions,
     staleTime: Infinity,
   })
 }

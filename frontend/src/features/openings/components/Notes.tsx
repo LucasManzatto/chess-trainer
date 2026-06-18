@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useOpeningComments } from '../hooks/useOpeningComments'
-import { usePositionComments } from '../hooks/usePositionComments'
-import type { Opening } from '../types'
+import type { Position } from '../types'
 
 type NotesProps = {
-  selectedOpening: Opening | null
+  selectedOpening: Position | null
   currentMoveIndex: number
   currentFen: string | null
 }
@@ -24,17 +23,13 @@ export function Notes({ selectedOpening, currentMoveIndex, currentFen }: NotesPr
       {!selectedOpening ? (
         <div className="flex flex-col items-center justify-center flex-1 gap-2 px-4 text-center">
           <span className="text-2xl opacity-20 select-none">✎</span>
-          <p className="text-sm text-white/25">Select an opening to view notes</p>
+          <p className="text-sm text-white/25">Select a position to view notes</p>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-5 p-4">
-          <OpeningNotesSection openingId={selectedOpening.id} />
-          {currentMoveIndex >= 0 && currentFen !== null && (
-            <MoveNotesSection
-              openingId={selectedOpening.id}
-              moveIndex={currentMoveIndex}
-              fen={currentFen}
-            />
+          <PositionNotesSection fen={selectedOpening.fen} title="Opening" />
+          {currentMoveIndex >= 0 && currentFen !== null && currentFen !== selectedOpening.fen && (
+            <PositionNotesSection fen={currentFen} title={`Move ${currentMoveIndex + 1}`} />
           )}
         </div>
       )}
@@ -55,29 +50,15 @@ function NotesHeader() {
   )
 }
 
-function OpeningNotesSection({ openingId }: { openingId: number }) {
-  const { comments, isLoading, add } = useOpeningComments(openingId)
+function PositionNotesSection({ fen, title }: { fen: string; title: string }) {
+  const { comments, isLoading, add } = useOpeningComments(fen)
 
   return (
     <NotesSection
-      title="Opening"
+      title={title}
       comments={comments}
       isLoading={isLoading}
       onAdd={(content) => add.mutate(content)}
-      pending={add.isPending}
-    />
-  )
-}
-
-function MoveNotesSection({ openingId, moveIndex, fen }: { openingId: number; moveIndex: number; fen: string }) {
-  const { comments, isLoading, add } = usePositionComments(openingId, fen)
-
-  return (
-    <NotesSection
-      title={`Move ${moveIndex + 1}`}
-      comments={comments}
-      isLoading={isLoading}
-      onAdd={(content) => add.mutate({ moveIndex, content })}
       pending={add.isPending}
     />
   )

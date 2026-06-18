@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { computeOpeningMoveCount } from '../utils/gameLogic'
-import type { Opening } from '../../openings/types'
+import type { Position } from '../../openings/types'
 
-function opening(eco: string, moves: string[]): Opening {
-  return { id: 1, name: 'Test', eco, moves, pgn: '', fen: '' }
+function opening(eco: string, moves: string[]): Position {
+  return { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', name: 'Test', eco, moves, pgn: '' }
 }
 
 describe('computeOpeningMoveCount', () => {
