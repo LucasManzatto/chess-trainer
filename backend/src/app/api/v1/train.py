@@ -38,7 +38,7 @@ async def delete_card(
     session: Session,
     user_id: UserId,
 ) -> None:
-    await train_service.delete_card(session, user_id, body.position_key)
+    await train_service.delete_card(session, user_id, body.position_id)
 
 
 @router.get("/cards/due", response_model=list[CardResponse])
@@ -56,7 +56,7 @@ async def review_card(
     session: Session,
     user_id: UserId,
 ) -> CardResponse:
-    return await train_service.review_card(session, user_id, body.position_key, body.grade)
+    return await train_service.review_card(session, user_id, body.position_id, body.grade)
 
 
 @router.post("/cards/reset", status_code=status.HTTP_204_NO_CONTENT)

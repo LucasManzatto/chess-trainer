@@ -1,18 +1,22 @@
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete, func, select
+
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..exceptions import NotFoundError
-from ..models.openings import RepertoireCard
+from ..models.openings import Position
+from ..models.repertoires import RepertoireCard
 from ..schemas.train import CardCreate, CardResponse, CoverageResponse, StatsResponse
-from .drill import compute_sm2
+from .drill import DrillFields, compute_drill_fields, compute_sm2
 
 _GRADE_INTERVAL: dict[int, timedelta] = {
     0: timedelta(seconds=5),
+    1: timedelta(seconds=5),
     2: timedelta(days=1),
     3: timedelta(days=3),
+    4: timedelta(days=7),
     5: timedelta(days=7),
 }
 
@@ -22,8 +26,45 @@ def _next_state(current: str, grade: int) -> str:
         return "review" if grade >= 3 else "learning"
     if current == "review":
         return "review" if grade >= 3 else "relearning"
-    # relearning
     return "review" if grade >= 3 else "relearning"
+
+
+def _card_response(card: RepertoireCard, position: Position) -> CardResponse:
+    drill: DrillFields = (
+        compute_drill_fields(position.moves)
+        if position.moves
+        else DrillFields(fen=position.fen, line=[], answer="")
+    )
+    return CardResponse(
+        id=card.id,
+        position_id=card.position_id,
+        side=card.side,
+        user_plan=card.user_plan,
+        ease=card.ease,
+        interval_days=card.interval_days,
+        due=card.due,
+        reps=card.reps,
+        lapses=card.lapses,
+        state=card.state,
+        name=position.name,
+        fen=drill["fen"],
+        line=drill["line"],
+        answer=drill["answer"],
+    )
+
+
+async def _upsert_position(session: AsyncSession, fen: str, moves: list[str], name: str | None) -> Position:
+    stmt = (
+        pg_insert(Position)
+        .values(fen=fen, name=name, moves=moves)
+        .on_conflict_do_update(
+            index_elements=["fen"],
+            set_={"moves": moves, "name": func.coalesce(name, Position.name)},
+        )
+        .returning(Position)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one()
 
 
 async def list_cards(
@@ -31,11 +72,15 @@ async def list_cards(
     user_id: str,
     side: str | None = None,
 ) -> list[CardResponse]:
-    q = select(RepertoireCard).where(RepertoireCard.user_id == user_id)
+    q = (
+        select(RepertoireCard, Position)
+        .join(Position, Position.id == RepertoireCard.position_id)
+        .where(RepertoireCard.user_id == user_id)
+    )
     if side:
         q = q.where(RepertoireCard.side == side)
     result = await session.execute(q.order_by(RepertoireCard.due.asc()))
-    return [CardResponse.model_validate(r) for r in result.scalars()]
+    return [_card_response(card, pos) for card, pos in result]
 
 
 async def get_due_cards(
@@ -45,12 +90,13 @@ async def get_due_cards(
 ) -> list[CardResponse]:
     now = datetime.now(UTC)
     result = await session.execute(
-        select(RepertoireCard)
+        select(RepertoireCard, Position)
+        .join(Position, Position.id == RepertoireCard.position_id)
         .where(RepertoireCard.user_id == user_id, RepertoireCard.due <= now)
         .order_by(RepertoireCard.interval_days.asc(), RepertoireCard.due.asc())
         .limit(limit)
     )
-    return [CardResponse.model_validate(r) for r in result.scalars()]
+    return [_card_response(card, pos) for card, pos in result]
 
 
 async def commit_move(
@@ -58,52 +104,44 @@ async def commit_move(
     user_id: str,
     data: CardCreate,
 ) -> CardResponse:
+    position = await _upsert_position(session, data.fen, data.moves, data.name)
+
     stmt = (
         pg_insert(RepertoireCard)
         .values(
             user_id=user_id,
-            position_key=data.position_key,
-            fen=data.fen,
+            position_id=position.id,
             side=data.side,
-            answer=data.answer,
-            line=data.line,
-            opening_eco=data.opening_eco,
-            opening_name=data.opening_name,
-            plan=data.plan,
+            user_plan=data.user_plan,
         )
         .on_conflict_do_update(
-            index_elements=["user_id", "position_key"],
+            index_elements=["user_id", "position_id"],
             set_={
-                "fen": data.fen,
                 "side": data.side,
-                "answer": data.answer,
-                "line": data.line,
-                "opening_eco": data.opening_eco,
-                "opening_name": data.opening_name,
-                "plan": data.plan,
+                "user_plan": data.user_plan,
                 "updated_at": datetime.now(UTC),
             },
         )
         .returning(RepertoireCard)
     )
     result = await session.execute(stmt)
-    row = result.scalar_one()
+    card = result.scalar_one()
     await session.commit()
-    return CardResponse.model_validate(row)
+    return _card_response(card, position)
 
 
 async def delete_card(
     session: AsyncSession,
     user_id: str,
-    position_key: str,
+    position_id: str,
 ) -> None:
-    result = await session.execute(
+    cursor = await session.execute(
         delete(RepertoireCard).where(
             RepertoireCard.user_id == user_id,
-            RepertoireCard.position_key == position_key,
+            RepertoireCard.position_id == position_id,
         )
     )
-    if result.rowcount == 0:
+    if cursor.rowcount == 0:
         raise NotFoundError("Card not found")
     await session.commit()
 
@@ -111,18 +149,21 @@ async def delete_card(
 async def review_card(
     session: AsyncSession,
     user_id: str,
-    position_key: str,
+    position_id: str,
     grade: int,
 ) -> CardResponse:
     result = await session.execute(
-        select(RepertoireCard).where(
+        select(RepertoireCard, Position)
+        .join(Position, Position.id == RepertoireCard.position_id)
+        .where(
             RepertoireCard.user_id == user_id,
-            RepertoireCard.position_key == position_key,
+            RepertoireCard.position_id == position_id,
         )
     )
-    card = result.scalar_one_or_none()
-    if card is None:
+    row = result.one_or_none()
+    if row is None:
         raise NotFoundError("Card not found")
+    card, position = row
 
     new_ef, _, new_reps = compute_sm2(
         ease_factor=card.ease,
@@ -136,16 +177,14 @@ async def review_card(
         card.lapses += 1
 
     delta = _GRADE_INTERVAL[grade]
-
     card.ease = new_ef
     card.interval_days = delta.total_seconds() / 86400
     card.reps = new_reps
     card.state = new_state
     card.due = datetime.now(UTC) + delta
-    # updated_at is managed by the DB onupdate trigger; no Python assignment needed
 
     await session.commit()
-    return CardResponse.model_validate(card)
+    return _card_response(card, position)
 
 
 async def reset_cards(

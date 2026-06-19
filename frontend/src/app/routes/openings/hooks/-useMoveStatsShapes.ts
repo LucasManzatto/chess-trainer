@@ -161,7 +161,7 @@ export function useMoveStatsShapes() {
     const posKey = fen.split(' ').slice(0, 4).join(' ')
     const set = new Set<string>()
     for (const card of allCards) {
-      if (card.position_key === posKey) set.add(card.answer)
+      if (card.fen.split(' ').slice(0, 4).join(' ') === posKey) set.add(card.answer)
     }
     return set
   }, [fen, allCards])

@@ -22,7 +22,7 @@ export function AddToDrill({ card, existingCard, className }: Props) {
         className="bg-red-700/60 hover:bg-red-600/70 disabled:opacity-50 text-red-200 text-xs font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer"
         disabled={isPending}
         onClick={() =>
-          deleteCard(existingCard.position_key, {
+          deleteCard(existingCard.position_id, {
             onSuccess: () => toast.success('Removed from drill'),
             onError: () => toast.error('Failed to remove from drill'),
           })

@@ -1,24 +1,36 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..exceptions import NotFoundError
-from ..models.openings import Position, PositionComment, UserPosition
+from ..exceptions import ConflictError, NotFoundError
+from ..models.openings import Position, PositionComment, PositionMove
+from ..models.repertoires import RepertoireCard
 from ..schemas.openings import (
     PositionCommentCreate,
     PositionCommentResponse,
     PositionCreate,
+    PositionMoveCreate,
+    PositionMoveResponse,
+    PositionMoveUpdate,
     PositionResponse,
 )
+
+
+async def get_position(session: AsyncSession, fen: str) -> PositionResponse:
+    result = await session.execute(select(Position).where(Position.fen == fen))
+    pos = result.scalar_one_or_none()
+    if pos is None:
+        raise NotFoundError("Position not found")
+    return PositionResponse.model_validate(pos)
 
 
 async def upsert_position(session: AsyncSession, body: PositionCreate) -> PositionResponse:
     stmt = (
         pg_insert(Position)
-        .values(fen=body.fen, eco=body.eco, name=body.name, pgn=body.pgn, moves=body.moves)
+        .values(fen=body.fen, name=body.name, moves=body.moves)
         .on_conflict_do_update(
             index_elements=["fen"],
-            set_={"eco": body.eco, "name": body.name, "pgn": body.pgn, "moves": body.moves},
+            set_={"name": func.coalesce(body.name, Position.name), "moves": body.moves},
         )
         .returning(Position)
     )
@@ -27,43 +39,85 @@ async def upsert_position(session: AsyncSession, body: PositionCreate) -> Positi
     return PositionResponse.model_validate(result.scalar_one())
 
 
-async def list_user_positions(session: AsyncSession, user_id: str) -> list[PositionResponse]:
-    result = await session.execute(
-        select(Position)
-        .join(UserPosition, UserPosition.fen == Position.fen)
-        .where(UserPosition.user_id == user_id)
-        .order_by(UserPosition.saved_at.desc())
+async def delete_position(session: AsyncSession, fen: str) -> None:
+    pos_result = await session.execute(select(Position).where(Position.fen == fen))
+    pos = pos_result.scalar_one_or_none()
+    if pos is None:
+        raise NotFoundError("Position not found")
+    card_count = await session.scalar(
+        select(func.count()).where(RepertoireCard.position_id == pos.id)
     )
-    return [PositionResponse.model_validate(p) for p in result.scalars()]
+    if card_count:
+        raise ConflictError("Position has associated drill cards and cannot be deleted")
+    await session.execute(delete(Position).where(Position.id == pos.id))
+    await session.commit()
 
 
-async def save_user_position(session: AsyncSession, user_id: str, fen: str) -> PositionResponse:
-    pos_stmt = (
+async def list_position_moves(session: AsyncSession, fen: str) -> list[PositionMoveResponse]:
+    result = await session.execute(
+        select(PositionMove)
+        .join(Position, Position.id == PositionMove.from_position_id)
+        .where(Position.fen == fen)
+        .order_by(PositionMove.is_main_line.desc(), PositionMove.san)
+    )
+    return [PositionMoveResponse.model_validate(m) for m in result.scalars()]
+
+
+async def create_position_move(session: AsyncSession, body: PositionMoveCreate) -> PositionMoveResponse:
+    # DO NOTHING returns no rows on conflict; no-op DO UPDATE forces RETURNING to return existing row
+    from_pos_result = await session.execute(
         pg_insert(Position)
-        .values(fen=fen, eco=None, name=None, pgn=None, moves=[])
-        .on_conflict_do_update(index_elements=["fen"], set_={"fen": fen})
+        .values(fen=body.from_fen, name=None, moves=[])
+        .on_conflict_do_update(index_elements=["fen"], set_={"fen": body.from_fen})
         .returning(Position)
     )
-    result = await session.execute(pos_stmt)
-    pos = result.scalar_one()
+    from_pos = from_pos_result.scalar_one()
 
-    await session.execute(
-        pg_insert(UserPosition)
-        .values(user_id=user_id, fen=fen)
-        .on_conflict_do_nothing()
+    to_pos_result = await session.execute(
+        pg_insert(Position)
+        .values(fen=body.to_fen, name=None, moves=[])
+        .on_conflict_do_update(index_elements=["fen"], set_={"fen": body.to_fen})
+        .returning(Position)
+    )
+    to_pos = to_pos_result.scalar_one()
+
+    move_result = await session.execute(
+        pg_insert(PositionMove)
+        .values(
+            from_position_id=from_pos.id,
+            to_position_id=to_pos.id,
+            san=body.san,
+            lan=body.lan,
+            is_main_line=body.is_main_line,
+            commentary=body.commentary,
+        )
+        .returning(PositionMove)
     )
     await session.commit()
-    return PositionResponse.model_validate(pos)
+    return PositionMoveResponse.model_validate(move_result.scalar_one())
 
 
-async def remove_user_position(session: AsyncSession, user_id: str, fen: str) -> None:
+async def update_position_move(
+    session: AsyncSession, move_id: str, body: PositionMoveUpdate
+) -> PositionMoveResponse:
+    result = await session.execute(select(PositionMove).where(PositionMove.id == move_id))
+    move = result.scalar_one_or_none()
+    if move is None:
+        raise NotFoundError("Position move not found")
+    if body.is_main_line is not None:
+        move.is_main_line = body.is_main_line
+    if "commentary" in body.model_fields_set:
+        move.commentary = body.commentary
+    await session.commit()
+    return PositionMoveResponse.model_validate(move)
+
+
+async def delete_position_move(session: AsyncSession, move_id: str) -> None:
     result = await session.execute(
-        delete(UserPosition)
-        .where(UserPosition.user_id == user_id, UserPosition.fen == fen)
-        .returning(UserPosition.fen)
+        delete(PositionMove).where(PositionMove.id == move_id).returning(PositionMove.id)
     )
     if result.first() is None:
-        raise NotFoundError("Position not in user's list")
+        raise NotFoundError("Position move not found")
     await session.commit()
 
 
@@ -72,7 +126,8 @@ async def list_position_comments(
 ) -> list[PositionCommentResponse]:
     result = await session.execute(
         select(PositionComment)
-        .where(PositionComment.user_id == user_id, PositionComment.fen == fen)
+        .join(Position, Position.id == PositionComment.position_id)
+        .where(PositionComment.user_id == user_id, Position.fen == fen)
         .order_by(PositionComment.created_at)
     )
     return [PositionCommentResponse.model_validate(c) for c in result.scalars()]
@@ -81,12 +136,14 @@ async def list_position_comments(
 async def create_position_comment(
     session: AsyncSession, user_id: str, fen: str, body: PositionCommentCreate
 ) -> PositionCommentResponse:
-    await session.execute(
+    pos_result = await session.execute(
         pg_insert(Position)
-        .values(fen=fen, eco=None, name=None, pgn=None, moves=[])
-        .on_conflict_do_nothing()
+        .values(fen=fen, name=None, moves=[])
+        .on_conflict_do_update(index_elements=["fen"], set_={"fen": fen})
+        .returning(Position)
     )
-    comment = PositionComment(user_id=user_id, fen=fen, content=body.content)
+    pos = pos_result.scalar_one()
+    comment = PositionComment(user_id=user_id, position_id=pos.id, content=body.content)
     session.add(comment)
     await session.commit()
     return PositionCommentResponse.model_validate(comment)

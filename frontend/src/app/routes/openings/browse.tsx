@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { getMoves, getActiveMove, getCurrentFen, INITIAL_FEN, ChessBoard, ChessBoardProvider, useChessBoardStore } from '../../../features/board'
 import { createFileRoute } from '@tanstack/react-router'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
-import { useSyncOpeningToBoard, useMoveStatsShapes, useCurrentOpening } from './hooks'
+import { useSyncOpeningToBoard, useCurrentOpening } from './hooks'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 import { getSelectedPosition, useOpeningsStore } from '../../../features/openings/store/openingsStore'
@@ -25,9 +25,12 @@ function BrowseV2Page() {
   )
 }
 
+function getSideFromFen(fen: string): 'white' | 'black' {
+  return fen.split(' ')[1] === 'w' ? 'white' : 'black'
+}
+
 function BrowseV2PageInner() {
   useSyncOpeningToBoard()
-  useMoveStatsShapes()
   const currentOpening = useCurrentOpening()
 
   const history = useChessBoardStore(s => s.history)
@@ -41,24 +44,23 @@ function BrowseV2PageInner() {
   const activeMove = getActiveMove({ currentMoveIndex })
   const currentFen = useChessBoardStore(getCurrentFen)
 
+  const preAnswerFen = currentMoveIndex > 0 ? history[currentMoveIndex - 1].fen : INITIAL_FEN
+
   const drillCard = useMemo((): CardCreate | null => {
     if (currentMoveIndex < 0) return null
-    const entry = history[currentMoveIndex]
-    const fen = currentMoveIndex > 0 ? history[currentMoveIndex - 1].fen : INITIAL_FEN
-    const side = fen.split(' ')[1] === 'w' ? 'white' : 'black'
+    const positionFen = history[currentMoveIndex].fen
+    const cardMoves = history.slice(0, currentMoveIndex + 1).map(e => e.san)
+    const side = getSideFromFen(preAnswerFen)
     return {
-      position_key: fen.split(' ').slice(0, 4).join(' '),
-      fen,
+      fen: positionFen,
+      moves: cardMoves,
       side,
-      answer: entry.from + entry.to + (entry.san.match(/=([QRBN])/)?.[1].toLowerCase() ?? ''),
-      line: history.slice(0, currentMoveIndex).map(e => e.san),
-      opening_eco: selectedOpening?.eco ?? null,
-      opening_name: selectedOpening?.name ?? null,
+      name: selectedOpening?.name ?? null,
     }
-  }, [currentMoveIndex, history, selectedOpening])
+  }, [currentMoveIndex, history, preAnswerFen, selectedOpening])
 
   const existingCard = drillCard
-    ? allCards.find(c => c.position_key === drillCard.position_key) ?? null
+    ? allCards.find(c => c.fen === preAnswerFen) ?? null
     : null
 
   function onMoveClick(moveNumber: number, color: 'white' | 'black') {
@@ -68,24 +70,23 @@ function BrowseV2PageInner() {
   return (
     <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <ChessBoard
-          header={
-            <div className="relative flex items-center justify-center w-full px-1">
-              <span className="text-white/60 text-lg font-medium tracking-wide">
-                {currentOpening?.name ?? ' '}
-              </span>
-              {drillCard && (
-                <div className="absolute right-0">
-                  <AddToDrill
-                    card={drillCard}
-                    existingCard={existingCard}
-                    className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer"
-                  />
-                </div>
-              )}
-            </div>
-          }
-        />
+        <div className="flex flex-col items-stretch">
+          <div className="relative flex items-center justify-center px-3 py-2">
+            <span className="text-white/60 text-lg font-medium tracking-wide">
+              {currentOpening?.name ?? ' '}
+            </span>
+            {drillCard && (
+              <div className="absolute right-0">
+                <AddToDrill
+                  card={drillCard}
+                  existingCard={existingCard}
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+          <ChessBoard />
+        </div>
       </section>
 
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">

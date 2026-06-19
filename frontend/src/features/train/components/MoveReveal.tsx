@@ -52,7 +52,7 @@ export function GradeButtons({ card, onGrade }: GradeButtonsProps) {
           key={label}
           onClick={() => {
             if (card) {
-              reviewCard({ position_key: card.position_key, grade })
+              reviewCard({ position_id: card.position_id, grade })
               onGrade()
             }
           }}

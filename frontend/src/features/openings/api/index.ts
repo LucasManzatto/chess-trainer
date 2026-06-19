@@ -1,5 +1,5 @@
 import { request } from '../../../lib/api'
-import type { Position, PositionComment } from '../types'
+import type { MoveStatsResponse, Position, PositionComment, PositionMove, PositionMoveCreateBody } from '../types'
 
 export async function fetchPositions(): Promise<Position[]> {
   const resp = await fetch('/positions.json')
@@ -7,16 +7,38 @@ export async function fetchPositions(): Promise<Position[]> {
   return resp.json()
 }
 
-export const userPositionsApi = {
-  list: (signal?: AbortSignal) =>
-    request<Position[]>('/api/v1/positions/mine', { signal }),
-  save: (fen: string) =>
-    request<Position>('/api/v1/positions/mine', {
+export const positionsApi = {
+  upsert: (fen: string, name?: string | null, moves?: string[]) =>
+    request<Position>('/api/v1/positions', {
       method: 'POST',
-      body: JSON.stringify({ fen }),
+      body: JSON.stringify({ fen, name: name ?? null, moves: moves ?? [] }),
     }),
+  get: (fen: string, signal?: AbortSignal) =>
+    request<Position>(`/api/v1/positions/${encodeURIComponent(fen)}`, { signal }),
   remove: (fen: string) =>
-    request<void>(`/api/v1/positions/mine/${encodeURIComponent(fen)}`, { method: 'DELETE' }),
+    request<void>(`/api/v1/positions/${encodeURIComponent(fen)}`, { method: 'DELETE' }),
+}
+
+export const positionMovesApi = {
+  list: (fen: string, signal?: AbortSignal) =>
+    request<PositionMove[]>(`/api/v1/positions/${encodeURIComponent(fen)}/moves`, { signal }),
+  create: (body: PositionMoveCreateBody) =>
+    request<PositionMove>('/api/v1/positions/moves', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  update: (moveId: string, body: { is_main_line?: boolean; commentary?: string | null }) =>
+    request<PositionMove>(`/api/v1/positions/moves/${moveId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  remove: (moveId: string) =>
+    request<void>(`/api/v1/positions/moves/${moveId}`, { method: 'DELETE' }),
+}
+
+export const moveStatsApi = {
+  get: (moves: string[], signal?: AbortSignal) =>
+    request<MoveStatsResponse>(`/api/v1/positions/move-stats?moves=${encodeURIComponent(moves.join(','))}`, { signal }),
 }
 
 export const positionCommentsApi = {

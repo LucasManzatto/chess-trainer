@@ -10,14 +10,14 @@ export const trainApi = {
     return request<RepertoireCard[]>(`/api/v1/train/cards${qs}`, { signal })
   },
 
-  /** Upsert a committed move as a card. Idempotent by position_key. */
+  /** Upsert a card. Idempotent by position (fen). */
   commitMove: (card: CardCreate) =>
     request<RepertoireCard>('/api/v1/train/cards', {
       method: 'POST',
       body: JSON.stringify(card),
     }),
 
-  /** Delete a card. position_key is in the body to avoid FEN slash encoding issues. */
+  /** Delete a card by position_id. */
   deleteCard: (body: CardDelete) =>
     request<void>('/api/v1/train/cards', {
       method: 'DELETE',

@@ -84,7 +84,7 @@ async def main() -> None:
             skipped += 1
             continue
         fen, moves = result
-        positions.append({"fen": fen, "eco": eco, "name": name, "pgn": pgn, "moves": moves})
+        positions.append({"fen": fen, "name": name, "moves": moves})
 
     print(f"Parsed {len(positions)} positions ({skipped} skipped).")
 
@@ -94,12 +94,11 @@ async def main() -> None:
         print("Upserting positions...")
         await conn.executemany(
             """
-            INSERT INTO positions (fen, eco, name, pgn, moves)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (fen) DO UPDATE SET eco = EXCLUDED.eco, name = EXCLUDED.name,
-                pgn = EXCLUDED.pgn, moves = EXCLUDED.moves
+            INSERT INTO positions (fen, name, moves)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (fen) DO UPDATE SET name = EXCLUDED.name, moves = EXCLUDED.moves
             """,
-            [(p["fen"], p["eco"], p["name"], p["pgn"], p["moves"]) for p in positions],
+            [(p["fen"], p["name"], p["moves"]) for p in positions],
         )
         print(f"Upserted {len(positions)} rows.")
     finally:

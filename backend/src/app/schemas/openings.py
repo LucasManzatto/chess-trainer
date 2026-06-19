@@ -5,24 +5,45 @@ from pydantic import BaseModel, ConfigDict
 
 class PositionCreate(BaseModel):
     fen: str
-    eco: str | None = None
     name: str | None = None
-    pgn: str | None = None
     moves: list[str] = []
 
 
 class PositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: str
     fen: str
-    eco: str | None
     name: str | None
-    pgn: str | None
     moves: list[str]
+    created_at: datetime
 
 
-class UserPositionSave(BaseModel):
-    fen: str
+
+class PositionMoveCreate(BaseModel):
+    from_fen: str
+    to_fen: str
+    san: str
+    lan: str
+    is_main_line: bool = False
+    commentary: str | None = None
+
+
+class PositionMoveUpdate(BaseModel):
+    is_main_line: bool | None = None
+    commentary: str | None = None
+
+
+class PositionMoveResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    from_position_id: str
+    to_position_id: str
+    san: str
+    lan: str
+    is_main_line: bool
+    commentary: str | None
 
 
 class PositionCommentCreate(BaseModel):
@@ -38,7 +59,7 @@ class PositionCommentResponse(BaseModel):
 
     id: int
     user_id: str
-    fen: str
+    position_id: str
     content: str
     created_at: datetime
 

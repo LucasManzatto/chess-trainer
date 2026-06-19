@@ -13,7 +13,7 @@ export function useReviewCard() {
       const prevDue = queryClient.getQueryData<RepertoireCard[]>(trainKeys.due())
       queryClient.setQueryData<RepertoireCard[]>(
         trainKeys.due(),
-        (prev) => prev?.filter(c => c.position_key !== review.position_key),
+        (prev) => prev?.filter(c => c.position_id !== review.position_id),
       )
       return { prevDue }
     },
@@ -24,7 +24,7 @@ export function useReviewCard() {
     onSuccess: (updated) => {
       queryClient.setQueriesData<RepertoireCard[]>(
         { queryKey: trainKeys.cards() },
-        (prev) => prev?.map(c => c.position_key === updated.position_key ? updated : c),
+        (prev) => prev?.map(c => c.position_id === updated.position_id ? updated : c),
       )
     },
     onSettled: () => {

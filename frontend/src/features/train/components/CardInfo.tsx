@@ -9,18 +9,13 @@ export function CardInfo({ card }: CardInfoProps) {
 
   return (
     <div className="flex flex-col gap-2 px-1 w-full select-none">
-      {/* Opening name + ECO */}
+      {/* Opening name */}
       <div className="flex items-center gap-2">
-        {card.opening_eco && (
-          <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-white/[0.06] border border-white/[0.08] text-white/40 text-xs font-mono">
-            {card.opening_eco}
-          </span>
-        )}
         <span
           className="text-white/90 font-semibold leading-tight truncate"
           style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '15px' }}
         >
-          {card.opening_name ?? 'Unknown Opening'}
+          {card.name ?? 'Unknown Opening'}
         </span>
       </div>
 
@@ -42,8 +37,8 @@ export function CardInfo({ card }: CardInfoProps) {
       )}
 
       {/* Plan text */}
-      {card.plan && (
-        <p className="text-white/40 text-xs italic leading-snug">{card.plan}</p>
+      {card.user_plan && (
+        <p className="text-white/40 text-xs italic leading-snug">{card.user_plan}</p>
       )}
     </div>
   )

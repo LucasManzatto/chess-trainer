@@ -21,8 +21,8 @@ interface TrainState {
   mode: TrainMode
   phase: TrainPhase
   stats: SessionStats
-  /** Position keys seen this session — prevents re-quizzing transpositions. */
-  seenPositionKeys: Set<string>
+  /** Position IDs seen this session — prevents re-quizzing the same position. */
+  seenPositionIds: Set<string>
   /** Due cards loaded by the provider for the current session. */
   dueCards: RepertoireCard[]
   /** All user cards — used by spar mode for the position→card lookup. */
@@ -36,11 +36,11 @@ interface TrainActions {
   setPhase: (phase: TrainPhase) => void
   setDueCards: (cards: RepertoireCard[]) => void
   setAllCards: (cards: RepertoireCard[]) => void
-  markSeen: (positionKey: string) => void
+  markSeen: (positionId: string) => void
   recordResult: (correct: boolean) => void
   /** Pick next unseen card and commit it to currentCard. */
   advanceCard: () => void
-  /** Reset session state, clear seen keys and stats. */
+  /** Reset session state, clear seen ids and stats. */
   resetSession: () => void
 }
 
@@ -48,14 +48,14 @@ export type TrainStoreType = TrainState & TrainActions
 
 // ── Selectors ──────────────────────────────────────────────────────────────────
 
-export function getCardsByPositionKey(
+export function getCardsByPositionId(
   state: Pick<TrainStoreType, 'allCards'>,
 ): Map<string, RepertoireCard> {
-  return new Map(state.allCards.map(c => [c.position_key, c]))
+  return new Map(state.allCards.map(c => [c.position_id, c]))
 }
 
-export function getDueCount(state: Pick<TrainStoreType, 'dueCards' | 'seenPositionKeys'>): number {
-  return state.dueCards.filter(c => !state.seenPositionKeys.has(c.position_key)).length
+export function getDueCount(state: Pick<TrainStoreType, 'dueCards' | 'seenPositionIds'>): number {
+  return state.dueCards.filter(c => !state.seenPositionIds.has(c.position_id)).length
 }
 
 // ── Factory ────────────────────────────────────────────────────────────────────
@@ -65,18 +65,18 @@ export function createTrainStore() {
     mode: 'drill',
     phase: { type: 'idle' },
     stats: { total: 0, correct: 0 },
-    seenPositionKeys: new Set(),
+    seenPositionIds: new Set(),
     dueCards: [],
     allCards: [],
     currentCard: null,
 
-    // Full session reset on mode switch — prevents stale seen keys / stats carrying over.
+    // Full session reset on mode switch — prevents stale seen ids / stats carrying over.
     setMode: mode =>
       set({
         mode,
         phase: { type: 'idle' },
         stats: { total: 0, correct: 0 },
-        seenPositionKeys: new Set(),
+        seenPositionIds: new Set(),
         currentCard: null,
       }),
 
@@ -85,22 +85,22 @@ export function createTrainStore() {
     setDueCards: dueCards =>
       set(s => ({
         dueCards,
-        currentCard: dueCards.find(c => !s.seenPositionKeys.has(c.position_key)) ?? null,
+        currentCard: dueCards.find(c => !s.seenPositionIds.has(c.position_id)) ?? null,
       })),
 
     setAllCards: allCards => set({ allCards }),
 
     advanceCard: () =>
       set(s => ({
-        currentCard: s.dueCards.find(c => !s.seenPositionKeys.has(c.position_key)) ?? null,
+        currentCard: s.dueCards.find(c => !s.seenPositionIds.has(c.position_id)) ?? null,
       })),
 
-    markSeen: positionKey =>
+    markSeen: positionId =>
       set(s => {
-        const seenPositionKeys = new Set(s.seenPositionKeys).add(positionKey)
+        const seenPositionIds = new Set(s.seenPositionIds).add(positionId)
         return {
-          seenPositionKeys,
-          currentCard: s.dueCards.find(c => !seenPositionKeys.has(c.position_key)) ?? null,
+          seenPositionIds,
+          currentCard: s.dueCards.find(c => !seenPositionIds.has(c.position_id)) ?? null,
         }
       }),
 
@@ -116,7 +116,7 @@ export function createTrainStore() {
       set({
         phase: { type: 'idle' },
         stats: { total: 0, correct: 0 },
-        seenPositionKeys: new Set(),
+        seenPositionIds: new Set(),
         currentCard: null,
       }),
   }))

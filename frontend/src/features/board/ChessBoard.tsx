@@ -8,7 +8,6 @@ import { useBoardSettings } from './store/boardSettingsStore'
 import { usePositionEvaluation } from './hooks/usePositionEvaluation'
 
 type Props = {
-  header?: ReactNode
   overlay?: ReactNode
   showEvalBar?: boolean
   showSettings?: boolean
@@ -26,14 +25,13 @@ function useEvaluation() {
   return { isLoading }
 }
 
-export function ChessBoard({ header, overlay, showEvalBar = true, showSettings = true }: Props) {
+export function ChessBoard({ overlay, showEvalBar = true, showSettings = true }: Props) {
   const { isLoading } = useEvaluation()
   const boardSize = useBoardSettings(s => s.boardSize)
   const evalScore = useChessBoardStore(s => s.evalScore)
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {header}
       <div className="flex flex-row gap-2">
         {showEvalBar && (
           <div style={{ height: boardSize }}>

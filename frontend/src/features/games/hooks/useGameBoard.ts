@@ -17,7 +17,7 @@ export function useGameBoard(onAnalysisComplete: () => void, onOrientationChange
   const { data: openings } = useOpenings()
 
   const openingMatch = useMemo(
-    () => computeOpeningMatch(selectedGame?.moves ?? [], selectedGame?.eco ?? null, openings ?? []),
+    () => computeOpeningMatch(selectedGame?.moves ?? [], openings ?? []),
     [selectedGame?.moves, selectedGame?.eco, openings],
   )
 
