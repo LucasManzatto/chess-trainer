@@ -1,5 +1,4 @@
 export { useCurrentOpening } from './-useCurrentOpening'
-export { useFilteredOpenings } from './-useFilteredOpenings'
 export { useMoveStatsShapes } from './-useMoveStatsShapes'
 export { useNextMoveShapes } from './-useNextMoveShapes'
 export { useSyncOpeningToBoard } from './-useSyncOpeningToBoard'

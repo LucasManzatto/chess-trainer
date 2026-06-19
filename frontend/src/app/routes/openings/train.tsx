@@ -68,11 +68,8 @@ function TrainPageInner() {
   return (
     <div className="flex items-center justify-center gap-5 p-6 h-full w-full overflow-hidden">
       <section className="relative flex flex-col items-center justify-center min-h-0 h-full rounded flex-1 max-w-2xl">
-        <ChessBoard
-          showEvalBar={false}
-          showSettings={false}
-          header={<TrainHeader mode={mode} onBack={goIdle} />}
-        />
+        <TrainHeader mode={mode} onBack={goIdle} />
+        <ChessBoard showEvalBar={false} showSettings={false} />
         {revealed && <CorrectBanner correct={isCorrect ?? false} />}
         <div className={`w-full mt-3${!revealed ? ' invisible' : ''}`}>
           <GradeButtons card={currentCard} onGrade={() => setPhase({ type: 'done' })} />

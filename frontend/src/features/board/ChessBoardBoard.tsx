@@ -6,7 +6,7 @@ import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
-import { getCurrentFen } from './store/slices/gameSlice'
+import { getCurrentFen, getLastMove } from './store/slices/gameSlice'
 import { useBoardSettings } from './store/boardSettingsStore'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -22,16 +22,14 @@ const BRUSHES = {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type HistoryEntry = { san: string; fen: string; from: string; to: string }
-
 type ConfigParams = {
   fen: string
   orientation: 'white' | 'black'
   turn: 'white' | 'black'
-  chess: Chess
+  check: boolean
   interactive: boolean
   dests: Dests
-  lastEntry: HistoryEntry | undefined
+  lastMove: string | undefined
   shapes: DrawShape[] | undefined
   extraBrushes: Record<string, DrawBrush>
   onMove: (orig: Key, dest: Key) => void
@@ -41,10 +39,6 @@ type ConfigParams = {
 
 function getTurn(chess: Chess): 'white' | 'black' {
   return chess.turn() === 'w' ? 'white' : 'black'
-}
-
-function getLastEntry(history: HistoryEntry[], currentMoveIndex: number): HistoryEntry | undefined {
-  return currentMoveIndex >= 0 ? history[currentMoveIndex] : undefined
 }
 
 function getDests(chess: Chess, interactive: boolean): Dests {
@@ -67,13 +61,13 @@ function getAllShapes(shapes: DrawShape[], hintShapes: DrawShape[], evalBestMove
   return [...shapes, ...hintShapes, ...bestMoveShape]
 }
 
-function getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntry, shapes, extraBrushes, onMove }: ConfigParams): Config {
+function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, shapes, extraBrushes, onMove }: ConfigParams): Config {
   return {
     fen,
     orientation,
     turnColor: turn,
-    check: chess.inCheck(),
-    lastMove: lastEntry ? [lastEntry.from as Key, lastEntry.to as Key] : undefined,
+    check,
+    lastMove: lastMove ? [lastMove.slice(0, 2) as Key, lastMove.slice(2, 4) as Key] : undefined,
     viewOnly: !interactive,
     movable: {
       free: false,
@@ -103,8 +97,6 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   const apiRef = useRef<Api | null>(null)
   const store = useChessBoardStoreApi()
 
-  const history = useChessBoardStore(s => s.history)
-  const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
   const orientation = useChessBoardStore(s => s.orientation)
   const interactive = useChessBoardStore(s => s.interactive)
   const shapes = useChessBoardStore(s => s.shapes)
@@ -114,10 +106,10 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   const boardSize = useBoardSettings(s => s.boardSize)
   const showBestMove = useBoardSettings(s => s.showBestMove)
   const evalBestMove = useChessBoardStore(s => s.evalBestMove)
+  const lastMove = useChessBoardStore(getLastMove)
   const chess = useMemo(() => new Chess(fen), [fen])
   const turn = getTurn(chess)
   const dests = useMemo(() => getDests(chess, interactive), [chess, interactive])
-  const lastEntry = getLastEntry(history, currentMoveIndex)
 
   const onMoveHandler = useCallback(
     (orig: Key, dest: Key) => store.getState().applyMove(orig, dest),
@@ -130,8 +122,8 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   )
 
   const config = useMemo(
-    () => getConfig({ fen, orientation, turn, chess, interactive, dests, lastEntry, shapes: allShapes, extraBrushes: hintBrushes, onMove: onMoveHandler }),
-    [fen, orientation, turn, chess, interactive, dests, lastEntry, allShapes, hintBrushes, onMoveHandler],
+    () => getConfig({ fen, orientation, turn, check: chess.inCheck(), interactive, dests, lastMove, shapes: allShapes, extraBrushes: hintBrushes, onMove: onMoveHandler }),
+    [fen, orientation, turn, chess, interactive, dests, lastMove, allShapes, hintBrushes, onMoveHandler],
   )
 
   // Init once

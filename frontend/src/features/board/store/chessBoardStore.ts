@@ -2,10 +2,9 @@ import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
 import { createGameSlice, getInitialGameState, type GameSlice } from './slices/gameSlice'
 import { createDisplaySlice, getInitialDisplayState, type DisplaySlice, type DisplaySliceConfig } from './slices/displaySlice'
-import { createOverlaySlice, getInitialOverlayState, type OverlaySlice } from './slices/overlaySlice'
 import { createEvalSlice, getInitialEvalState, type EvalSlice } from './slices/evalSlice'
 
-export type ChessBoardStoreType = GameSlice & DisplaySlice & OverlaySlice & EvalSlice & {
+export type ChessBoardStoreType = GameSlice & DisplaySlice & EvalSlice & {
   reset: () => void
 }
 
@@ -15,13 +14,11 @@ export function createChessBoardStore(config: ChessBoardStoreConfig = {}) {
   return createStore<ChessBoardStoreType>()((set, get, store) => ({
     ...createGameSlice(set, get, store),
     ...createDisplaySlice(config)(set, get, store),
-    ...createOverlaySlice(set, get, store),
     ...createEvalSlice(set, get, store),
 
     reset: () => set({
       ...getInitialGameState(),
       ...getInitialDisplayState({ orientation: get().orientation, interactive: get().interactive }),
-      ...getInitialOverlayState(),
       ...getInitialEvalState(),
     }),
   }))

@@ -40,6 +40,11 @@ export function getCurrentFen(state: Pick<GameSlice, 'lastExternalFen' | 'histor
   return state.lastExternalFen ?? getFenAtIndex(state)
 }
 
+export function getLastMove(state: Pick<GameSlice, 'history' | 'currentMoveIndex'>): string | undefined {
+  const entry = state.currentMoveIndex >= 0 ? state.history[state.currentMoveIndex] : undefined
+  return entry ? `${entry.from}${entry.to}` : undefined
+}
+
 export function getActiveMove(state: Pick<GameSlice, 'currentMoveIndex'>): ActiveMove | undefined {
   if (state.currentMoveIndex < 0) return undefined
   return {

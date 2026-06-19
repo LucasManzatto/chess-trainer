@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useOpeningComments } from '../hooks/useOpeningComments'
+import { usePositionComments } from '../hooks/usePositionComments'
 import type { Position } from '../types'
 
 type NotesProps = {
@@ -51,7 +51,7 @@ function NotesHeader() {
 }
 
 function PositionNotesSection({ fen, title }: { fen: string; title: string }) {
-  const { comments, isLoading, add } = useOpeningComments(fen)
+  const { comments, isLoading, add } = usePositionComments(fen)
 
   return (
     <NotesSection
