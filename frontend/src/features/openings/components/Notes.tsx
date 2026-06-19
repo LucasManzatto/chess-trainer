@@ -1,38 +1,31 @@
 import { useState } from 'react'
 import { usePositionComments } from '../hooks/usePositionComments'
-import type { Position } from '../types'
 
 type NotesProps = {
-  selectedOpening: Position | null
-  currentMoveIndex: number
-  currentFen: string | null
+  currentFen: string
 }
 
 type NotesSectionProps = {
-  title: string
   comments: { id: number; content: string }[]
   isLoading: boolean
   onAdd: (content: string) => void
   pending: boolean
 }
 
-export function Notes({ selectedOpening, currentMoveIndex, currentFen }: NotesProps) {
+export function Notes({ currentFen }: NotesProps) {
+  const { comments, isLoading, add } = usePositionComments(currentFen)
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <NotesHeader />
-      {!selectedOpening ? (
-        <div className="flex flex-col items-center justify-center flex-1 gap-2 px-4 text-center">
-          <span className="text-2xl opacity-20 select-none">✎</span>
-          <p className="text-sm text-white/25">Select a position to view notes</p>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-5 p-4">
-          <PositionNotesSection fen={selectedOpening.fen} title="Opening" />
-          {currentMoveIndex >= 0 && currentFen !== null && currentFen !== selectedOpening.fen && (
-            <PositionNotesSection fen={currentFen} title={`Move ${currentMoveIndex + 1}`} />
-          )}
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-5 p-4">
+        <NotesSection
+          comments={comments}
+          isLoading={isLoading}
+          onAdd={(content) => add.mutate(content)}
+          pending={add.isPending}
+        />
+      </div>
     </div>
   )
 }
@@ -50,21 +43,7 @@ function NotesHeader() {
   )
 }
 
-function PositionNotesSection({ fen, title }: { fen: string; title: string }) {
-  const { comments, isLoading, add } = usePositionComments(fen)
-
-  return (
-    <NotesSection
-      title={title}
-      comments={comments}
-      isLoading={isLoading}
-      onAdd={(content) => add.mutate(content)}
-      pending={add.isPending}
-    />
-  )
-}
-
-function NotesSection({ title, comments, isLoading, onAdd, pending }: NotesSectionProps) {
+function NotesSection({ comments, isLoading, onAdd, pending }: NotesSectionProps) {
   const [draft, setDraft] = useState('')
 
   function handleAdd() {
@@ -76,12 +55,6 @@ function NotesSection({ title, comments, isLoading, onAdd, pending }: NotesSecti
 
   return (
     <div className="flex flex-col gap-2.5">
-      <span
-        className="text-white/50 font-semibold tracking-tight"
-        style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '12px' }}
-      >
-        {title}
-      </span>
       {isLoading ? (
         <p className="text-sm text-white/25">Loading…</p>
       ) : comments.length === 0 ? (

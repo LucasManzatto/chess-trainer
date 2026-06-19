@@ -3,14 +3,15 @@ import { useMemo } from 'react'
 
 import { ChessBoard, ChessBoardProvider, INITIAL_FEN, getActiveMove, getCurrentFen, getMoves, useChessBoardStore } from '../../../features/board'
 import { MovesList } from '../../../components/MovesList/MovesList'
-import { usePosition } from '../../../features/openings/hooks/usePosition'
 import { OpeningsStoreProvider } from '../../../features/openings/store/OpeningsStoreProvider'
-import { getSelectedPosition, useOpeningsStore } from '../../../features/openings/store/openingsStore'
 import { Notes } from '../../../features/openings/components/Notes'
+import { PositionName } from '../../../features/openings/components/PositionName'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { useRepertoireCards } from '../../../features/train/hooks/useRepertoireCards'
 import { useSyncOpeningToBoard } from './hooks'
-import type { CardCreate } from '../../../features/train/types'
+import type { CardCreate, RepertoireCard } from '../../../features/train/types'
+import type { PositionMoveCreateBody } from '../../../features/openings/types'
+import type { HistoryEntry } from '../../../lib/chess/types'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,38 @@ function getSideFromFen(fen: string): 'white' | 'black' {
   return fen.split(' ')[1] === 'w' ? 'white' : 'black'
 }
 
+function getSanMoves(history: HistoryEntry[], currentMoveIndex: number): string[] {
+  return history.slice(0, currentMoveIndex + 1).map(e => e.san)
+}
+
+function getLastMove(
+  history: HistoryEntry[],
+  currentMoveIndex: number,
+  preAnswerFen: string,
+): PositionMoveCreateBody | undefined {
+  if (currentMoveIndex < 0) return undefined
+  const entry = history[currentMoveIndex]
+  return { from_fen: preAnswerFen, to_fen: entry.fen, san: entry.san, lan: entry.from + entry.to }
+}
+
+function getDrillCard(
+  history: HistoryEntry[],
+  currentMoveIndex: number,
+  sanMoves: string[],
+  preAnswerFen: string,
+): CardCreate | null {
+  if (currentMoveIndex < 0) return null
+  return { fen: history[currentMoveIndex].fen, moves: sanMoves, side: getSideFromFen(preAnswerFen) }
+}
+
+function getExistingCard(
+  drillCard: CardCreate | null,
+  allCards: RepertoireCard[],
+  preAnswerFen: string,
+): RepertoireCard | null {
+  return drillCard ? allCards.find(c => c.fen === preAnswerFen) ?? null : null
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function BrowseV2PageInner() {
@@ -43,14 +76,10 @@ function BrowseV2PageInner() {
   useSyncOpeningToBoard()
 
   // ── Board state ────────────────────────────────────────────────────────────
-  const history         = useChessBoardStore(s => s.history)
+  const history          = useChessBoardStore(s => s.history)
   const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
-  const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
-  const currentFen      = useChessBoardStore(getCurrentFen)
-
-  // ── Opening / position data ────────────────────────────────────────────────
-  const selectedOpening             = useOpeningsStore(getSelectedPosition)
-  const { position: currentPosition } = usePosition(selectedOpening ? currentFen : '')
+  const navigateToIndex  = useChessBoardStore(s => s.navigateToIndex)
+  const currentFen       = useChessBoardStore(getCurrentFen)
 
   // ── Drill / card data ──────────────────────────────────────────────────────
   const { data: allCards = [] } = useRepertoireCards()
@@ -59,20 +88,12 @@ function BrowseV2PageInner() {
   // (card.fen is the drill FEN, i.e. position before the answer move)
   const preAnswerFen = currentMoveIndex > 0 ? history[currentMoveIndex - 1].fen : INITIAL_FEN
 
-  // CardCreate payload for the currently selected move
-  const drillCard = useMemo((): CardCreate | null => {
-    if (currentMoveIndex < 0) return null
-    return {
-      fen: history[currentMoveIndex].fen,
-      moves: history.slice(0, currentMoveIndex + 1).map(e => e.san),
-      side: getSideFromFen(preAnswerFen),
-      name: currentPosition?.name ?? selectedOpening?.name ?? null,
-    }
-  }, [currentMoveIndex, history, preAnswerFen, selectedOpening, currentPosition])
-
-  const existingCard = drillCard
-    ? allCards.find(c => c.fen === preAnswerFen) ?? null
-    : null
+  const { sanMoves, lastMove } = useMemo(
+    () => ({ sanMoves: getSanMoves(history, currentMoveIndex), lastMove: getLastMove(history, currentMoveIndex, preAnswerFen) }),
+    [history, currentMoveIndex, preAnswerFen],
+  )
+  const drillCard    = useMemo(() => getDrillCard(history, currentMoveIndex, sanMoves, preAnswerFen), [history, currentMoveIndex, sanMoves, preAnswerFen])
+  const existingCard = getExistingCard(drillCard, allCards, preAnswerFen)
 
   // ── Moves list ─────────────────────────────────────────────────────────────
   const moves      = useMemo(() => getMoves({ history }), [history])
@@ -90,9 +111,7 @@ function BrowseV2PageInner() {
       <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
         <div className="flex flex-col items-stretch">
           <div className="relative flex items-center justify-center px-3 py-2">
-            <span className="text-white/60 text-lg font-medium tracking-wide">
-              {currentPosition?.name ?? ' '}
-            </span>
+            <PositionName fen={currentFen} moves={sanMoves} lastMove={lastMove} />
             {drillCard && (
               <div className="absolute right-0">
                 <AddToDrill
@@ -114,7 +133,7 @@ function BrowseV2PageInner() {
 
       {/* Notes per position */}
       <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
-        <Notes selectedOpening={selectedOpening} currentMoveIndex={currentMoveIndex} currentFen={currentFen} />
+        <Notes currentFen={currentFen} />
       </section>
 
     </div>

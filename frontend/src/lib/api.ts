@@ -29,7 +29,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
     if (resp.status === 401) {
       window.dispatchEvent(new CustomEvent('auth:unauthorized'))
-    } else {
+    } else if (resp.status !== 404) {
       toast.error(message)
     }
 
