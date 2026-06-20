@@ -4,7 +4,8 @@ import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import type { MoveStat } from '../../../../features/engine/api'
 import { arrowTokens } from '../../../../features/engine/arrowTokens'
-import { useChessBoardStore, useChessBoardStoreApi, getPlayedMoves } from '../../../../features/board'
+import { useChessBoardStore, useChessBoardStoreApi } from '../../../../features/board'
+import { getSanMoves } from '../../../../lib/chess'
 import { useMoveStats } from '../../../../features/engine/hooks/useMoveStats'
 import { useBoardSettings, type MoveStatDisplay } from '../../../../features/board/store/boardSettingsStore'
 import { useRepertoireCards } from '../../../../features/train/hooks'
@@ -144,7 +145,7 @@ function buildMineShapes(
 
 export function useMoveStatsShapes() {
   const chessBoardStore = useChessBoardStoreApi()
-  const playedMovesKey = useChessBoardStore(s => getPlayedMoves(s).join('|'))
+  const playedMovesKey = useChessBoardStore(s => getSanMoves(s.history, s.currentMoveIndex).join('|'))
   const orientation = useChessBoardStore(s => s.orientation)
   const boardSize = useBoardSettings(s => s.boardSize)
   const moveStatDisplay = useBoardSettings(s => s.moveStatDisplay)

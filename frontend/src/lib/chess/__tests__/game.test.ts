@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Chess } from 'chess.js'
-import { buildHistoryFromMoves, getFenAtIndex } from '../../../features/board/store/slices/gameSlice'
+import { buildHistoryFromMoves, getFenAtIndex } from '../gameUtils'
 
 const STARTING_FEN = new Chess().fen()
 

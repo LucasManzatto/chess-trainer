@@ -3,13 +3,14 @@ import { Chess } from 'chess.js'
 import type { DrawShape } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
 import type { Position as Opening } from '../../../../features/openings/types'
-import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getPlayedMoves } from '../../../../features/board'
+import { useChessBoardStore, useChessBoardStoreApi, getCurrentFen } from '../../../../features/board'
+import { getSanMoves } from '../../../../lib/chess'
 import { isPrefix } from '../../../../features/openings/utils/movesMatch'
 
 export function useNextMoveShapes(openings: Opening[]) {
   const chessBoardStore = useChessBoardStoreApi()
   const currentFen = useChessBoardStore(getCurrentFen)
-  const playedMovesKey = useChessBoardStore(s => getPlayedMoves(s).join(','))
+  const playedMovesKey = useChessBoardStore(s => getSanMoves(s.history, s.currentMoveIndex).join(','))
 
   useEffect(() => {
     const playedMoves = playedMovesKey ? playedMovesKey.split(',') : []
