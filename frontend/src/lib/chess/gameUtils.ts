@@ -1,14 +1,18 @@
 import { Chess } from 'chess.js'
+import type { Square } from 'chess.js'
 import type { HistoryEntry, MovePair, ActiveMove } from './types'
 
-export const INITIAL_FEN = new Chess().fen()
+export const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+function toEntry(move: ReturnType<Chess['move']>, engine: Chess): HistoryEntry {
+  return { san: move.san, fen: engine.fen(), from: move.from, to: move.to }
+}
 
 export function buildHistoryFromMoves(moves: string[]): HistoryEntry[] {
   const engine = new Chess()
   return moves.map(san => {
     try {
-      const move = engine.move(san)
-      return { san: move.san, fen: engine.fen(), from: move.from, to: move.to }
+      return toEntry(engine.move(san), engine)
     } catch {
       throw new Error(`Illegal move in sequence: "${san}"`)
     }
@@ -16,11 +20,10 @@ export function buildHistoryFromMoves(moves: string[]): HistoryEntry[] {
 }
 
 export function getFenAtIndex({ history, currentMoveIndex }: { history: HistoryEntry[]; currentMoveIndex: number }): string {
-  if (history.length === 0 || currentMoveIndex < 0) return INITIAL_FEN
   return history[currentMoveIndex]?.fen ?? INITIAL_FEN
 }
 
-export function getMoves({ history }: { history: HistoryEntry[] }): MovePair[] {
+export function getMoves(history: HistoryEntry[]): MovePair[] {
   const pairs: MovePair[] = []
   for (let i = 0; i < history.length; i += 2) {
     pairs.push({
@@ -37,7 +40,7 @@ export function getLastMove({ history, currentMoveIndex }: { history: HistoryEnt
   return entry ? `${entry.from}${entry.to}` : undefined
 }
 
-export function getActiveMove({ currentMoveIndex }: { currentMoveIndex: number }): ActiveMove | undefined {
+export function getActiveMove(currentMoveIndex: number): ActiveMove | undefined {
   if (currentMoveIndex < 0) return undefined
   return {
     moveNumber: Math.floor(currentMoveIndex / 2) + 1,
@@ -46,33 +49,32 @@ export function getActiveMove({ currentMoveIndex }: { currentMoveIndex: number }
 }
 
 export function applyMoveToPosition(
-  currentFen: string,
+  fen: string,
   history: HistoryEntry[],
-  currentIndex: number,
-  orig: string,
-  dest: string,
+  currentMoveIndex: number,
+  from: Square,
+  to: Square,
 ): { history: HistoryEntry[]; newIndex: number; entry: HistoryEntry } | null {
-  const engine = new Chess(currentFen)
-  const piece = engine.get(orig as Parameters<Chess['get']>[0])
+  const engine = new Chess(fen)
+  const piece = engine.get(from)
   const isPromotion =
     piece?.type === 'p' &&
-    ((piece.color === 'w' && dest[1] === '8') || (piece.color === 'b' && dest[1] === '1'))
-  let move!: ReturnType<Chess['move']>
+    ((piece.color === 'w' && to[1] === '8') || (piece.color === 'b' && to[1] === '1'))
   try {
-    move = engine.move({ from: orig, to: dest, promotion: isPromotion ? 'q' : undefined })
+    const move = engine.move({ from, to, promotion: isPromotion ? 'q' : undefined })
+    const entry = toEntry(move, engine)
+    const nextHistory = [...history.slice(0, currentMoveIndex + 1), entry]
+    return { history: nextHistory, newIndex: nextHistory.length - 1, entry }
   } catch {
     return null
   }
-  const entry: HistoryEntry = { san: move.san, fen: engine.fen(), from: move.from, to: move.to }
-  const nextHistory = [...history.slice(0, currentIndex + 1), entry]
-  return { history: nextHistory, newIndex: nextHistory.length - 1, entry }
 }
 
 export function undoLastMove(
   history: HistoryEntry[],
-  currentIndex: number,
+  currentMoveIndex: number,
 ): { history: HistoryEntry[]; newIndex: number } {
-  if (currentIndex < 0) return { history, newIndex: currentIndex }
-  const nextHistory = history.slice(0, currentIndex)
-  return { history: nextHistory, newIndex: currentIndex - 1 }
+  if (currentMoveIndex < 0) return { history, newIndex: currentMoveIndex }
+  const nextHistory = history.slice(0, currentMoveIndex)
+  return { history: nextHistory, newIndex: currentMoveIndex - 1 }
 }

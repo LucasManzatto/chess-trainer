@@ -5,6 +5,7 @@ import type { Config } from '@lichess-org/chessground/config'
 import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
+import type { Square } from 'chess.js'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
 import { getCurrentFen } from './store/slices/gameSlice'
 import { getLastMove } from '../../lib/chess/gameUtils'
@@ -115,7 +116,7 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   const dests = useMemo(() => getDests(chess, interactive), [chess, interactive])
 
   const onMoveHandler = useCallback(
-    (orig: Key, dest: Key) => store.getState().applyMove(orig, dest),
+    (orig: Key, dest: Key) => store.getState().applyMove(orig as Square, dest as Square),
     [store],
   )
 

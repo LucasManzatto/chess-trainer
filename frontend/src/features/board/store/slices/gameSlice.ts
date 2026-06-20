@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand'
+import type { Square } from 'chess.js'
 import type { HistoryEntry, MoveResult } from '../../../../lib/chess/types'
 import { buildHistoryFromMoves, getFenAtIndex, applyMoveToPosition, undoLastMove } from '../../../../lib/chess/gameUtils'
 import type { ChessBoardStoreType } from '../chessBoardStore'
@@ -16,7 +17,7 @@ export type GameSlice = {
 
   loadMoves: (moves: string[]) => void
   loadFen: (fen: string) => void
-  applyMove: (orig: string, dest: string) => MoveResult | null
+  applyMove: (from: Square, to: Square) => MoveResult | null
   navigateBack: () => void
   navigateForward: () => void
   navigateToIndex: (index: number | null) => void
@@ -43,10 +44,10 @@ export const createGameSlice: StateCreator<ChessBoardStoreType, [], [], GameSlic
     set({ history: [], currentMoveIndex: -1, lastExternalFen: fen })
   },
 
-  applyMove: (orig, dest) => {
+  applyMove: (from, to) => {
     const { history, currentMoveIndex } = get()
-    const currentFen = getFenAtIndex({ history, currentMoveIndex })
-    const result = applyMoveToPosition(currentFen, history, currentMoveIndex, orig, dest)
+    const fen = getFenAtIndex({ history, currentMoveIndex })
+    const result = applyMoveToPosition(fen, history, currentMoveIndex, from, to)
     if (!result) return null
     set({ history: result.history, currentMoveIndex: result.newIndex, lastExternalFen: null })
     return { from: result.entry.from, to: result.entry.to, san: result.entry.san, fen: result.entry.fen }
