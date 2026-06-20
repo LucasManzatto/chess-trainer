@@ -11,6 +11,8 @@ export type DisplaySlice = {
   shapes: DrawShape[]
   hintShapes: DrawShape[]
   hintBrushes: Record<string, DrawBrush>
+  drawnShapes: DrawShape[]
+  shapesClearSignal: number
   customSquares: Record<string, string>
   pendingPromotion: { from: string; to: string } | null
   interactive: boolean
@@ -19,6 +21,8 @@ export type DisplaySlice = {
   flipOrientation: () => void
   setShapes: (shapes: DrawShape[]) => void
   setHintShapes: (shapes: DrawShape[], brushes?: Record<string, DrawBrush>) => void
+  setDrawnShapes: (shapes: DrawShape[] | undefined) => void
+  clearDrawnShapes: () => void
   setCustomSquares: (squares: Record<string, string>) => void
   setPendingPromotion: (promotion: { from: string; to: string } | null) => void
   setInteractive: (interactive: boolean) => void
@@ -30,13 +34,15 @@ export type DisplaySliceConfig = {
 }
 
 export function getInitialDisplayState(config: DisplaySliceConfig = {}): Pick<DisplaySlice,
-  'orientation' | 'shapes' | 'hintShapes' | 'hintBrushes' | 'customSquares' | 'pendingPromotion' | 'interactive'
+  'orientation' | 'shapes' | 'hintShapes' | 'hintBrushes' | 'drawnShapes' | 'shapesClearSignal' | 'customSquares' | 'pendingPromotion' | 'interactive'
 > {
   return {
     orientation: config.orientation ?? 'white',
     shapes: [],
     hintShapes: [],
     hintBrushes: EMPTY_BRUSHES,
+    drawnShapes: [],
+    shapesClearSignal: 0,
     customSquares: {},
     pendingPromotion: null,
     interactive: config.interactive ?? true,
@@ -51,6 +57,8 @@ export function createDisplaySlice(config: DisplaySliceConfig = {}): StateCreato
     flipOrientation: () => set(s => ({ orientation: s.orientation === 'white' ? 'black' : 'white' })),
     setShapes: (shapes) => set({ shapes }),
     setHintShapes: (hintShapes, brushes) => set({ hintShapes, hintBrushes: brushes ?? EMPTY_BRUSHES }),
+    setDrawnShapes: (drawnShapes) => set({ drawnShapes: drawnShapes ?? [] }),
+    clearDrawnShapes: () => set(s => ({ drawnShapes: [], shapesClearSignal: s.shapesClearSignal + 1 })),
     setCustomSquares: (customSquares) => set({ customSquares }),
     setPendingPromotion: (pendingPromotion) => set({ pendingPromotion }),
     setInteractive: (interactive) => set({ interactive }),

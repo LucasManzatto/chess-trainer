@@ -33,6 +33,7 @@ type ConfigParams = {
   shapes: DrawShape[] | undefined
   extraBrushes: Record<string, DrawBrush>
   onMove: (orig: Key, dest: Key) => void
+  onShapesChange: (shapes: DrawShape[]) => void
 }
 
 // ─── Game state helpers ───────────────────────────────────────────────────────
@@ -61,7 +62,7 @@ function getAllShapes(shapes: DrawShape[], hintShapes: DrawShape[], evalBestMove
   return [...shapes, ...hintShapes, ...bestMoveShape]
 }
 
-function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, shapes, extraBrushes, onMove }: ConfigParams): Config {
+function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, shapes, extraBrushes, onMove, onShapesChange }: ConfigParams): Config {
   return {
     fen,
     orientation,
@@ -79,6 +80,7 @@ function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove
     drawable: {
       autoShapes: shapes,
       brushes: { ...BRUSHES, ...extraBrushes },
+      onChange: onShapesChange,
     },
     animation: { enabled: true, duration: 300 },
     highlight: { lastMove: true, check: true },
@@ -116,14 +118,16 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
     [store],
   )
 
+  const setDrawnShapes = useChessBoardStore(s => s.setDrawnShapes)
+
   const allShapes = useMemo(
     () => getAllShapes(shapes, hintShapes, evalBestMove, showBestMove),
     [shapes, hintShapes, evalBestMove, showBestMove],
   )
 
   const config = useMemo(
-    () => getConfig({ fen, orientation, turn, check: chess.inCheck(), interactive, dests, lastMove, shapes: allShapes, extraBrushes: hintBrushes, onMove: onMoveHandler }),
-    [fen, orientation, turn, chess, interactive, dests, lastMove, allShapes, hintBrushes, onMoveHandler],
+    () => getConfig({ fen, orientation, turn, check: chess.inCheck(), interactive, dests, lastMove, shapes: allShapes, extraBrushes: hintBrushes, onMove: onMoveHandler, onShapesChange: setDrawnShapes }),
+    [fen, orientation, turn, chess, interactive, dests, lastMove, allShapes, hintBrushes, onMoveHandler, setDrawnShapes],
   )
 
   // Init once
@@ -141,6 +145,11 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   useEffect(() => {
     apiRef.current?.set(config)
   }, [config])
+
+  const shapesClearSignal = useChessBoardStore(s => s.shapesClearSignal)
+  useEffect(() => {
+    if (shapesClearSignal > 0) apiRef.current?.set({ drawable: { shapes: [] } })
+  }, [shapesClearSignal])
 
   const navigateBack = useChessBoardStore(s => s.navigateBack)
   const navigateForward = useChessBoardStore(s => s.navigateForward)
