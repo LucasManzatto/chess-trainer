@@ -8,7 +8,7 @@ import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
 import { getCurrentFen } from './store/slices/gameSlice'
-import { getLastMove } from '../../lib/chess/gameUtils'
+import { getLastMove, getTurn, getDests } from '../../lib/chess/gameUtils'
 import { useBoardSettings } from './store/boardSettingsStore'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -38,30 +38,11 @@ type ConfigParams = {
   onShapesChange: (shapes: DrawShape[]) => void
 }
 
-// ─── Game state helpers ───────────────────────────────────────────────────────
+// ─── Pure helpers ─────────────────────────────────────────────────────────────
 
-function getTurn(chess: Chess): 'white' | 'black' {
-  return chess.turn() === 'w' ? 'white' : 'black'
-}
-
-function getDests(chess: Chess, interactive: boolean): Dests {
-  const map: Dests = new Map()
-  if (!interactive) return map
-  for (const move of chess.moves({ verbose: true })) {
-    const list = map.get(move.from as Key) ?? []
-    list.push(move.to as Key)
-    map.set(move.from as Key, list)
-  }
-  return map
-}
-
-// ─── Board config helpers ─────────────────────────────────────────────────────
-
-function getAllShapes(shapes: DrawShape[], hintShapes: DrawShape[], evalBestMove: string | undefined, showBestMove: boolean): DrawShape[] {
-  const bestMoveShape: DrawShape[] = showBestMove && evalBestMove
-    ? [{ orig: evalBestMove.slice(0, 2) as Key, dest: evalBestMove.slice(2, 4) as Key, brush: 'eval' }]
-    : []
-  return [...shapes, ...hintShapes, ...bestMoveShape]
+function getBestMoveShape(evalBestMove: string | undefined, showBestMove: boolean): DrawShape[] {
+  if (!showBestMove || !evalBestMove) return []
+  return [{ orig: evalBestMove.slice(0, 2) as Key, dest: evalBestMove.slice(2, 4) as Key, brush: 'eval' }]
 }
 
 function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, shapes, extraBrushes, onMove, onShapesChange }: ConfigParams): Config {
@@ -90,49 +71,55 @@ function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove
   }
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
-type ChessBoardBoardProps = {
-  overlay?: ReactNode
-}
-
-export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
-  const elRef = useRef<HTMLDivElement>(null)
-  const apiRef = useRef<Api | null>(null)
+function useBoardConfig(): Config {
   const store = useChessBoardStoreApi()
 
+  const fen = useChessBoardStore(getCurrentFen)
   const orientation = useChessBoardStore(s => s.orientation)
   const interactive = useChessBoardStore(s => s.interactive)
   const shapes = useChessBoardStore(s => s.shapes)
   const hintShapes = useChessBoardStore(s => s.hintShapes)
   const hintBrushes = useChessBoardStore(s => s.hintBrushes)
-  const fen = useChessBoardStore(getCurrentFen)
-  const boardSize = useBoardSettings(s => s.boardSize)
-  const showBestMove = useBoardSettings(s => s.showBestMove)
   const evalBestMove = useChessBoardStore(s => s.evalBestMove)
   const lastMove = useChessBoardStore(getLastMove)
-  const chess = useMemo(() => new Chess(fen), [fen])
-  const turn = getTurn(chess)
-  const dests = useMemo(() => getDests(chess, interactive), [chess, interactive])
+  const setDrawnShapes = useChessBoardStore(s => s.setDrawnShapes)
+  const showBestMove = useBoardSettings(s => s.showBestMove)
 
-  const onMoveHandler = useCallback(
+  const chess = useMemo(() => new Chess(fen), [fen])
+  const turn = useMemo(() => getTurn(chess), [chess])
+  const check = useMemo(() => chess.inCheck(), [chess])
+  const dests = useMemo(() => interactive ? getDests(chess) : new Map(), [chess, interactive])
+
+  const onMove = useCallback(
     (orig: Key, dest: Key) => store.getState().applyMove(orig as Square, dest as Square),
     [store],
   )
 
-  const setDrawnShapes = useChessBoardStore(s => s.setDrawnShapes)
+  const bestMoveShape = useMemo(
+    () => getBestMoveShape(evalBestMove, showBestMove),
+    [evalBestMove, showBestMove],
+  )
 
   const allShapes = useMemo(
-    () => getAllShapes(shapes, hintShapes, evalBestMove, showBestMove),
-    [shapes, hintShapes, evalBestMove, showBestMove],
+    () => [...shapes, ...hintShapes, ...bestMoveShape],
+    [shapes, hintShapes, bestMoveShape],
   )
 
   const config = useMemo(
-    () => getConfig({ fen, orientation, turn, check: chess.inCheck(), interactive, dests, lastMove, shapes: allShapes, extraBrushes: hintBrushes, onMove: onMoveHandler, onShapesChange: setDrawnShapes }),
-    [fen, orientation, turn, chess, interactive, dests, lastMove, allShapes, hintBrushes, onMoveHandler, setDrawnShapes],
+    () => getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, shapes: allShapes, extraBrushes: hintBrushes, onMove, onShapesChange: setDrawnShapes }),
+    [fen, orientation, turn, check, interactive, dests, lastMove, allShapes, hintBrushes, onMove, setDrawnShapes],
   )
 
-  // Init once
+  return config
+}
+
+function useChessground(config: Config) {
+  const elRef = useRef<HTMLDivElement>(null)
+  const apiRef = useRef<Api | null>(null)
+  const shapesClearSignal = useChessBoardStore(s => s.shapesClearSignal)
+
   useEffect(() => {
     if (!elRef.current) return
     apiRef.current = Chessground(elRef.current, config)
@@ -143,16 +130,18 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sync config updates
   useEffect(() => {
     apiRef.current?.set(config)
   }, [config])
 
-  const shapesClearSignal = useChessBoardStore(s => s.shapesClearSignal)
   useEffect(() => {
     if (shapesClearSignal > 0) apiRef.current?.set({ drawable: { shapes: [] } })
   }, [shapesClearSignal])
 
+  return elRef
+}
+
+function useBoardKeyNav() {
   const navigateBack = useChessBoardStore(s => s.navigateBack)
   const navigateForward = useChessBoardStore(s => s.navigateForward)
 
@@ -165,6 +154,19 @@ export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [navigateBack, navigateForward])
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+type ChessBoardBoardProps = {
+  overlay?: ReactNode
+}
+
+export function ChessBoardBoard({ overlay }: ChessBoardBoardProps = {}) {
+  const config = useBoardConfig()
+  const elRef = useChessground(config)
+  const boardSize = useBoardSettings(s => s.boardSize)
+  useBoardKeyNav()
 
   return (
     <div className="relative">

@@ -1,8 +1,23 @@
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
+import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { HistoryEntry, MovePair, ActiveMove } from './types'
 
 export const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+export function getTurn(chess: Chess): 'white' | 'black' {
+  return chess.turn() === 'w' ? 'white' : 'black'
+}
+
+export function getDests(chess: Chess): Dests {
+  const map: Dests = new Map()
+  for (const move of chess.moves({ verbose: true })) {
+    const list = map.get(move.from as Key) ?? []
+    list.push(move.to as Key)
+    map.set(move.from as Key, list)
+  }
+  return map
+}
 
 function toEntry(move: ReturnType<Chess['move']>, engine: Chess): HistoryEntry {
   return { san: move.san, fen: engine.fen(), from: move.from, to: move.to }
