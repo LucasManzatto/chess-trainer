@@ -1,5 +1,7 @@
 import logging
 from collections.abc import AsyncGenerator
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 from contextlib import asynccontextmanager
 
 import httpx

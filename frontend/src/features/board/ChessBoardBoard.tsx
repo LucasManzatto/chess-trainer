@@ -6,6 +6,7 @@ import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
+import { useShallow } from 'zustand/shallow'
 import { useChessBoardStore, useChessBoardStoreApi } from './store/chessBoardStore'
 import { getCurrentFen } from './store/slices/gameSlice'
 import { getLastMove, getTurn, getDests } from '../../lib/chess/gameUtils'
@@ -76,15 +77,19 @@ function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove
 function useBoardConfig(): Config {
   const store = useChessBoardStoreApi()
 
-  const fen = useChessBoardStore(getCurrentFen)
-  const orientation = useChessBoardStore(s => s.orientation)
-  const interactive = useChessBoardStore(s => s.interactive)
-  const shapes = useChessBoardStore(s => s.shapes)
-  const hintShapes = useChessBoardStore(s => s.hintShapes)
-  const hintBrushes = useChessBoardStore(s => s.hintBrushes)
-  const evalBestMove = useChessBoardStore(s => s.evalBestMove)
-  const lastMove = useChessBoardStore(getLastMove)
-  const setDrawnShapes = useChessBoardStore(s => s.setDrawnShapes)
+  const { fen, orientation, interactive, shapes, hintShapes, hintBrushes, evalBestMove, lastMove, setDrawnShapes } = useChessBoardStore(
+    useShallow((s) => ({
+      fen: getCurrentFen(s),
+      orientation: s.orientation,
+      interactive: s.interactive,
+      shapes: s.shapes,
+      hintShapes: s.hintShapes,
+      hintBrushes: s.hintBrushes,
+      evalBestMove: s.evalBestMove,
+      lastMove: getLastMove(s),
+      setDrawnShapes: s.setDrawnShapes,
+    })),
+  )
   const showBestMove = useBoardSettings(s => s.showBestMove)
 
   const chess = useMemo(() => new Chess(fen), [fen])

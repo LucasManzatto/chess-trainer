@@ -1,3 +1,6 @@
+import logging
+import time
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,14 +56,31 @@ async def delete_position(session: AsyncSession, fen: str) -> None:
     await session.commit()
 
 
+logger = logging.getLogger(__name__)
+
+
 async def list_position_moves(session: AsyncSession, fen: str) -> list[PositionMoveResponse]:
+    t0 = time.perf_counter()
     result = await session.execute(
         select(PositionMove)
         .join(Position, Position.id == PositionMove.from_position_id)
         .where(Position.fen == fen)
         .order_by(PositionMove.is_main_line.desc(), PositionMove.san)
     )
-    return [PositionMoveResponse.model_validate(m) for m in result.scalars()]
+    t_db = time.perf_counter()
+
+    rows = [PositionMoveResponse.model_validate(m) for m in result.scalars()]
+    t_serialize = time.perf_counter()
+
+    logger.info(
+        "list_position_moves fen=%r db=%.1fms serialize=%.1fms total=%.1fms rows=%d",
+        fen,
+        (t_db - t0) * 1000,
+        (t_serialize - t_db) * 1000,
+        (t_serialize - t0) * 1000,
+        len(rows),
+    )
+    return rows
 
 
 async def create_position_move(session: AsyncSession, body: PositionMoveCreate) -> PositionMoveResponse:

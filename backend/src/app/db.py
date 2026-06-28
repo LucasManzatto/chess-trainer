@@ -41,8 +41,12 @@ async def init_db() -> None:
     url, connect_args = _async_url_and_connect_args()
     _engine = create_async_engine(
         url,
-        connect_args={**connect_args, "timeout": 30},  # Neon cold-start can take ~10s
-        pool_pre_ping=True,  # re-verify connection before use, handles idle drops
+        connect_args={
+            **connect_args,
+            "timeout": 30,
+            "prepared_statement_cache_size": 0,  # pgBouncer transaction mode rejects PREPARE
+        },
+        pool_pre_ping=True,
     )
     _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
 
