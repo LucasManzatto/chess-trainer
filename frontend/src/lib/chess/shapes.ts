@@ -22,9 +22,12 @@ export function computeThreats(fen: string): ThreatSquares {
         hanging.push(square)
       }
 
-      const kingAlreadyAttacked = isKingAttacked(chess, piece.color, enemy)
+      const kingSquare = findKingSquare(board, piece.color)
+      const kingAlreadyAttacked = kingSquare ? chess.isAttacked(kingSquare, enemy as Color) : false
       chess.remove(square)
-      if (!kingAlreadyAttacked && isKingAttacked(chess, piece.color, enemy)) {
+      const boardAfter = chess.board()
+      const kingSquareAfter = findKingSquare(boardAfter, piece.color)
+      if (!kingAlreadyAttacked && kingSquareAfter && chess.isAttacked(kingSquareAfter, enemy as Color)) {
         pinned.push(square)
       }
       chess.put({ type: piece.type as PieceSymbol, color: piece.color as Color }, square)
@@ -34,29 +37,27 @@ export function computeThreats(fen: string): ThreatSquares {
   return { hanging, pinned }
 }
 
-function isKingAttacked(chess: Chess, kingColor: string, attackerColor: string): boolean {
-  const board = chess.board()
+function findKingSquare(board: ReturnType<Chess['board']>, kingColor: string): Square | undefined {
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const p = board[r][c]
       if (p?.type === 'k' && p.color === kingColor) {
-        const kingSquare = (String.fromCharCode(97 + c) + String(8 - r)) as Square
-        return chess.isAttacked(kingSquare, attackerColor as Color)
+        return (String.fromCharCode(97 + c) + String(8 - r)) as Square
       }
     }
   }
-  return false
+  return undefined
 }
 
 export function computeCandidateShapes(
-  candidateMoves: Map<string, number>,
-  boardFen: string | undefined,
+  moves: Map<string, number>,
+  fen: string | undefined,
 ): DrawShape[] {
-  if (candidateMoves.size === 0) return []
-  const chess = boardFen ? new Chess(boardFen) : new Chess()
+  if (moves.size === 0) return []
+  const chess = fen ? new Chess(fen) : new Chess()
   const legal = chess.moves({ verbose: true })
   const result: DrawShape[] = []
-  for (const [san] of candidateMoves.entries()) {
+  for (const [san] of moves.entries()) {
     const move = legal.find(m => m.san === san)
     if (move) result.push({ orig: move.from as Key, dest: move.to as Key, brush: 'green' })
   }

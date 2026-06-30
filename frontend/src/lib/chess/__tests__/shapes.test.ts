@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Chess } from 'chess.js'
-import { computeThreats, computeCandidateShapes } from '../analysis'
+import { computeThreats, computeCandidateShapes } from '../shapes'
 
 const STARTING_FEN = new Chess().fen()
 

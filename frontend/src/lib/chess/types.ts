@@ -9,11 +9,26 @@ export type ActiveMove = {
   color: 'white' | 'black'
 }
 
+export type AnnotationColor = 'G' | 'R' | 'B' | 'Y'
+
+export type AnnotationArrow = { from: string; to: string; color: AnnotationColor }
+
+export type AnnotationCircle = { square: string; color: AnnotationColor }
+
+export type Annotation = {
+  arrows: AnnotationArrow[]
+  circles: AnnotationCircle[]
+  comment?: string
+}
+
 export type HistoryEntry = {
   san: string
-  fen: string
+  lan: string
   from: string
   to: string
+  fen: string
+  promotion?: string
+  annotations?: Annotation
 }
 
 export type GameMetadata = {
@@ -29,6 +44,7 @@ export type MoveResult = {
   san: string
   promotion?: string
   fen: string
+  gameOver: GameOverResult | null
 }
 
 export type GameOverResult = {

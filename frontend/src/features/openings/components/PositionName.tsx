@@ -1,22 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
-import { usePosition } from '../hooks/usePosition'
-import { usePositionMoves } from '../hooks/usePositionMoves'
-import type { PositionMoveCreateBody } from '../types'
 
 type Props = {
-  fen: string
-  moves?: string[]
-  lastMove?: PositionMoveCreateBody
+  name: string | null
+  isSaving: boolean
+  onSave: (name: string | null) => void
   placeholder?: string
   className?: string
 }
 
-export function PositionName({ fen, moves, lastMove, placeholder = 'Unnamed position', className }: Props) {
-  const { position, upsert } = usePosition(fen)
-  const { create: createMove } = usePositionMoves(fen)
+export function PositionName({ name, isSaving, onSave, placeholder = 'Unnamed position', className }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
-  const displayName = position?.name ?? null
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -24,17 +18,15 @@ export function PositionName({ fen, moves, lastMove, placeholder = 'Unnamed posi
   }, [editing])
 
   function startEdit() {
-    setDraft(displayName ?? '')
+    setDraft(name ?? '')
     setEditing(true)
   }
 
   function commit() {
     setEditing(false)
     const trimmed = draft.trim()
-    const current = position?.name ?? null
-    if (trimmed === (current ?? '')) return
-    upsert.mutate({ name: trimmed || null, moves })
-    if (lastMove) createMove.mutate(lastMove)
+    if (trimmed === (name ?? '')) return
+    onSave(trimmed || null)
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -61,10 +53,10 @@ export function PositionName({ fen, moves, lastMove, placeholder = 'Unnamed posi
       tabIndex={0}
       onClick={startEdit}
       onKeyDown={e => e.key === 'Enter' && startEdit()}
-      className={className ?? `text-lg font-medium tracking-wide cursor-text select-none ${displayName ? 'text-white/60' : 'text-white/20 italic'}`}
+      className={className ?? `text-lg font-medium tracking-wide cursor-text select-none ${name ? 'text-white/60' : 'text-white/20 italic'}`}
     >
-      {displayName ?? placeholder}
-      {upsert.isPending && <span className="ml-2 text-xs text-white/30">saving…</span>}
+      {name ?? placeholder}
+      {isSaving && <span className="ml-2 text-xs text-white/30">saving…</span>}
     </span>
   )
 }

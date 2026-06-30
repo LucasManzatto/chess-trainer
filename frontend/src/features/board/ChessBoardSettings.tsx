@@ -1,100 +1,38 @@
 import { useState } from 'react'
-import { useChessBoardStore } from './store/chessBoardStore'
-import { useBoardSettings } from './store/boardSettingsStore'
-import { GearIcon, FlipIcon, EyeIcon, CloseIcon, ResetIcon, BestMoveIcon, WinrateIcon, FrequencyIcon } from '../../components/icons'
+import type { BoardConfig } from './store/boardSettingsStore'
+import { SettingsDrawerButton } from './components/settings/SettingsDrawerButton'
+import { FlipBoardButton } from './components/settings/FlipBoardButton'
+import { ShowThreatsButton } from './components/settings/ShowThreatsButton'
+import { ShowBestMoveButton } from './components/settings/ShowBestMoveButton'
+import { MoveStatDisplayButton } from './components/settings/MoveStatDisplayButton'
+import { ResetBoardButton } from './components/settings/ResetBoardButton'
+import { BoardSizeDrawer } from './components/settings/BoardSizeDrawer'
 
-export function ChessBoardSettings() {
+export type ChessBoardSettingsProps = {
+  config: BoardConfig
+  onConfigChange: (updater: (prev: BoardConfig) => BoardConfig) => void
+  onFlipOrientation: () => void
+  onReset: () => void
+}
+
+export function ChessBoardSettings({ config, onConfigChange, onFlipOrientation, onReset }: ChessBoardSettingsProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const flipOrientation = useChessBoardStore(s => s.flipOrientation)
-  const reset = useChessBoardStore(s => s.reset)
-
-  const showThreats = useBoardSettings(s => s.showThreats)
-  const setShowThreats = useBoardSettings(s => s.setShowThreats)
-  const showBestMove = useBoardSettings(s => s.showBestMove)
-  const setShowBestMove = useBoardSettings(s => s.setShowBestMove)
-  const boardSize = useBoardSettings(s => s.boardSize)
-  const setBoardSize = useBoardSettings(s => s.setBoardSize)
-  const moveStatDisplay = useBoardSettings(s => s.moveStatDisplay)
-  const setMoveStatDisplay = useBoardSettings(s => s.setMoveStatDisplay)
+  function update<K extends keyof BoardConfig>(key: K, value: BoardConfig[K]) {
+    onConfigChange(prev => ({ ...prev, [key]: value }))
+  }
 
   return (
     <>
       <div className="absolute top-0 left-full ml-1 flex flex-col gap-1 z-10">
-        <button
-          className={`p-1.5 rounded bg-black/40 hover:bg-black/60 transition-colors ${drawerOpen ? 'text-white' : 'text-white/70 hover:text-white'}`}
-          onClick={() => setDrawerOpen(o => !o)}
-          title="Settings"
-        >
-          <GearIcon size={14} />
-        </button>
-        <button
-          className="p-1.5 rounded bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors"
-          onClick={flipOrientation}
-          title="Flip board"
-        >
-          <FlipIcon size={14} />
-        </button>
-        <button
-          className={`p-1.5 rounded bg-black/40 hover:bg-black/60 transition-colors ${showThreats ? 'text-white' : 'text-white/70 hover:text-white'}`}
-          onClick={() => setShowThreats(!showThreats)}
-          title={showThreats ? 'Hide threats' : 'Show threats'}
-        >
-          <EyeIcon size={14} />
-        </button>
-        <button
-          className={`p-1.5 rounded bg-black/40 hover:bg-black/60 transition-colors ${showBestMove ? 'text-white' : 'text-white/70 hover:text-white'}`}
-          onClick={() => setShowBestMove(!showBestMove)}
-          title={showBestMove ? 'Hide best move' : 'Show best move'}
-        >
-          <BestMoveIcon size={14} />
-        </button>
-        <button
-          className="p-1.5 rounded bg-black/40 hover:bg-black/60 transition-colors text-white"
-          onClick={() => setMoveStatDisplay(moveStatDisplay === 'winrate' ? 'frequency' : 'winrate')}
-          title={moveStatDisplay === 'winrate' ? 'Showing win rate — click for frequency' : 'Showing frequency — click for win rate'}
-        >
-          {moveStatDisplay === 'winrate' ? <WinrateIcon size={14} /> : <FrequencyIcon size={14} />}
-        </button>
-        <button
-          className="p-1.5 rounded bg-black/40 hover:bg-black/60 text-white/70 hover:text-white transition-colors"
-          onClick={reset}
-          title="Reset board"
-        >
-          <ResetIcon size={14} />
-        </button>
+        <SettingsDrawerButton active={drawerOpen} onClick={() => setDrawerOpen(o => !o)} />
+        <FlipBoardButton onClick={onFlipOrientation} />
+        <ShowThreatsButton active={config.showThreats} onClick={() => update('showThreats', !config.showThreats)} />
+        <ShowBestMoveButton active={config.showBestMove} onClick={() => update('showBestMove', !config.showBestMove)} />
+        <MoveStatDisplayButton value={config.moveStatDisplay} onChange={val => update('moveStatDisplay', val)} />
+        <ResetBoardButton onClick={onReset} />
       </div>
-
-      {drawerOpen && (
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          <div className="absolute top-0 right-0 bottom-0 w-48 bg-gray-900/95 border-l border-white/10 pointer-events-auto flex flex-col">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-              <span className="text-xs font-medium text-white/80">Settings</span>
-              <button
-                className="text-white/50 hover:text-white transition-colors"
-                onClick={() => setDrawerOpen(false)}
-              >
-                <CloseIcon size={14} />
-              </button>
-            </div>
-            <div className="flex flex-col gap-4 p-3">
-              <label className="flex flex-col gap-2">
-                <span className="text-xs text-white/60">Board size</span>
-                <input
-                  type="range"
-                  min={240}
-                  max={800}
-                  step={8}
-                  value={boardSize}
-                  onChange={e => setBoardSize(Number(e.target.value))}
-                  className="w-full accent-white/80"
-                />
-                <span className="text-xs text-white/40 text-right">{boardSize}px</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
+      <BoardSizeDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} value={config.boardSize} onChange={size => update('boardSize', size)} />
     </>
   )
 }

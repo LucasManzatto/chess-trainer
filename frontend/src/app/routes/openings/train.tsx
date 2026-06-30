@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useMemo } from 'react'
-import { ChessBoard, ChessBoardProvider, getMoves, getActiveMove, useChessBoardStore } from '../../../features/board'
+import { ChessBoard, ChessBoardProvider, getMoves, getActiveMove, useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getLastMove } from '../../../features/board'
+import { useBoardSettings } from '../../../features/board/store/boardSettingsStore'
+import { useShallow } from 'zustand/shallow'
 import { TrainStoreProvider } from '../../../features/train/store/TrainStoreProvider'
 import { TrainSetup } from '../../../features/train/components/TrainSetup'
 import { TrainHeader } from '../../../features/train/components/TrainHeader'
@@ -25,15 +26,27 @@ function TrainPage() {
 
 function TrainPageInner() {
   const { phase, setPhase, currentCard, isCorrect, mode, setMode } = useDrillBoard()
-  const history = useChessBoardStore(s => s.history)
-  const currentMoveIndex = useChessBoardStore(s => s.currentMoveIndex)
-  const navigateToIndex = useChessBoardStore(s => s.navigateToIndex)
-  const moves = useMemo(() => getMoves(history), [history])
-  const activeMove = getActiveMove(currentMoveIndex)
 
-  function onMoveClick(moveNumber: number, color: 'white' | 'black') {
-    navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
-  }
+  const store = useChessBoardStoreApi()
+  const boardState = useChessBoardStore(
+    useShallow((s) => ({
+      fen: getCurrentFen(s),
+      orientation: s.orientation,
+      interactive: s.interactive,
+      evalBestMove: undefined as string | undefined,
+      lastMove: getLastMove(s),
+      hint: s.hintShapes,
+      drawn: s.drawnShapes,
+      brushes: s.hintBrushes,
+      moves: getMoves(s),
+      activeMove: getActiveMove(s),
+      navigateToIndex: s.navigateToIndex,
+    })),
+  )
+  const boardSize = useBoardSettings(s => s.boardSize)
+
+  const onMoveClick = (moveNumber: number, color: 'white' | 'black') =>
+    boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
 
   const goIdle = () => setPhase({ type: 'idle' })
 
@@ -69,7 +82,17 @@ function TrainPageInner() {
     <div className="flex items-center justify-center gap-5 p-6 h-full w-full overflow-hidden">
       <section className="relative flex flex-col items-center justify-center min-h-0 h-full rounded flex-1 max-w-2xl">
         <TrainHeader mode={mode} onBack={goIdle} />
-        <ChessBoard showEvalBar={false} showSettings={false} />
+        <ChessBoard
+          state={boardState}
+          shapes={{ hint: boardState.hint, drawn: boardState.drawn, brushes: boardState.brushes, annotations: undefined }}
+          config={{ showBestMove: false, boardSize }}
+          actions={{
+            applyMove: store.getState().applyMove,
+            navigateBack: store.getState().navigateBack,
+            navigateForward: store.getState().navigateForward,
+            setDrawnShapes: store.getState().setDrawnShapes,
+          }}
+        />
         {revealed && <CorrectBanner correct={isCorrect ?? false} />}
         <div className={`w-full mt-3${!revealed ? ' invisible' : ''}`}>
           <GradeButtons card={currentCard} onGrade={() => setPhase({ type: 'done' })} />
@@ -77,7 +100,7 @@ function TrainPageInner() {
       </section>
 
       <section className="flex flex-col min-h-0 h-full w-[220px] overflow-hidden border border-white/[0.09] rounded">
-        <MovesList moves={moves} activeMove={activeMove} onMoveClick={onMoveClick} />
+        <MovesList moves={boardState.moves} activeMove={boardState.activeMove} onMoveClick={onMoveClick} />
       </section>
     </div>
   )

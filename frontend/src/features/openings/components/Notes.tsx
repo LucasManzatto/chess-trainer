@@ -1,20 +1,13 @@
 import { useState } from 'react'
-import { usePositionComments } from '../hooks/usePositionComments'
 
-type NotesProps = {
-  currentFen: string
-}
-
-type NotesSectionProps = {
+export type NotesProps = {
   comments: { id: number; content: string }[]
   isLoading: boolean
   onAdd: (content: string) => void
-  pending: boolean
+  addPending: boolean
 }
 
-export function Notes({ currentFen }: NotesProps) {
-  const { comments, isLoading, add } = usePositionComments(currentFen)
-
+export function Notes({ comments, isLoading, onAdd, addPending }: NotesProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <NotesHeader />
@@ -22,8 +15,8 @@ export function Notes({ currentFen }: NotesProps) {
         <NotesSection
           comments={comments}
           isLoading={isLoading}
-          onAdd={(content) => add.mutate(content)}
-          pending={add.isPending}
+          onAdd={onAdd}
+          pending={addPending}
         />
       </div>
     </div>
@@ -41,6 +34,13 @@ function NotesHeader() {
       </span>
     </div>
   )
+}
+
+type NotesSectionProps = {
+  comments: { id: number; content: string }[]
+  isLoading: boolean
+  onAdd: (content: string) => void
+  pending: boolean
 }
 
 function NotesSection({ comments, isLoading, onAdd, pending }: NotesSectionProps) {

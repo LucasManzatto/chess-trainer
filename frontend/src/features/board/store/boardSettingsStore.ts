@@ -5,6 +5,13 @@ export type BoardTheme = 'green' | 'brown' | 'blue' | 'purple' | 'ic'
 export type PieceSet = 'cburnett' | 'merida' | 'alpha' | 'pirouetti' | 'chessnut' | 'chess7'
 export type MoveStatDisplay = 'winrate' | 'frequency'
 
+export interface BoardConfig {
+  readonly showThreats: boolean
+  readonly showBestMove: boolean
+  readonly boardSize: number
+  readonly moveStatDisplay: MoveStatDisplay
+}
+
 type BoardSettings = {
   boardSize: number
   showThreats: boolean
@@ -17,6 +24,7 @@ type BoardSettings = {
 }
 
 type BoardSettingsActions = {
+  setConfig: (patch: Partial<BoardConfig>) => void
   setBoardSize: (boardSize: number) => void
   setShowThreats: (show: boolean) => void
   setShowCoords: (show: boolean) => void
@@ -41,6 +49,7 @@ export const useBoardSettings = create<BoardSettingsStore>()(
       soundEnabled: true,
       moveStatDisplay: 'winrate',
 
+      setConfig: (patch) => set(patch),
       setBoardSize: (boardSize) => set({ boardSize }),
       setShowThreats: (showThreats) => set({ showThreats }),
       setShowCoords: (showCoords) => set({ showCoords }),
