@@ -11,13 +11,10 @@ import { useShallow } from 'zustand/shallow'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { OpeningsStoreProvider } from '../../../stores/openings/OpeningsStoreProvider'
 import { Notes } from '../../../features/openings/components/Notes'
-import { usePositionComments, usePosition } from '../../../data/hooks/usePositions'
+import { usePositionComments, usePosition, usePositionAnnotationArrows } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
-import {
-  useSyncOpeningToBoard,
-  useBrowseDrillCard,
-} from './hooks'
+import { useBrowseDrillCard } from './hooks'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -40,7 +37,6 @@ function BrowseV2Page() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function BrowseV2PageInner() {
-  useSyncOpeningToBoard()
   const store = useChessBoardStoreApi()
   const boardState = useChessBoardStore(
     useShallow((s) => ({
@@ -51,7 +47,6 @@ function BrowseV2PageInner() {
       activeMove: getActiveMove(s),
       orientation: s.orientation,
       interactive: s.interactive,
-      evalBestMove: s.evalBestMove,
       lastMove: getCurrentLan(s),
     })),
   )
@@ -67,6 +62,7 @@ function BrowseV2PageInner() {
   const { data: positionDetail, isLoading: notesLoading, upsert } = usePosition(boardState.fen)
   const { comments, arrows, circles } = positionDetail
   const { add } = usePositionComments(boardState.fen)
+  const { create: createArrow } = usePositionAnnotationArrows(boardState.fen)
   const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
 
   return (
@@ -105,6 +101,8 @@ function BrowseV2PageInner() {
                     applyMove: store.getState().applyMove,
                     navigateBack: store.getState().navigateBack,
                     navigateForward: store.getState().navigateForward,
+                    createArrow: (from_square, to_square, color) =>
+                      createArrow.mutate({ from_square, to_square, color }),
                   }}
                 />
                 <ChessBoardSettings

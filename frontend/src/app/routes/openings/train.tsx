@@ -33,11 +33,7 @@ function TrainPageInner() {
       fen: getCurrentFen(s),
       orientation: s.orientation,
       interactive: s.interactive,
-      evalBestMove: undefined as string | undefined,
       lastMove: getLastMove(s),
-      hint: s.hintShapes,
-      drawn: s.drawnShapes,
-      brushes: s.hintBrushes,
       moves: getMoves(s),
       activeMove: getActiveMove(s),
       navigateToIndex: s.navigateToIndex,
@@ -84,13 +80,12 @@ function TrainPageInner() {
         <TrainHeader mode={mode} onBack={goIdle} />
         <ChessBoard
           state={boardState}
-          shapes={{ hint: boardState.hint, drawn: boardState.drawn, brushes: boardState.brushes }}
+          shapes={{}}
           config={{ showBestMove: false, boardSize }}
           actions={{
             applyMove: store.getState().applyMove,
             navigateBack: store.getState().navigateBack,
             navigateForward: store.getState().navigateForward,
-            setDrawnShapes: store.getState().setDrawnShapes,
           }}
         />
         {revealed && <CorrectBanner correct={isCorrect ?? false} />}

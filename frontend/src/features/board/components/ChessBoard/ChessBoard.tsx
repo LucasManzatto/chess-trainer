@@ -1,9 +1,9 @@
-import { useEffect, useRef, useMemo, type ReactNode } from 'react'
+import { useEffect, useRef, useMemo, useCallback, type ReactNode } from 'react'
 import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key, Dests } from '@lichess-org/chessground/types'
-import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
+import type { DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { getDests } from '../../../../lib/chess/position'
@@ -12,6 +12,7 @@ import type { PositionAnnotationArrow, PositionAnnotationCircle } from '../../..
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const ANNOTATION_COLOR_MAP: Record<string, string> = { G: 'green', R: 'red', B: 'blue', Y: 'yellow' }
+const BRUSH_TO_COLOR: Record<string, string> = { green: 'G', red: 'R', blue: 'B', yellow: 'Y' }
 
 function annotationBrush(color: string): string {
   return ANNOTATION_COLOR_MAP[color] ?? color
@@ -23,7 +24,6 @@ const BRUSHES = {
   blue:   { key: 'blue',   color: '#003088', opacity: 0.9, lineWidth: 10 },
   yellow: { key: 'yellow', color: '#e68f00', opacity: 0.9, lineWidth: 10 },
   hint:   { key: 'hint',   color: '#15781B', opacity: 0.9, lineWidth: 10 },
-  eval:   { key: 'eval',   color: '#003088', opacity: 0.9, lineWidth: 10 },
 } as const
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,8 +37,6 @@ type ConfigParams = {
   dests: Dests
   lastMove: string | undefined
   autoShapes: DrawShape[] | undefined
-  drawnShapes: DrawShape[]
-  extraBrushes: Record<string, DrawBrush>
   onMove: (orig: Square, dest: Square) => void
   onShapesChange: (shapes: DrawShape[]) => void
 }
@@ -49,15 +47,11 @@ export type ChessBoardProps = {
     fen: string
     orientation: 'white' | 'black'
     interactive: boolean
-    evalBestMove: string | undefined
     lastMove: string | undefined
   }
   shapes: {
-    hint?: DrawShape[]
     arrows?: PositionAnnotationArrow[]
     circles?: PositionAnnotationCircle[]
-    drawn?: DrawShape[]
-    brushes?: Record<string, DrawBrush>
   }
   config: {
     showBestMove: boolean
@@ -67,7 +61,7 @@ export type ChessBoardProps = {
     applyMove: (orig: Square, dest: Square) => void
     navigateBack: () => void
     navigateForward: () => void
-    setDrawnShapes?: (shapes: DrawShape[] | undefined) => void
+    createArrow?: (from_square: string, to_square: string, color: string) => void
   }
 }
 
@@ -79,12 +73,7 @@ function shouldIgnoreKeyEvent(target: EventTarget | null): boolean {
     || (target instanceof HTMLElement && target.isContentEditable)
 }
 
-function getBestMoveShape(evalBestMove: string | undefined, showBestMove: boolean): DrawShape[] {
-  if (!showBestMove || !evalBestMove) return []
-  return [{ orig: evalBestMove.slice(0, 2) as Key, dest: evalBestMove.slice(2, 4) as Key, brush: 'eval' }]
-}
-
-function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, autoShapes, drawnShapes, extraBrushes, onMove, onShapesChange }: ConfigParams): Config {
+function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove, autoShapes, onMove, onShapesChange }: ConfigParams): Config {
   return {
     fen,
     orientation,
@@ -101,8 +90,7 @@ function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove
     },
     drawable: {
       autoShapes,
-      shapes: drawnShapes,
-      brushes: { ...BRUSHES, ...extraBrushes },
+      brushes: BRUSHES,
       onChange: onShapesChange,
     },
     animation: { enabled: true, duration: 300 },
@@ -116,11 +104,10 @@ function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove
 function useBoardConfig(
   state: ChessBoardProps['state'],
   shapes: ChessBoardProps['shapes'],
-  config: ChessBoardProps['config'],
   actions: ChessBoardProps['actions'],
 ): Config {
-  const { fen, orientation, interactive, evalBestMove, lastMove } = state
-  const { hint = [], arrows = [], circles = [], drawn: drawnShapes = [], brushes: hintBrushes = {} } = shapes
+  const { fen, orientation, interactive, lastMove } = state
+  const { arrows = [], circles = [] } = shapes
 
   const annotationShapes = useMemo(
     () => [
@@ -130,27 +117,22 @@ function useBoardConfig(
     [arrows, circles],
   )
 
-  const hintShapes = hint
-  const { showBestMove } = config
-  const { applyMove, setDrawnShapes = () => {} } = actions
+  const { applyMove, createArrow } = actions
+
+  const handleShapesChange = useCallback((newShapes: DrawShape[]) => {
+    const last = newShapes[newShapes.length - 1]
+    if (createArrow && last?.dest && last.orig !== last.dest) {
+      createArrow(last.orig, last.dest, BRUSH_TO_COLOR[last.brush ?? 'green'] ?? 'G')
+    }
+  }, [createArrow])
 
   const chess = useMemo(() => new Chess(fen), [fen])
   const moves = useMemo(() => chess.moves({ verbose: true }), [chess])
   const dests = useMemo(() => interactive ? getDests(moves) : new Map(), [moves, interactive])
 
-  const bestMoveShape = useMemo(
-    () => getBestMoveShape(evalBestMove, showBestMove),
-    [evalBestMove, showBestMove],
-  )
-
-  const allShapes = useMemo(
-    () => [...annotationShapes, ...hintShapes, ...bestMoveShape],
-    [annotationShapes, hintShapes, bestMoveShape],
-  )
-
   return useMemo(
-    () => getConfig({ fen, orientation, turn: chess.turn() === 'w' ? 'white' : 'black', check: chess.inCheck(), interactive, dests, lastMove, autoShapes: allShapes, drawnShapes, extraBrushes: hintBrushes, onMove: applyMove, onShapesChange: setDrawnShapes }),
-    [fen, orientation, chess, interactive, dests, lastMove, allShapes, drawnShapes, hintBrushes, applyMove, setDrawnShapes],
+    () => getConfig({ fen, orientation, turn: chess.turn() === 'w' ? 'white' : 'black', check: chess.inCheck(), interactive, dests, lastMove, autoShapes: annotationShapes, onMove: applyMove, onShapesChange: handleShapesChange }),
+    [fen, orientation, chess, interactive, dests, lastMove, annotationShapes, applyMove, handleShapesChange],
   )
 }
 
@@ -193,7 +175,7 @@ function useBoardKeyNav(navigateBack: () => void, navigateForward: () => void) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ChessBoard(props: ChessBoardProps) {
-  const config = useBoardConfig(props.state, props.shapes, props.config, props.actions)
+  const config = useBoardConfig(props.state, props.shapes, props.actions)
   const elRef = useChessground(config)
   useBoardKeyNav(props.actions.navigateBack, props.actions.navigateForward)
 
