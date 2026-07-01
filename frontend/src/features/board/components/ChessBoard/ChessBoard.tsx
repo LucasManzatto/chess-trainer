@@ -7,8 +7,15 @@ import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { getDests } from '../../../../lib/chess/position'
+import type { PositionAnnotationArrow, PositionAnnotationCircle } from '../../../openings/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
+
+const ANNOTATION_COLOR_MAP: Record<string, string> = { G: 'green', R: 'red', B: 'blue', Y: 'yellow' }
+
+function annotationBrush(color: string): string {
+  return ANNOTATION_COLOR_MAP[color] ?? color
+}
 
 const BRUSHES = {
   green:  { key: 'green',  color: '#15781B', opacity: 0.9, lineWidth: 10 },
@@ -47,9 +54,10 @@ export type ChessBoardProps = {
   }
   shapes: {
     hint?: DrawShape[]
-    continuations?: { lan: string; is_main_line: boolean }[]
-    drawn: DrawShape[]
-    brushes: Record<string, DrawBrush>
+    arrows?: PositionAnnotationArrow[]
+    circles?: PositionAnnotationCircle[]
+    drawn?: DrawShape[]
+    brushes?: Record<string, DrawBrush>
   }
   config: {
     showBestMove: boolean
@@ -59,7 +67,7 @@ export type ChessBoardProps = {
     applyMove: (orig: Square, dest: Square) => void
     navigateBack: () => void
     navigateForward: () => void
-    setDrawnShapes: (shapes: DrawShape[] | undefined) => void
+    setDrawnShapes?: (shapes: DrawShape[] | undefined) => void
   }
 }
 
@@ -112,20 +120,19 @@ function useBoardConfig(
   actions: ChessBoardProps['actions'],
 ): Config {
   const { fen, orientation, interactive, evalBestMove, lastMove } = state
-  const { hint = [], continuations = [], drawn: drawnShapes, brushes: hintBrushes } = shapes
+  const { hint = [], arrows = [], circles = [], drawn: drawnShapes = [], brushes: hintBrushes = {} } = shapes
 
-  const continuationShapes = useMemo(
-    () => continuations.map(m => ({
-      orig: m.lan.slice(0, 2) as Key,
-      dest: m.lan.slice(2, 4) as Key,
-      brush: m.is_main_line ? 'green' : 'blue',
-    })),
-    [continuations],
+  const annotationShapes = useMemo(
+    () => [
+      ...arrows.map(a => ({ orig: a.from_square as Key, dest: a.to_square as Key, brush: annotationBrush(a.color) })),
+      ...circles.map(c => ({ orig: c.square as Key, brush: annotationBrush(c.color) })),
+    ],
+    [arrows, circles],
   )
 
-  const hintShapes = useMemo(() => [...hint, ...continuationShapes], [hint, continuationShapes])
+  const hintShapes = hint
   const { showBestMove } = config
-  const { applyMove, setDrawnShapes } = actions
+  const { applyMove, setDrawnShapes = () => {} } = actions
 
   const chess = useMemo(() => new Chess(fen), [fen])
   const moves = useMemo(() => chess.moves({ verbose: true }), [chess])
@@ -137,8 +144,8 @@ function useBoardConfig(
   )
 
   const allShapes = useMemo(
-    () => [...hintShapes, ...bestMoveShape],
-    [hintShapes, bestMoveShape],
+    () => [...annotationShapes, ...hintShapes, ...bestMoveShape],
+    [annotationShapes, hintShapes, bestMoveShape],
   )
 
   return useMemo(

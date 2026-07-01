@@ -11,13 +11,12 @@ import { useShallow } from 'zustand/shallow'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { OpeningsStoreProvider } from '../../../stores/openings/OpeningsStoreProvider'
 import { Notes } from '../../../features/openings/components/Notes'
-import { usePositionComments, usePosition, usePositionMoves } from '../../../data/hooks/useOpenings'
+import { usePositionComments, usePosition } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import {
   useSyncOpeningToBoard,
   useBrowseDrillCard,
-  useBrowseContinuations,
 } from './hooks'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
@@ -54,13 +53,6 @@ function BrowseV2PageInner() {
       interactive: s.interactive,
       evalBestMove: s.evalBestMove,
       lastMove: getCurrentLan(s),
-      drawn: s.drawnShapes,
-      positionMove: s.currentMoveIndex < 0 ? undefined : {
-        from_fen: getParentFen(s),
-        to_fen: s.history[s.currentMoveIndex].fen,
-        san: s.history[s.currentMoveIndex].san,
-        lan: s.history[s.currentMoveIndex].lan,
-      },
     })),
   )
   const config = useBoardSettings(
@@ -68,19 +60,14 @@ function BrowseV2PageInner() {
       showThreats: s.showThreats,
       showBestMove: s.showBestMove,
       boardSize: s.boardSize,
-      moveStatDisplay: s.moveStatDisplay,
     })),
   )
   const { score, isLoading } = usePositionEvaluation(boardState.fen)
 
-  const { position, upsert } = usePosition(boardState.fen)
-  const { moves: continuations, create: createMove } = usePositionMoves(boardState.fen)
-  const { comments, isLoading: notesLoading, add } = usePositionComments(boardState.fen)
+  const { data: positionDetail, isLoading: notesLoading, upsert } = usePosition(boardState.fen)
+  const { comments, arrows, circles } = positionDetail
+  const { add } = usePositionComments(boardState.fen)
   const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
-  const { arrowShapes, saveArrowsAsMoves, isPending } = useBrowseContinuations({
-    createMoveAsync: createMove.mutateAsync,
-    isPending: createMove.isPending,
-  })
 
   return (
     <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
@@ -90,25 +77,10 @@ function BrowseV2PageInner() {
         <div className="flex flex-col items-stretch">
           <div className="relative flex items-center justify-center px-3 py-2">
             <PositionName
-              name={position?.name ?? null}
+              name={positionDetail.position?.name ?? null}
               isSaving={upsert.isPending}
-              onSave={(name) => {
-                upsert.mutate({ name, moves: boardState.sanMoves })
-                if (boardState.positionMove) createMove.mutate(boardState.positionMove)
-              }}
+              onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
             />
-            <div className="absolute left-0 flex gap-1">
-              {arrowShapes.length > 0 && (
-                <button
-                  onClick={saveArrowsAsMoves}
-                  disabled={isPending}
-                  title="Save drawn arrows as moves"
-                  className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-medium rounded px-2.5 py-1.5 transition-colors cursor-pointer"
-                >
-                  Save drawn moves ({arrowShapes.length})
-                </button>
-              )}
-            </div>
             {drillCard && (
               <div className="absolute right-0">
                 <AddToDrill
@@ -127,13 +99,12 @@ function BrowseV2PageInner() {
               <div className="relative">
                 <ChessBoard
                   state={boardState}
-                  shapes={{ continuations, drawn: boardState.drawn, brushes: {} }}
+                  shapes={{ arrows, circles }}
                   config={{ showBestMove: config.showBestMove, boardSize: config.boardSize }}
                   actions={{
                     applyMove: store.getState().applyMove,
                     navigateBack: store.getState().navigateBack,
                     navigateForward: store.getState().navigateForward,
-                    setDrawnShapes: store.getState().setDrawnShapes,
                   }}
                 />
                 <ChessBoardSettings

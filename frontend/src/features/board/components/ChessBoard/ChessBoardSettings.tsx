@@ -4,7 +4,6 @@ import { SettingsDrawerButton } from '../settings/SettingsDrawerButton'
 import { FlipBoardButton } from '../settings/FlipBoardButton'
 import { ShowThreatsButton } from '../settings/ShowThreatsButton'
 import { ShowBestMoveButton } from '../settings/ShowBestMoveButton'
-import { MoveStatDisplayButton } from '../settings/MoveStatDisplayButton'
 import { ResetBoardButton } from '../settings/ResetBoardButton'
 import { BoardSizeDrawer } from '../settings/BoardSizeDrawer'
 
@@ -29,7 +28,6 @@ export function ChessBoardSettings({ config, onConfigChange, onFlipOrientation, 
         <FlipBoardButton onClick={onFlipOrientation} />
         <ShowThreatsButton active={config.showThreats} onClick={() => update('showThreats', !config.showThreats)} />
         <ShowBestMoveButton active={config.showBestMove} onClick={() => update('showBestMove', !config.showBestMove)} />
-        <MoveStatDisplayButton value={config.moveStatDisplay} onChange={val => update('moveStatDisplay', val)} />
         <ResetBoardButton onClick={onReset} />
       </div>
       <BoardSizeDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} value={config.boardSize} onChange={size => update('boardSize', size)} />

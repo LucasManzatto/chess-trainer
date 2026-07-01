@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useGameAnalysis } from '../../../features/board/hooks/useGameAnalysis'
-import { useOpenings } from '../../../data/hooks/useOpenings'
+import { usePositions } from '../../../data/hooks/usePositions'
 import { computeOpeningMatch } from '../utils/gameLogic'
 import { findCriticalMoves } from '../utils/analysisUtils'
 import type { Game, MoveClassification } from '../types'
@@ -14,7 +14,7 @@ export function useGameBoard(onAnalysisComplete: () => void, onOrientationChange
   const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
     useGameAnalysis(allFens, allMoves, selectedGame?.id ?? null, 18, onAnalysisComplete)
 
-  const { data: openings } = useOpenings()
+  const { data: openings } = usePositions()
 
   const openingMatch = useMemo(
     () => computeOpeningMatch(selectedGame?.moves ?? [], openings ?? []),

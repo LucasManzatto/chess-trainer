@@ -19,46 +19,19 @@ class PositionResponse(BaseModel):
     created_at: datetime
 
 
-class PositionMoveCreate(BaseModel):
-    from_fen: str
-    to_fen: str
-    san: str
-    lan: str
-    is_main_line: bool = False
-    commentary: str | None = None
-
-
-class PositionMoveUpdate(BaseModel):
-    is_main_line: bool | None = None
-    commentary: str | None = None
-
-
-class PositionMoveResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: str
-    from_position_id: str
-    to_position_id: str
-    san: str
-    lan: str
-    is_main_line: bool
-    commentary: str | None
-
-
-class PositionCommentCreate(BaseModel):
+class PositionAnnotationCommentCreate(BaseModel):
     content: str
 
 
-class PositionCommentUpdate(BaseModel):
+class PositionAnnotationCommentUpdate(BaseModel):
     content: str
 
 
-class PositionCommentResponse(BaseModel):
+class PositionAnnotationCommentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    user_id: str
-    position_id: str
+    fen: str
     content: str
     created_at: datetime
 
@@ -101,16 +74,8 @@ class PositionAnnotationCircleResponse(BaseModel):
     color: str
 
 
-class MoveStat(BaseModel):
-    san: str
-    uci: str
-    white: int
-    draws: int
-    black: int
-    total: int
-    percentage: float
-
-
-class MoveStatsResponse(BaseModel):
-    moves: list[MoveStat]
-    total_games: int
+class PositionDetailResponse(BaseModel):
+    position: PositionResponse | None
+    comments: list[PositionAnnotationCommentResponse]
+    arrows: list[PositionAnnotationArrowResponse]
+    circles: list[PositionAnnotationCircleResponse]

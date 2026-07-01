@@ -1,9 +1,5 @@
 import type { GamesFilters } from '../features/games/types'
 
-export const engineKeys = {
-  moveStats: (moves: string[]) => ['move-stats', moves] as const,
-}
-
 export const gamesKeys = {
   profile:    ()                    => ['games-profile'] as const,
   syncStatus: ()                    => ['games-sync-status'] as const,
@@ -11,12 +7,7 @@ export const gamesKeys = {
 }
 
 export const positionsKeys = {
-  position:      (fen: string) => ['position', fen] as const,
-  moves:         (fen: string) => ['position-moves', fen] as const,
-  comments:      (fen: string) => ['position-comments', fen] as const,
-  moveStats:     (moves: string[]) => ['move-stats', moves] as const,
-  annotationArrows:  (fen: string) => ['position-annotation-arrows', fen] as const,
-  annotationCircles: (fen: string) => ['position-annotation-circles', fen] as const,
+  detail: (fen: string) => ['position-detail', fen] as const,
 }
 
 export const trainKeys = {

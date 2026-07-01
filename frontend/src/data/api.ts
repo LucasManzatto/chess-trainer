@@ -5,32 +5,9 @@ import type {
   PositionAnnotationArrow,
   PositionAnnotationCircle,
   PositionComment,
-  PositionMove,
-  PositionMoveCreateBody,
+  PositionDetail,
 } from '../features/openings/types'
 import type { CardCreate, CardDelete, CardReview, CoverageStats, RepertoireCard, TrainStats } from '../features/train/types'
-
-export type MoveStat = {
-  san: string
-  uci: string
-  white: number
-  draws: number
-  black: number
-  total: number
-  percentage: number
-}
-
-export type MoveStatsResponse = {
-  moves: MoveStat[]
-  total_games: number
-}
-
-export const moveStatsApi = {
-  get: (moves: string[], signal?: AbortSignal) => {
-    const params = moves.length ? `?moves=${moves.join(',')}` : ''
-    return request<MoveStatsResponse>(`/api/v1/positions/move-stats${params}`, { signal })
-  },
-}
 
 export const profileApi = {
   get: (signal?: AbortSignal) =>
@@ -83,23 +60,8 @@ export const positionsApi = {
     request<Position>(`/api/v1/positions/${encodeURIComponent(fen)}`, { signal }),
   remove: (fen: string) =>
     request<void>(`/api/v1/positions/${encodeURIComponent(fen)}`, { method: 'DELETE' }),
-}
-
-export const positionMovesApi = {
-  list: (fen: string, signal?: AbortSignal) =>
-    request<PositionMove[]>(`/api/v1/positions/${encodeURIComponent(fen)}/moves`, { signal }),
-  create: (body: PositionMoveCreateBody) =>
-    request<PositionMove>('/api/v1/positions/moves', {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
-  update: (moveId: string, body: { is_main_line?: boolean; commentary?: string | null }) =>
-    request<PositionMove>(`/api/v1/positions/moves/${moveId}`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }),
-  remove: (moveId: string) =>
-    request<void>(`/api/v1/positions/moves/${moveId}`, { method: 'DELETE' }),
+  getDetail: (fen: string, signal?: AbortSignal) =>
+    request<PositionDetail>(`/api/v1/positions/${encodeURIComponent(fen)}/detail`, { signal }),
 }
 
 export const positionCommentsApi = {
