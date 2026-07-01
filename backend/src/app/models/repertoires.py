@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -10,6 +10,7 @@ from .openings import Base
 
 class RepertoireCard(Base):
     __tablename__ = "repertoire_cards"
+    __table_args__ = (UniqueConstraint("user_id", "position_id", name="rc_user_position_unique"),)
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, server_default=func.gen_random_uuid())
     user_id: Mapped[str] = mapped_column(Text)
