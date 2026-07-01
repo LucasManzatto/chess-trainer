@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
-import type { RepertoireCard } from '../types'
+import type { RepertoireCard } from '../features/train/types'
 
 // ── Phase discriminated union ──────────────────────────────────────────────────
 

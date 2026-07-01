@@ -1,4 +1,4 @@
-import { useReviewCard } from '../hooks/useReviewCard'
+import { useReviewCard } from '../../../data/hooks/useTrain'
 import type { CardReview, RepertoireCard } from '../types'
 
 type Grade = CardReview['grade']

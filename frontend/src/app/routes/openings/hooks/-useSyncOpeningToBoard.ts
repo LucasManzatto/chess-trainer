@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useChessBoardStoreApi } from '../../../../features/board'
-import { useOpeningsStore, getSelectedPosition } from '../../../../features/openings/store/openingsStore'
+import { useOpeningsStore, getSelectedPosition } from '../../../../stores/openingsStore'
 
 export function useSyncOpeningToBoard() {
   const selectedOpening = useOpeningsStore(getSelectedPosition)

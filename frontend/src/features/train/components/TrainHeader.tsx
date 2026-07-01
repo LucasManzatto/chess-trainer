@@ -1,7 +1,5 @@
-import { useResetCards } from '../hooks/useResetCards'
-import { useStats } from '../hooks/useStats'
-import { useDueCards } from '../hooks/useDueCards'
-import type { TrainMode } from '../store/trainStore'
+import { useResetCards, useStats, useDueCards } from '../../../data/hooks/useTrain'
+import type { TrainMode } from '../../stores/trainStore'
 
 interface TrainHeaderProps {
   mode: TrainMode

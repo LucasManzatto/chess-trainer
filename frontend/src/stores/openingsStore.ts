@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
-import type { Position } from '../types'
+import type { Position } from '../features/openings/types'
 
 interface OpeningsState {
   positions: Position[]

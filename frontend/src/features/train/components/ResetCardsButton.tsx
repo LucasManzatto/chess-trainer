@@ -1,4 +1,4 @@
-import { useResetCards } from '../hooks/useResetCards'
+import { useResetCards } from '../../../data/hooks/useTrain'
 
 export function ResetCardsButton() {
   const { mutate, isPending } = useResetCards()

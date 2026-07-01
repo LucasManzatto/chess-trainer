@@ -1,4 +1,4 @@
-import type { EvaluationScore } from '../../lib/chess/types'
+import type { EvaluationScore } from '../../../../lib/chess/types'
 
 type Props = {
   score?: EvaluationScore

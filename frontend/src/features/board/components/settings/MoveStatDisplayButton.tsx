@@ -1,4 +1,4 @@
-import type { MoveStatDisplay } from '../../store/boardSettingsStore'
+import type { MoveStatDisplay } from '../../../stores/boardSettingsStore'
 import { WinrateIcon, FrequencyIcon } from '../../../../components/icons'
 
 type Props = { value: MoveStatDisplay; onChange: (v: MoveStatDisplay) => void }

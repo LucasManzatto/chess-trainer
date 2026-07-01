@@ -1,8 +1,8 @@
 import { memo, useCallback, useMemo } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { Game } from '../../types'
-import { useGames } from '../../hooks/useGames'
-import { useGamesSync } from '../../hooks/useGamesSync'
+import { useGames } from '../../../../data/hooks/useGames'
+import { useGamesSync } from '../../../../data/hooks/useGames'
 import { SyncControls } from '../GamesTab/SyncControls'
 import { timeControlLabel } from '../../utils/gameFormatters'
 

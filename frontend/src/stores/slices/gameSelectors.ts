@@ -1,5 +1,5 @@
-import { INITIAL_FEN } from '../../../../lib/chess/history'
-import type { Annotation, HistoryEntry, MovePair, ActiveMove } from '../../../../lib/chess/types'
+import { INITIAL_FEN } from '../../lib/chess/history'
+import type { Annotation, HistoryEntry, MovePair, ActiveMove } from '../../lib/chess/types'
 import type { GameState } from './gameSlice'
 
 export function getFenAtIndex(state: GameState): string {

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import { ChessComSetup } from '../../../features/games/components/ChessComSetup'
-import { useProfile } from '../../../features/games/hooks/useProfile'
+import { useProfile } from '../../../data/hooks/useGames'
 
 export const Route = createFileRoute('/_auth/games')({
   component: GamesLayout,

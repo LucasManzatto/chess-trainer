@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUpdateProfile } from './useProfile'
+import { useUpdateProfile } from '../../../data/hooks/useGames'
 
 export function useChessComSetup(onComplete: () => void) {
   const [username, setUsername] = useState('')

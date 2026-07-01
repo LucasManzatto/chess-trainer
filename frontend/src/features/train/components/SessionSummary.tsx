@@ -1,4 +1,4 @@
-import { useStats } from '../hooks/useStats'
+import { useStats } from '../../../data/hooks/useTrain'
 
 interface SessionSummaryProps {
   onTrainAgain: () => void

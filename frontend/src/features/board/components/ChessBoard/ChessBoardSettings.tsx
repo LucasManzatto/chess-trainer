@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import type { BoardConfig } from './store/boardSettingsStore'
-import { SettingsDrawerButton } from './components/settings/SettingsDrawerButton'
-import { FlipBoardButton } from './components/settings/FlipBoardButton'
-import { ShowThreatsButton } from './components/settings/ShowThreatsButton'
-import { ShowBestMoveButton } from './components/settings/ShowBestMoveButton'
-import { MoveStatDisplayButton } from './components/settings/MoveStatDisplayButton'
-import { ResetBoardButton } from './components/settings/ResetBoardButton'
-import { BoardSizeDrawer } from './components/settings/BoardSizeDrawer'
+import type { BoardConfig } from '../../../../stores/boardSettingsStore'
+import { SettingsDrawerButton } from '../settings/SettingsDrawerButton'
+import { FlipBoardButton } from '../settings/FlipBoardButton'
+import { ShowThreatsButton } from '../settings/ShowThreatsButton'
+import { ShowBestMoveButton } from '../settings/ShowBestMoveButton'
+import { MoveStatDisplayButton } from '../settings/MoveStatDisplayButton'
+import { ResetBoardButton } from '../settings/ResetBoardButton'
+import { BoardSizeDrawer } from '../settings/BoardSizeDrawer'
 
 export type ChessBoardSettingsProps = {
   config: BoardConfig

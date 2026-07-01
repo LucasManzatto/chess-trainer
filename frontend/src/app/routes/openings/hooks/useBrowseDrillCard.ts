@@ -1,5 +1,5 @@
 import { getSideFromFen } from '../../../../lib/chess'
-import { useRepertoireCards } from '../../../../features/train/hooks/useRepertoireCards'
+import { useRepertoireCards } from '../../../../data/hooks/useTrain'
 
 
 export function useBrowseDrillCard(fen: string, preAnswerFen: string, sanMoves: string[]) {

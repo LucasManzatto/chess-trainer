@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchPositions } from '../api'
+import { fetchPositions } from '../data/api'
 import { createOpeningsStore, OpeningsStoreContext } from './openingsStore'
 
 export function OpeningsStoreProvider({ children }: { children: ReactNode }) {

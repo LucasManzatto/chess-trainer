@@ -1,9 +1,9 @@
 import { Chess } from 'chess.js'
 import type { StateCreator } from 'zustand'
 import type { Square } from 'chess.js'
-import type { Annotation, HistoryEntry, MoveResult } from '../../../../lib/chess/types'
-import { buildHistoryFromMoves, INITIAL_FEN } from '../../../../lib/chess/history'
-import { getGameOver } from '../../../../lib/chess/position'
+import type { Annotation, HistoryEntry, MoveResult } from '../../lib/chess/types'
+import { buildHistoryFromMoves, INITIAL_FEN } from '../../lib/chess/history'
+import { getGameOver } from '../../lib/chess/position'
 import type { ChessBoardStoreType } from '../chessBoardStore'
 import { getCurrentEntry } from './gameSelectors'
 

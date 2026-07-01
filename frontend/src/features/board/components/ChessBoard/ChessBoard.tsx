@@ -6,8 +6,8 @@ import type { Key, Dests } from '@lichess-org/chessground/types'
 import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
-import { getDests } from '../../lib/chess/position'
-import type { Annotation, AnnotationColor } from '../../lib/chess/types'
+import { getDests } from '../../../../lib/chess/position'
+import type { Annotation, AnnotationColor } from '../../../../lib/chess/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import type { GameAnalysis, MoveAnalysis } from '../types'
-import { gamesApi } from '../../../features/games/api'
+import { gamesApi } from '../../../data/api'
 import { classifyMove, cpToWinPercent, computeAccuracy, evalFen } from '../../../lib/chess'
 import { createStockfishWorker } from '../../../features/engine'
 import sfUrl from 'stockfish/bin/stockfish-18-lite-single.js?url'

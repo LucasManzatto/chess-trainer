@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useGameAnalysis } from '../../../features/board/hooks/useGameAnalysis'
-import { useOpenings } from '../../openings/hooks/useOpenings'
+import { useOpenings } from '../../../data/hooks/useOpenings'
 import { computeOpeningMatch } from '../utils/gameLogic'
 import { findCriticalMoves } from '../utils/analysisUtils'
 import type { Game, MoveClassification } from '../types'
