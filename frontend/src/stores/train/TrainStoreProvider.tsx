@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from 'react'
-import { useDueCards, useRepertoireCards } from '../data/hooks/useTrain'
+import { useDueCards, useRepertoireCards } from '../../data/hooks/useTrain'
 import { createTrainStore, TrainStoreContext } from './trainStore'
 
 interface TrainStoreProviderProps {

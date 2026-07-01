@@ -8,7 +8,7 @@ export function buildHistoryFromMoves(moves: string[]): HistoryEntry[] {
   return moves.map(san => {
     try {
       const move = engine.move(san)
-      return { san: move.san, lan: move.lan, from: move.from, to: move.to, fen: move.after, promotion: move.promotion }
+      return { san: move.san, lan: move.lan, from: move.from, to: move.to, fen: move.after }
     } catch {
       throw new Error(`Illegal move in sequence: "${san}"`)
     }

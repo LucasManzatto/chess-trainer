@@ -7,11 +7,8 @@ import type { DrawBrush, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { getDests } from '../../../../lib/chess/position'
-import type { Annotation, AnnotationColor } from '../../../../lib/chess/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-
-const ANNOTATION_COLOR_MAP: Record<AnnotationColor, string> = { G: 'green', R: 'red', B: 'blue', Y: 'yellow' }
 
 const BRUSHES = {
   green:  { key: 'green',  color: '#15781B', opacity: 0.9, lineWidth: 10 },
@@ -49,7 +46,6 @@ export type ChessBoardProps = {
     lastMove: string | undefined
   }
   shapes: {
-    annotations: Annotation | undefined
     hint?: DrawShape[]
     continuations?: { lan: string; is_main_line: boolean }[]
     drawn: DrawShape[]
@@ -116,7 +112,7 @@ function useBoardConfig(
   actions: ChessBoardProps['actions'],
 ): Config {
   const { fen, orientation, interactive, evalBestMove, lastMove } = state
-  const { annotations, hint = [], continuations = [], drawn: drawnShapes, brushes: hintBrushes } = shapes
+  const { hint = [], continuations = [], drawn: drawnShapes, brushes: hintBrushes } = shapes
 
   const continuationShapes = useMemo(
     () => continuations.map(m => ({
@@ -140,17 +136,9 @@ function useBoardConfig(
     [evalBestMove, showBestMove],
   )
 
-  const annotationShapes = useMemo((): DrawShape[] => {
-    if (!annotations) return []
-    return [
-      ...annotations.arrows.map(a => ({ orig: a.from as Key, dest: a.to as Key, brush: ANNOTATION_COLOR_MAP[a.color] })),
-      ...annotations.circles.map(c => ({ orig: c.square as Key, brush: ANNOTATION_COLOR_MAP[c.color] })),
-    ]
-  }, [annotations])
-
   const allShapes = useMemo(
-    () => [...annotationShapes, ...hintShapes, ...bestMoveShape],
-    [annotationShapes, hintShapes, bestMoveShape],
+    () => [...hintShapes, ...bestMoveShape],
+    [hintShapes, bestMoveShape],
   )
 
   return useMemo(

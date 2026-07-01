@@ -3,13 +3,13 @@ import { ChessBoardProvider, getSanMoves, getMoves, getActiveMove } from '../../
 import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessBoard'
 import { ChessBoardSettings } from '../../../features/board/components/ChessBoard/ChessBoardSettings'
 import { EvaluationBar } from '../../../features/board/components/ChessBoard/ChessBoardEvalBar'
-import { useChessBoardStore, useChessBoardStoreApi } from '../../../stores/chessBoardStore'
-import { getCurrentFen, getCurrentLan, getCurrentAnnotations, getParentFen } from '../../../stores/slices/gameSelectors'
+import { useChessBoardStore, useChessBoardStoreApi } from '../../../stores/board/chessBoardStore'
+import { getCurrentFen, getCurrentLan, getParentFen } from '../../../stores/board/slices/gameSelectors'
 import { usePositionEvaluation } from '../../../features/board/hooks/usePositionEvaluation'
-import { useBoardSettings } from '../../../stores/boardSettingsStore'
+import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
 import { MovesList } from '../../../components/MovesList/MovesList'
-import { OpeningsStoreProvider } from '../../../stores/OpeningsStoreProvider'
+import { OpeningsStoreProvider } from '../../../stores/openings/OpeningsStoreProvider'
 import { Notes } from '../../../features/openings/components/Notes'
 import { usePositionComments, usePosition, usePositionMoves } from '../../../data/hooks/useOpenings'
 import { PositionName } from '../../../features/openings/components/PositionName'
@@ -54,7 +54,6 @@ function BrowseV2PageInner() {
       interactive: s.interactive,
       evalBestMove: s.evalBestMove,
       lastMove: getCurrentLan(s),
-      annotations: getCurrentAnnotations(s),
       drawn: s.drawnShapes,
       positionMove: s.currentMoveIndex < 0 ? undefined : {
         from_fen: getParentFen(s),
@@ -128,7 +127,7 @@ function BrowseV2PageInner() {
               <div className="relative">
                 <ChessBoard
                   state={boardState}
-                  shapes={{ annotations: boardState.annotations, continuations, drawn: boardState.drawn, brushes: {} }}
+                  shapes={{ continuations, drawn: boardState.drawn, brushes: {} }}
                   config={{ showBestMove: config.showBestMove, boardSize: config.boardSize }}
                   actions={{
                     applyMove: store.getState().applyMove,

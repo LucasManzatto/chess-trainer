@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { EvaluationScore } from '../../lib/chess/types'
+import type { EvaluationScore } from '../../../lib/chess/types'
 import type { ChessBoardStoreType } from '../chessBoardStore'
 
 export type EvalSlice = {

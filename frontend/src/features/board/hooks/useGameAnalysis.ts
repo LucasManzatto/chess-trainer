@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import type { GameAnalysis, MoveAnalysis } from '../types'
+import type { GameAnalysis, MoveAnalysis } from '../../games/types'
 import { gamesApi } from '../../../data/api'
 import { classifyMove, cpToWinPercent, computeAccuracy, evalFen } from '../../../lib/chess'
 import { createStockfishWorker } from '../../../features/engine'

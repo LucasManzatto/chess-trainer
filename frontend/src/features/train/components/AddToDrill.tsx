@@ -1,6 +1,5 @@
 import { toast } from 'sonner'
-import { useCommitMove } from '../../../data/train'
-import { useDeleteCard } from '../../../data/hooks/useTrain'
+import { useCommitMove, useDeleteCard } from '../../../data/hooks/useTrain'
 import type { CardCreate, RepertoireCard } from '../types'
 
 type Props = {

@@ -1,5 +1,5 @@
-import { INITIAL_FEN } from '../../lib/chess/history'
-import type { Annotation, HistoryEntry, MovePair, ActiveMove } from '../../lib/chess/types'
+import { INITIAL_FEN } from '../../../lib/chess/history'
+import type { HistoryEntry, MovePair, ActiveMove } from '../../../lib/chess/types'
 import type { GameState } from './gameSlice'
 
 export function getFenAtIndex(state: GameState): string {
@@ -11,11 +11,7 @@ export function getCurrentEntry(state: GameState): HistoryEntry | undefined {
 }
 
 export function getCurrentFen(state: GameState): string {
-  return state.lastExternalFen ?? getCurrentEntry(state)?.fen ?? INITIAL_FEN
-}
-
-export function getCurrentAnnotations(state: GameState): Annotation | undefined {
-  return getCurrentEntry(state)?.annotations
+  return getCurrentEntry(state)?.fen ?? INITIAL_FEN
 }
 
 export function getLastMove(state: GameState): string | undefined {

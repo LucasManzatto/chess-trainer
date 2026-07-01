@@ -1,5 +1,5 @@
-import { useResetCards, useStats, useDueCards } from '../../../data/hooks/useTrain'
-import type { TrainMode } from '../../stores/train/trainStore'
+import { useStats, useDueCards } from '../../../data/hooks/useTrain'
+import type { TrainMode } from '../../../stores/train/trainStore'
 
 interface TrainHeaderProps {
   mode: TrainMode
@@ -7,7 +7,6 @@ interface TrainHeaderProps {
 }
 
 export function TrainHeader({ mode, onBack }: TrainHeaderProps) {
-  const { mutate: resetCards } = useResetCards()
   const { data: stats } = useStats()
   const { data: dueCards = [] } = useDueCards()
 

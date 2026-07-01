@@ -1,5 +1,5 @@
-import type { TrainMode, TrainPhase } from '../../stores/train/trainStore'
 import { useCoverage, useDueCards } from '../../../data/hooks/useTrain'
+import type { TrainMode, TrainPhase } from '../../../stores/train/trainStore'
 import { ResetCardsButton } from './ResetCardsButton'
 
 interface TrainSetupProps {

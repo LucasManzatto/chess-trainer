@@ -27,8 +27,6 @@ export type HistoryEntry = {
   from: string
   to: string
   fen: string
-  promotion?: string
-  annotations?: Annotation
 }
 
 export type GameMetadata = {

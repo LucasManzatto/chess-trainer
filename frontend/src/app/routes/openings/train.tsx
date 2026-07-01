@@ -84,7 +84,7 @@ function TrainPageInner() {
         <TrainHeader mode={mode} onBack={goIdle} />
         <ChessBoard
           state={boardState}
-          shapes={{ hint: boardState.hint, drawn: boardState.drawn, brushes: boardState.brushes, annotations: undefined }}
+          shapes={{ hint: boardState.hint, drawn: boardState.drawn, brushes: boardState.brushes }}
           config={{ showBestMove: false, boardSize }}
           actions={{
             applyMove: store.getState().applyMove,
