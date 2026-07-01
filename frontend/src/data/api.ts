@@ -81,38 +81,16 @@ export const positionCommentsApi = {
     request<void>(`/api/v1/positions/comments/${commentId}`, { method: 'DELETE' }),
 }
 
-export const positionAnnotationArrowsApi = {
-  list: (fen: string, signal?: AbortSignal) =>
-    request<PositionAnnotationArrow[]>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/arrows`, { signal }),
-  create: (fen: string, from_square: string, to_square: string, color: string) =>
-    request<PositionAnnotationArrow>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/arrows`, {
-      method: 'POST',
-      body: JSON.stringify({ from_square, to_square, color }),
-    }),
-  update: (arrowId: number, color: string) =>
-    request<PositionAnnotationArrow>(`/api/v1/positions/annotations/arrows/${arrowId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ color }),
-    }),
-  remove: (arrowId: number) =>
-    request<void>(`/api/v1/positions/annotations/arrows/${arrowId}`, { method: 'DELETE' }),
-}
-
-export const positionAnnotationCirclesApi = {
-  list: (fen: string, signal?: AbortSignal) =>
-    request<PositionAnnotationCircle[]>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/circles`, { signal }),
-  create: (fen: string, square: string, color: string) =>
-    request<PositionAnnotationCircle>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/circles`, {
-      method: 'POST',
-      body: JSON.stringify({ square, color }),
-    }),
-  update: (circleId: number, color: string) =>
-    request<PositionAnnotationCircle>(`/api/v1/positions/annotations/circles/${circleId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ color }),
-    }),
-  remove: (circleId: number) =>
-    request<void>(`/api/v1/positions/annotations/circles/${circleId}`, { method: 'DELETE' }),
+export const positionAnnotationsApi = {
+  replace: (
+    fen: string,
+    arrows: Pick<PositionAnnotationArrow, 'from_square' | 'to_square' | 'color'>[],
+    circles: Pick<PositionAnnotationCircle, 'square' | 'color'>[],
+  ) =>
+    request<{ arrows: PositionAnnotationArrow[]; circles: PositionAnnotationCircle[] }>(
+      `/api/v1/positions/${encodeURIComponent(fen)}/annotations`,
+      { method: 'PUT', body: JSON.stringify({ arrows, circles }) },
+    ),
 }
 
 export const trainApi = {

@@ -12,14 +12,12 @@ from ..models.openings import (
 )
 from ..models.repertoires import RepertoireCard
 from ..schemas.openings import (
-    PositionAnnotationArrowCreate,
     PositionAnnotationArrowResponse,
-    PositionAnnotationArrowUpdate,
-    PositionAnnotationCircleCreate,
     PositionAnnotationCircleResponse,
-    PositionAnnotationCircleUpdate,
     PositionAnnotationCommentCreate,
     PositionAnnotationCommentResponse,
+    PositionAnnotationsReplace,
+    PositionAnnotationsResponse,
     PositionCreate,
     PositionDetailResponse,
     PositionResponse,
@@ -191,89 +189,35 @@ async def delete_position_comment(session: AsyncSession, comment_id: int) -> Non
     await session.commit()
 
 
-async def list_position_annotation_arrows(
-    session: AsyncSession, fen: str
-) -> list[PositionAnnotationArrowResponse]:
-    result = await session.execute(
-        select(PositionAnnotationArrow).where(PositionAnnotationArrow.fen == fen)
+async def replace_position_annotations(
+    session: AsyncSession, fen: str, body: PositionAnnotationsReplace
+) -> PositionAnnotationsResponse:
+    await session.execute(
+        pg_insert(Position)
+        .values(fen=fen, name=None, moves=[])
+        .on_conflict_do_update(index_elements=["fen"], set_={"fen": fen})
     )
-    return [PositionAnnotationArrowResponse.model_validate(a) for a in result.scalars()]
-
-
-async def create_position_annotation_arrow(
-    session: AsyncSession, fen: str, body: PositionAnnotationArrowCreate
-) -> PositionAnnotationArrowResponse:
-    arrow = PositionAnnotationArrow(
-        fen=fen, from_square=body.from_square, to_square=body.to_square, color=body.color
+    await session.execute(
+        delete(PositionAnnotationArrow).where(PositionAnnotationArrow.fen == fen)
     )
-    session.add(arrow)
-    await session.commit()
-    return PositionAnnotationArrowResponse.model_validate(arrow)
-
-
-async def update_position_annotation_arrow(
-    session: AsyncSession, arrow_id: int, body: PositionAnnotationArrowUpdate
-) -> PositionAnnotationArrowResponse:
-    result = await session.execute(
-        select(PositionAnnotationArrow).where(PositionAnnotationArrow.id == arrow_id)
+    await session.execute(
+        delete(PositionAnnotationCircle).where(PositionAnnotationCircle.fen == fen)
     )
-    arrow = result.scalar_one_or_none()
-    if arrow is None:
-        raise NotFoundError("Annotation arrow not found")
-    arrow.color = body.color
-    await session.commit()
-    return PositionAnnotationArrowResponse.model_validate(arrow)
 
-
-async def delete_position_annotation_arrow(session: AsyncSession, arrow_id: int) -> None:
-    result = await session.execute(
-        delete(PositionAnnotationArrow)
-        .where(PositionAnnotationArrow.id == arrow_id)
-        .returning(PositionAnnotationArrow.id)
-    )
-    if result.first() is None:
-        raise NotFoundError("Annotation arrow not found")
+    arrows = [
+        PositionAnnotationArrow(
+            fen=fen, from_square=a.from_square, to_square=a.to_square, color=a.color
+        )
+        for a in body.arrows
+    ]
+    circles = [
+        PositionAnnotationCircle(fen=fen, square=c.square, color=c.color) for c in body.circles
+    ]
+    session.add_all(arrows)
+    session.add_all(circles)
     await session.commit()
 
-
-async def list_position_annotation_circles(
-    session: AsyncSession, fen: str
-) -> list[PositionAnnotationCircleResponse]:
-    result = await session.execute(
-        select(PositionAnnotationCircle).where(PositionAnnotationCircle.fen == fen)
+    return PositionAnnotationsResponse(
+        arrows=[PositionAnnotationArrowResponse.model_validate(a) for a in arrows],
+        circles=[PositionAnnotationCircleResponse.model_validate(c) for c in circles],
     )
-    return [PositionAnnotationCircleResponse.model_validate(c) for c in result.scalars()]
-
-
-async def create_position_annotation_circle(
-    session: AsyncSession, fen: str, body: PositionAnnotationCircleCreate
-) -> PositionAnnotationCircleResponse:
-    circle = PositionAnnotationCircle(fen=fen, square=body.square, color=body.color)
-    session.add(circle)
-    await session.commit()
-    return PositionAnnotationCircleResponse.model_validate(circle)
-
-
-async def update_position_annotation_circle(
-    session: AsyncSession, circle_id: int, body: PositionAnnotationCircleUpdate
-) -> PositionAnnotationCircleResponse:
-    result = await session.execute(
-        select(PositionAnnotationCircle).where(PositionAnnotationCircle.id == circle_id)
-    )
-    circle = result.scalar_one_or_none()
-    if circle is None:
-        raise NotFoundError("Annotation circle not found")
-    circle.color = body.color
-    await session.commit()
-    return PositionAnnotationCircleResponse.model_validate(circle)
-
-
-async def delete_position_annotation_circle(session: AsyncSession, circle_id: int) -> None:
-    result = await session.execute(
-        delete(PositionAnnotationCircle)
-        .where(PositionAnnotationCircle.id == circle_id)
-        .returning(PositionAnnotationCircle.id)
-    )
-    if result.first() is None:
-        raise NotFoundError("Annotation circle not found")
-    await session.commit()

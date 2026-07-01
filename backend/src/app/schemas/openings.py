@@ -36,13 +36,9 @@ class PositionAnnotationCommentResponse(BaseModel):
     created_at: datetime
 
 
-class PositionAnnotationArrowCreate(BaseModel):
+class PositionAnnotationArrowInput(BaseModel):
     from_square: str
     to_square: str
-    color: str
-
-
-class PositionAnnotationArrowUpdate(BaseModel):
     color: str
 
 
@@ -56,12 +52,8 @@ class PositionAnnotationArrowResponse(BaseModel):
     color: str
 
 
-class PositionAnnotationCircleCreate(BaseModel):
+class PositionAnnotationCircleInput(BaseModel):
     square: str
-    color: str
-
-
-class PositionAnnotationCircleUpdate(BaseModel):
     color: str
 
 
@@ -72,6 +64,16 @@ class PositionAnnotationCircleResponse(BaseModel):
     fen: str
     square: str
     color: str
+
+
+class PositionAnnotationsReplace(BaseModel):
+    arrows: list[PositionAnnotationArrowInput] = []
+    circles: list[PositionAnnotationCircleInput] = []
+
+
+class PositionAnnotationsResponse(BaseModel):
+    arrows: list[PositionAnnotationArrowResponse]
+    circles: list[PositionAnnotationCircleResponse]
 
 
 class PositionDetailResponse(BaseModel):

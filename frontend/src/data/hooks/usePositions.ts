@@ -1,13 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   fetchPositions,
-  positionAnnotationArrowsApi,
-  positionAnnotationCirclesApi,
+  positionAnnotationsApi,
   positionCommentsApi,
   positionsApi,
 } from '../api'
 import { positionsKeys } from '../queryKeys'
-import type { Position, PositionDetail } from '../../features/openings/types'
+import type { Position, PositionAnnotationArrow, PositionAnnotationCircle, PositionDetail } from '../../features/openings/types'
 
 export function usePositions() {
   return useQuery<Position[]>({
@@ -70,52 +69,20 @@ export function usePositionComments(fen: string) {
   return { comments: data?.comments ?? emptyDetail.comments, isLoading, add, update, remove }
 }
 
-export function usePositionAnnotationArrows(fen: string) {
+export function usePositionAnnotations(fen: string) {
   const qc = useQueryClient()
   const key = positionsKeys.detail(fen)
-  const { data, isLoading } = usePositionDetailQuery(fen)
 
-  const create = useMutation({
-    mutationFn: ({ from_square, to_square, color }: { from_square: string; to_square: string; color: string }) =>
-      positionAnnotationArrowsApi.create(fen, from_square, to_square, color),
+  const replace = useMutation({
+    mutationFn: ({
+      arrows,
+      circles,
+    }: {
+      arrows: Pick<PositionAnnotationArrow, 'from_square' | 'to_square' | 'color'>[]
+      circles: Pick<PositionAnnotationCircle, 'square' | 'color'>[]
+    }) => positionAnnotationsApi.replace(fen, arrows, circles),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   })
 
-  const update = useMutation({
-    mutationFn: ({ arrowId, color }: { arrowId: number; color: string }) =>
-      positionAnnotationArrowsApi.update(arrowId, color),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
-  })
-
-  const remove = useMutation({
-    mutationFn: (arrowId: number) => positionAnnotationArrowsApi.remove(arrowId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
-  })
-
-  return { arrows: data?.arrows ?? emptyDetail.arrows, isLoading, create, update, remove }
-}
-
-export function usePositionAnnotationCircles(fen: string) {
-  const qc = useQueryClient()
-  const key = positionsKeys.detail(fen)
-  const { data, isLoading } = usePositionDetailQuery(fen)
-
-  const create = useMutation({
-    mutationFn: ({ square, color }: { square: string; color: string }) =>
-      positionAnnotationCirclesApi.create(fen, square, color),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
-  })
-
-  const update = useMutation({
-    mutationFn: ({ circleId, color }: { circleId: number; color: string }) =>
-      positionAnnotationCirclesApi.update(circleId, color),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
-  })
-
-  const remove = useMutation({
-    mutationFn: (circleId: number) => positionAnnotationCirclesApi.remove(circleId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key }),
-  })
-
-  return { circles: data?.circles ?? emptyDetail.circles, isLoading, create, update, remove }
+  return { replace }
 }
