@@ -1,0 +1,201 @@
+import { request } from '../lib/api'
+import type { Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../features/games/types'
+import type {
+  Position,
+  PositionAnnotationArrow,
+  PositionAnnotationCircle,
+  PositionComment,
+  PositionMove,
+  PositionMoveCreateBody,
+} from '../features/openings/types'
+import type { CardCreate, CardDelete, CardReview, CoverageStats, RepertoireCard, TrainStats } from '../features/train/types'
+
+export type MoveStat = {
+  san: string
+  uci: string
+  white: number
+  draws: number
+  black: number
+  total: number
+  percentage: number
+}
+
+export type MoveStatsResponse = {
+  moves: MoveStat[]
+  total_games: number
+}
+
+export const moveStatsApi = {
+  get: (moves: string[], signal?: AbortSignal) => {
+    const params = moves.length ? `?moves=${moves.join(',')}` : ''
+    return request<MoveStatsResponse>(`/api/v1/positions/move-stats${params}`, { signal })
+  },
+}
+
+export const profileApi = {
+  get: (signal?: AbortSignal) =>
+    request<UserProfile>('/api/v1/users/profile', { signal }),
+  update: (chess_com_username: string) =>
+    request<UserProfile>('/api/v1/users/profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ chess_com_username }),
+    }),
+}
+
+export const syncApi = {
+  trigger: () =>
+    request<{ detail: string }>('/api/v1/games/sync', { method: 'POST' }),
+  status: (signal?: AbortSignal) =>
+    request<SyncStatus>('/api/v1/games/sync/status', { signal }),
+}
+
+export const gamesApi = {
+  list: (filters: GamesFilters, limit = 50, offset = 0, signal?: AbortSignal) => {
+    const params = new URLSearchParams()
+    if (filters.result)     params.set('result', filters.result)
+    if (filters.color)      params.set('color', filters.color)
+    if (filters.time_class) params.set('time_class', filters.time_class)
+    if (filters.eco)        params.set('eco', filters.eco)
+    params.set('limit', String(limit))
+    params.set('offset', String(offset))
+    return request<GamesListResponse>(`/api/v1/games?${params}`, { signal })
+  },
+  saveAnalysis: (gameId: number, analysis: GameAnalysis) =>
+    request<Game>(`/api/v1/games/${gameId}/analysis`, {
+      method: 'PUT',
+      body: JSON.stringify({ ...analysis, analyzed_at: analysis.analyzed_at }),
+    }),
+}
+
+export async function fetchPositions(): Promise<Position[]> {
+  const resp = await fetch('/positions.json')
+  if (!resp.ok) throw new Error('Failed to load positions')
+  return resp.json()
+}
+
+export const positionsApi = {
+  upsert: (fen: string, name?: string | null, moves?: string[]) =>
+    request<Position>('/api/v1/positions', {
+      method: 'POST',
+      body: JSON.stringify({ fen, name: name ?? null, moves: moves ?? [] }),
+    }),
+  get: (fen: string, signal?: AbortSignal) =>
+    request<Position>(`/api/v1/positions/${encodeURIComponent(fen)}`, { signal }),
+  remove: (fen: string) =>
+    request<void>(`/api/v1/positions/${encodeURIComponent(fen)}`, { method: 'DELETE' }),
+}
+
+export const positionMovesApi = {
+  list: (fen: string, signal?: AbortSignal) =>
+    request<PositionMove[]>(`/api/v1/positions/${encodeURIComponent(fen)}/moves`, { signal }),
+  create: (body: PositionMoveCreateBody) =>
+    request<PositionMove>('/api/v1/positions/moves', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  update: (moveId: string, body: { is_main_line?: boolean; commentary?: string | null }) =>
+    request<PositionMove>(`/api/v1/positions/moves/${moveId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  remove: (moveId: string) =>
+    request<void>(`/api/v1/positions/moves/${moveId}`, { method: 'DELETE' }),
+}
+
+export const positionCommentsApi = {
+  list: (fen: string, signal?: AbortSignal) =>
+    request<PositionComment[]>(`/api/v1/positions/${encodeURIComponent(fen)}/comments`, { signal }),
+  create: (fen: string, content: string) =>
+    request<PositionComment>(`/api/v1/positions/${encodeURIComponent(fen)}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+  update: (commentId: number, content: string) =>
+    request<PositionComment>(`/api/v1/positions/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    }),
+  delete: (commentId: number) =>
+    request<void>(`/api/v1/positions/comments/${commentId}`, { method: 'DELETE' }),
+}
+
+export const positionAnnotationArrowsApi = {
+  list: (fen: string, signal?: AbortSignal) =>
+    request<PositionAnnotationArrow[]>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/arrows`, { signal }),
+  create: (fen: string, from_square: string, to_square: string, color: string) =>
+    request<PositionAnnotationArrow>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/arrows`, {
+      method: 'POST',
+      body: JSON.stringify({ from_square, to_square, color }),
+    }),
+  update: (arrowId: number, color: string) =>
+    request<PositionAnnotationArrow>(`/api/v1/positions/annotations/arrows/${arrowId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ color }),
+    }),
+  remove: (arrowId: number) =>
+    request<void>(`/api/v1/positions/annotations/arrows/${arrowId}`, { method: 'DELETE' }),
+}
+
+export const positionAnnotationCirclesApi = {
+  list: (fen: string, signal?: AbortSignal) =>
+    request<PositionAnnotationCircle[]>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/circles`, { signal }),
+  create: (fen: string, square: string, color: string) =>
+    request<PositionAnnotationCircle>(`/api/v1/positions/${encodeURIComponent(fen)}/annotations/circles`, {
+      method: 'POST',
+      body: JSON.stringify({ square, color }),
+    }),
+  update: (circleId: number, color: string) =>
+    request<PositionAnnotationCircle>(`/api/v1/positions/annotations/circles/${circleId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ color }),
+    }),
+  remove: (circleId: number) =>
+    request<void>(`/api/v1/positions/annotations/circles/${circleId}`, { method: 'DELETE' }),
+}
+
+export const trainApi = {
+  /** List all repertoire cards, optionally filtered by side. */
+  listCards: (side?: 'white' | 'black', signal?: AbortSignal) => {
+    const params = new URLSearchParams()
+    if (side) params.set('side', side)
+    const qs = params.size ? `?${params}` : ''
+    return request<RepertoireCard[]>(`/api/v1/train/cards${qs}`, { signal })
+  },
+
+  /** Upsert a card. Idempotent by position (fen). */
+  commitMove: (card: CardCreate) =>
+    request<RepertoireCard>('/api/v1/train/cards', {
+      method: 'POST',
+      body: JSON.stringify(card),
+    }),
+
+  /** Delete a card by position_id. */
+  deleteCard: (body: CardDelete) =>
+    request<void>('/api/v1/train/cards', {
+      method: 'DELETE',
+      body: JSON.stringify(body),
+    }),
+
+  /** Cards due for review today, ordered by interval ASC then due ASC. */
+  getDueCards: (limit = 20, signal?: AbortSignal) =>
+    request<RepertoireCard[]>(`/api/v1/train/cards/due?limit=${limit}`, { signal }),
+
+  /** Submit a grade (0–5) for a card. Returns the updated card. */
+  reviewCard: (body: CardReview) =>
+    request<RepertoireCard>('/api/v1/train/cards/review', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  /** Count of committed cards per side. */
+  getCoverage: (signal?: AbortSignal) =>
+    request<CoverageStats>('/api/v1/train/coverage', { signal }),
+
+  /** Reset all cards to initial SRS state (ease 2.5, due now, state "new"). */
+  resetCards: () =>
+    request<void>('/api/v1/train/cards/reset', { method: 'POST' }),
+
+  /** SRS stats: totals by state + due count. */
+  getStats: (signal?: AbortSignal) =>
+    request<TrainStats>('/api/v1/train/stats', { signal }),
+}

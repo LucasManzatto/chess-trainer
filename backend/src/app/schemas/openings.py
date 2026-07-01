@@ -19,7 +19,6 @@ class PositionResponse(BaseModel):
     created_at: datetime
 
 
-
 class PositionMoveCreate(BaseModel):
     from_fen: str
     to_fen: str
@@ -62,6 +61,44 @@ class PositionCommentResponse(BaseModel):
     position_id: str
     content: str
     created_at: datetime
+
+
+class PositionAnnotationArrowCreate(BaseModel):
+    from_square: str
+    to_square: str
+    color: str
+
+
+class PositionAnnotationArrowUpdate(BaseModel):
+    color: str
+
+
+class PositionAnnotationArrowResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    fen: str
+    from_square: str
+    to_square: str
+    color: str
+
+
+class PositionAnnotationCircleCreate(BaseModel):
+    square: str
+    color: str
+
+
+class PositionAnnotationCircleUpdate(BaseModel):
+    color: str
+
+
+class PositionAnnotationCircleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    fen: str
+    square: str
+    color: str
 
 
 class MoveStat(BaseModel):

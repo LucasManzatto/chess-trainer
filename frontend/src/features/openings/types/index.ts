@@ -47,3 +47,18 @@ export type PositionMoveCreateBody = {
   is_main_line?: boolean
   commentary?: string | null
 }
+
+export type PositionAnnotationArrow = {
+  id: number
+  fen: string
+  from_square: string
+  to_square: string
+  color: string
+}
+
+export type PositionAnnotationCircle = {
+  id: number
+  fen: string
+  square: string
+  color: string
+}

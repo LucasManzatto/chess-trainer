@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { syncApi } from '../api'
-import { gamesKeys } from '../api/queryKeys'
-import type { SyncStatus } from '../types'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { gamesApi, profileApi, syncApi } from '../api'
+import { gamesKeys } from '../queryKeys'
+import type { GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
+
+export function useGames(filters: GamesFilters) {
+  return useQuery<GamesListResponse>({
+    queryKey: gamesKeys.list(filters),
+    queryFn: ({ signal }) => gamesApi.list(filters, 50, 0, signal),
+  })
+}
 
 export function useGamesSync() {
   const qc = useQueryClient()
@@ -51,4 +58,21 @@ export function useGamesSync() {
   const isRunning = syncStatus?.status === 'running' || isTriggerPending
 
   return { syncStatus, isRunning, triggerSync }
+}
+
+export function useProfile() {
+  return useQuery<UserProfile>({
+    queryKey: gamesKeys.profile(),
+    queryFn: ({ signal }) => profileApi.get(signal),
+  })
+}
+
+export function useUpdateProfile() {
+  const qc = useQueryClient()
+  async function update(username: string) {
+    const updated = await profileApi.update(username)
+    qc.setQueryData(gamesKeys.profile(), updated)
+    return updated
+  }
+  return { update }
 }

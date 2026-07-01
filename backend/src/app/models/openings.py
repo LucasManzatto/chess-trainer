@@ -44,6 +44,25 @@ class PositionMove(Base):
     commentary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class PositionAnnotationArrow(Base):
+    __tablename__ = "position_annotations_arrows"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fen: Mapped[str] = mapped_column(Text, ForeignKey("positions.fen", ondelete="CASCADE"))
+    from_square: Mapped[str] = mapped_column("from", Text)
+    to_square: Mapped[str] = mapped_column("to", Text)
+    color: Mapped[str] = mapped_column(Text)
+
+
+class PositionAnnotationCircle(Base):
+    __tablename__ = "position_annotations_circles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fen: Mapped[str] = mapped_column(Text, ForeignKey("positions.fen", ondelete="CASCADE"))
+    square: Mapped[str] = mapped_column(Text)
+    color: Mapped[str] = mapped_column(Text)
+
+
 class PositionMoveStats(Base):
     __tablename__ = "position_move_stats"
 

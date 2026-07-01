@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { moveStatsApi, type MoveStatsResponse } from '../api'
-import { engineKeys } from '../api/queryKeys'
+import { engineKeys } from '../queryKeys'
 
 export function useMoveStats(moves: string[]) {
   return useQuery<MoveStatsResponse>({
