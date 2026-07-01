@@ -21,19 +21,32 @@ export function useAnnotationDraft(
   fen: string,
   arrows: PositionAnnotationArrow[],
   circles: PositionAnnotationCircle[],
+  isLoading: boolean,
   replace: ReplaceAnnotations,
 ) {
   const [prevFen, setPrevFen] = useState(fen)
+  const [prevLoading, setPrevLoading] = useState(isLoading)
   const [draftArrows, setDraftArrows] = useState<AnnotationArrow[]>(() => toDraftArrows(arrows))
   const [draftCircles, setDraftCircles] = useState<AnnotationCircle[]>(() => toDraftCircles(circles))
   const [isDirty, setIsDirty] = useState(false)
 
-  if (fen !== prevFen) {
-    // Reset draft only on position switch, not every time arrows/circles refetch (would wipe in-progress edits).
-    setPrevFen(fen)
+  function loadServerState() {
     setDraftArrows(toDraftArrows(arrows))
     setDraftCircles(toDraftCircles(circles))
     setIsDirty(false)
+  }
+
+  if (fen !== prevFen) {
+    // Reset draft on position switch (arrows/circles for the new fen may already be cached).
+    setPrevFen(fen)
+    setPrevLoading(isLoading)
+    loadServerState()
+  } else if (isLoading !== prevLoading) {
+    setPrevLoading(isLoading)
+    // The initial fetch for this fen just resolved (was loading, arrows/circles were still
+    // empty when the draft state first initialized) — pick up the data that just arrived,
+    // unless the user already started drawing before the fetch resolved.
+    if (prevLoading && !isLoading && !isDirty) loadServerState()
   }
 
   const onAnnotationsChange = useCallback((nextArrows: AnnotationArrow[], nextCircles: AnnotationCircle[]) => {
@@ -50,9 +63,7 @@ export function useAnnotationDraft(
   }
 
   const reset = () => {
-    setDraftArrows(toDraftArrows(arrows))
-    setDraftCircles(toDraftCircles(circles))
-    setIsDirty(false)
+    loadServerState()
   }
 
   return {

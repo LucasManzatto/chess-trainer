@@ -26,19 +26,32 @@ export function getParentFen(state: GameState): string {
   return state.currentMoveIndex > 0 ? state.history[state.currentMoveIndex - 1].fen : INITIAL_FEN
 }
 
-export function getActiveMove(state: GameState): ActiveMove | undefined {
+// Cache is keyed by the `history` array reference (unique per store instance, replaced
+// only by loadMoves/applyMove) so multiple ChessBoardStore instances never thrash a shared slot.
+function memoizeByHistoryIndex<R>(compute: (state: GameState) => R) {
+  const cache = new WeakMap<HistoryEntry[], { index: number; result: R }>()
+  return (state: GameState): R => {
+    const cached = cache.get(state.history)
+    if (cached && cached.index === state.currentMoveIndex) return cached.result
+    const result = compute(state)
+    cache.set(state.history, { index: state.currentMoveIndex, result })
+    return result
+  }
+}
+
+export const getActiveMove = memoizeByHistoryIndex((state): ActiveMove | undefined => {
   if (state.currentMoveIndex < 0) return undefined
   return {
     moveNumber: Math.floor(state.currentMoveIndex / 2) + 1,
     color: state.currentMoveIndex % 2 === 0 ? 'white' : 'black',
   }
-}
+})
 
-export function getSanMoves(state: GameState): string[] {
-  return state.history.slice(0, state.currentMoveIndex + 1).map(e => e.san)
-}
+export const getSanMoves = memoizeByHistoryIndex((state): string[] =>
+  state.history.slice(0, state.currentMoveIndex + 1).map(e => e.san),
+)
 
-export function getMoves(state: GameState): MovePair[] {
+export const getMoves = memoizeByHistoryIndex((state): MovePair[] => {
   const pairs: MovePair[] = []
   for (let i = 0; i < state.history.length; i += 2) {
     pairs.push({
@@ -48,4 +61,4 @@ export function getMoves(state: GameState): MovePair[] {
     })
   }
   return pairs
-}
+})

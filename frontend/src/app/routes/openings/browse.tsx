@@ -3,7 +3,7 @@ import { ChessBoardProvider, getSanMoves, getMoves, getActiveMove } from '../../
 import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessBoard'
 import { ChessBoardSettings } from '../../../features/board/components/ChessBoard/ChessBoardSettings'
 import { EvaluationBar } from '../../../features/board/components/ChessBoard/ChessBoardEvalBar'
-import { useChessBoardStore, useChessBoardStoreApi } from '../../../stores/board/chessBoardStore'
+import { useChessBoardStore } from '../../../stores/board/chessBoardStore'
 import { getCurrentFen, getCurrentLan, getParentFen } from '../../../stores/board/slices/gameSelectors'
 import { usePositionEvaluation } from '../../../features/board/hooks/usePositionEvaluation'
 import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
@@ -37,7 +37,6 @@ function BrowseV2Page() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function BrowseV2PageInner() {
-  const store = useChessBoardStoreApi()
   const boardState = useChessBoardStore(
     useShallow((s) => ({
       fen: getCurrentFen(s),
@@ -48,6 +47,12 @@ function BrowseV2PageInner() {
       orientation: s.orientation,
       interactive: s.interactive,
       lastMove: getCurrentLan(s),
+      applyMove: s.applyMove,
+      navigateBack: s.navigateBack,
+      navigateForward: s.navigateForward,
+      navigateToIndex: s.navigateToIndex,
+      flipOrientation: s.flipOrientation,
+      reset: s.reset,
     })),
   )
   const config = useBoardSettings(
@@ -64,7 +69,7 @@ function BrowseV2PageInner() {
   const { add } = usePositionComments(boardState.fen)
   const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
-  const annotationDraft = useAnnotationDraft(boardState.fen, arrows, circles, replaceAnnotations)
+  const annotationDraft = useAnnotationDraft(boardState.fen, arrows, circles, notesLoading, replaceAnnotations)
 
   return (
     <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
@@ -101,17 +106,17 @@ function BrowseV2PageInner() {
                 circles={annotationDraft.circles}
                 config={{ showBestMove: config.showBestMove, boardSize: config.boardSize }}
                 actions={{
-                  applyMove: store.getState().applyMove,
-                  navigateBack: store.getState().navigateBack,
-                  navigateForward: store.getState().navigateForward,
+                  applyMove: boardState.applyMove,
+                  navigateBack: boardState.navigateBack,
+                  navigateForward: boardState.navigateForward,
                   onAnnotationsChange: annotationDraft.onAnnotationsChange,
                 }}
               />
               <ChessBoardSettings
                 config={config}
                 onConfigChange={updater => useBoardSettings.getState().setConfig(updater(config))}
-                onFlipOrientation={store.getState().flipOrientation}
-                onReset={store.getState().reset}
+                onFlipOrientation={boardState.flipOrientation}
+                onReset={boardState.reset}
                 annotationsDirty={annotationDraft.isDirty}
                 onResetAnnotations={annotationDraft.reset}
               />
@@ -126,7 +131,7 @@ function BrowseV2PageInner() {
           moves={boardState.moves}
           activeMove={boardState.activeMove}
           onMoveClick={(moveNumber, color) =>
-            store.getState().navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
+            boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
           }
         />
       </section>

@@ -8,6 +8,7 @@ import { TrainHeader } from '../../../features/train/components/TrainHeader'
 import { SessionSummary } from '../../../features/train/components/SessionSummary'
 import { CorrectBanner, GradeButtons } from '../../../features/train/components/MoveReveal'
 import { MovesList } from '../../../components/MovesList/MovesList'
+import { useDueCards } from '../../../data/hooks/useTrain'
 import { useDrillBoard } from './hooks'
 
 export const Route = createFileRoute('/openings/train')({
@@ -25,9 +26,9 @@ function TrainPage() {
 }
 
 function TrainPageInner() {
-  const { phase, setPhase, currentCard, isCorrect, mode, setMode } = useDrillBoard()
-
   const store = useChessBoardStoreApi()
+  const { data: dueCards = [] } = useDueCards()
+
   const boardState = useChessBoardStore(
     useShallow((s) => ({
       fen: getCurrentFen(s),
@@ -36,8 +37,21 @@ function TrainPageInner() {
       lastMove: getLastMove(s),
       moves: getMoves(s),
       activeMove: getActiveMove(s),
+      history: s.history,
       navigateToIndex: s.navigateToIndex,
+      loadMoves: s.loadMoves,
+      setOrientation: s.setOrientation,
+      setInteractive: s.setInteractive,
+      reset: s.reset,
     })),
+  )
+  const { phase, setPhase, currentCard, isCorrect, mode, setMode } = useDrillBoard(
+    dueCards,
+    boardState.history,
+    boardState.loadMoves,
+    boardState.setOrientation,
+    boardState.setInteractive,
+    boardState.reset,
   )
   const boardSize = useBoardSettings(s => s.boardSize)
 
