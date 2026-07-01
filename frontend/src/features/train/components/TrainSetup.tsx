@@ -1,4 +1,4 @@
-import type { TrainMode, TrainPhase } from '../../stores/trainStore'
+import type { TrainMode, TrainPhase } from '../../stores/train/trainStore'
 import { useCoverage, useDueCards } from '../../../data/hooks/useTrain'
 import { ResetCardsButton } from './ResetCardsButton'
 

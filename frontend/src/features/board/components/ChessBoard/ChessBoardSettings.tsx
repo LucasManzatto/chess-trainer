@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BoardConfig } from '../../../../stores/boardSettingsStore'
+import type { BoardConfig } from '../../../../stores/board/boardSettingsStore'
 import { SettingsDrawerButton } from '../settings/SettingsDrawerButton'
 import { FlipBoardButton } from '../settings/FlipBoardButton'
 import { ShowThreatsButton } from '../settings/ShowThreatsButton'

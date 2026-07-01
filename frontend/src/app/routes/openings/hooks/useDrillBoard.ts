@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useChessBoardStoreApi } from '../../../../features/board'
-import type { TrainPhase, TrainMode } from '../../../../stores/trainStore'
+import type { TrainPhase, TrainMode } from '../../../../stores/train/trainStore'
 import { useDueCards } from '../../../../data/hooks/useTrain'
 import type { RepertoireCard } from '../../../../features/train/types'
 
