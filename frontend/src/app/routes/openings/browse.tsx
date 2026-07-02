@@ -20,16 +20,18 @@ import { useBrowseDrillCard } from './hooks'
 // ─── Route ───────────────────────────────────────────────────────────────────
 
 export const Route = createFileRoute('/openings/browse')({
-  component: BrowseV2Page,
+  component: BrowsePage,
 })
+
+const PANEL_CLASS = 'flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded'
 
 // ─── Root (providers only) ────────────────────────────────────────────────────
 
-function BrowseV2Page() {
+function BrowsePage() {
   return (
     <ChessBoardProvider>
       <OpeningsStoreProvider>
-        <BrowseV2PageInner />
+        <BrowsePageInner />
       </OpeningsStoreProvider>
     </ChessBoardProvider>
   )
@@ -37,7 +39,7 @@ function BrowseV2Page() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-function BrowseV2PageInner() {
+function BrowsePageInner() {
   const boardState = useChessBoardStore(
     useShallow((s) => ({
       fen: getCurrentFen(s),
@@ -63,6 +65,7 @@ function BrowseV2PageInner() {
       boardSize: s.boardSize,
     })),
   )
+  const setConfig = useBoardSettings((s) => s.setConfig)
   const annotations = useChessBoardStore(
     useShallow((s) => ({
       draftArrows: s.draftArrows,
@@ -89,7 +92,7 @@ function BrowseV2PageInner() {
     <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
 
       {/* Board + opening name + drill button */}
-      <section className="flex flex-col items-center justify-center min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
+      <section className={`${PANEL_CLASS} items-center justify-center`}>
         <div className="flex flex-col items-stretch">
           <div className="flex items-end justify-between gap-3 px-1 pb-3">
             <PositionName
@@ -132,7 +135,7 @@ function BrowseV2PageInner() {
               />
               <ChessBoardSettings
                 config={config}
-                onConfigChange={updater => useBoardSettings.getState().setConfig(updater(config))}
+                onConfigChange={updater => setConfig(updater(config))}
                 onFlipOrientation={boardState.flipOrientation}
                 onReset={boardState.reset}
               />
@@ -142,7 +145,7 @@ function BrowseV2PageInner() {
       </section>
 
       {/* Move list */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
+      <section className={PANEL_CLASS}>
         <MovesList
           moves={boardState.moves}
           activeMove={boardState.activeMove}
@@ -153,7 +156,7 @@ function BrowseV2PageInner() {
       </section>
 
       {/* Notes per position */}
-      <section className="flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded">
+      <section className={PANEL_CLASS}>
         <Notes
           comments={comments}
           isLoading={notesLoading}
