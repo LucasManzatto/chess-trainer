@@ -5,7 +5,6 @@ import { FlipBoardButton } from '../settings/FlipBoardButton'
 import { ShowThreatsButton } from '../settings/ShowThreatsButton'
 import { ShowBestMoveButton } from '../settings/ShowBestMoveButton'
 import { ResetBoardButton } from '../settings/ResetBoardButton'
-import { ResetAnnotationsButton } from '../settings/ResetAnnotationsButton'
 import { BoardSizeDrawer } from '../settings/BoardSizeDrawer'
 
 export type ChessBoardSettingsProps = {
@@ -13,8 +12,6 @@ export type ChessBoardSettingsProps = {
   onConfigChange: (updater: (prev: BoardConfig) => BoardConfig) => void
   onFlipOrientation: () => void
   onReset: () => void
-  annotationsDirty: boolean
-  onResetAnnotations: () => void
 }
 
 export function ChessBoardSettings({
@@ -22,8 +19,6 @@ export function ChessBoardSettings({
   onConfigChange,
   onFlipOrientation,
   onReset,
-  annotationsDirty,
-  onResetAnnotations,
 }: ChessBoardSettingsProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -39,7 +34,6 @@ export function ChessBoardSettings({
         <ShowThreatsButton active={config.showThreats} onClick={() => update('showThreats', !config.showThreats)} />
         <ShowBestMoveButton active={config.showBestMove} onClick={() => update('showBestMove', !config.showBestMove)} />
         <ResetBoardButton onClick={onReset} />
-        <ResetAnnotationsButton onClick={onResetAnnotations} disabled={!annotationsDirty} />
       </div>
       <BoardSizeDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} value={config.boardSize} onChange={size => update('boardSize', size)} />
     </>

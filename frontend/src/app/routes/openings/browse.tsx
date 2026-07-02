@@ -14,7 +14,7 @@ import { Notes } from '../../../features/openings/components/Notes'
 import { usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { PositionActions } from '../../../features/openings/components/PositionActions'
-import { useBrowseDrillCard, useAnnotationDraft } from './hooks'
+import { useBrowseDrillCard } from './hooks'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -69,7 +69,6 @@ function BrowseV2PageInner() {
   const { add } = usePositionComments(boardState.fen)
   const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
-  const annotationDraft = useAnnotationDraft(boardState.fen, arrows, circles, notesLoading, replaceAnnotations)
 
   return (
     <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
@@ -87,8 +86,6 @@ function BrowseV2PageInner() {
             <PositionActions
               drillCard={drillCard}
               existingCard={existingCard}
-              annotationsDirty={annotationDraft.isDirty}
-              onSaveAnnotations={annotationDraft.commit}
             />
           </div>
           <div className="flex flex-row gap-2">
@@ -101,14 +98,15 @@ function BrowseV2PageInner() {
             <div className="relative">
               <ChessBoard
                 state={boardState}
-                arrows={annotationDraft.arrows}
-                circles={annotationDraft.circles}
+                arrows={arrows}
+                circles={circles}
                 config={{ showBestMove: config.showBestMove, boardSize: config.boardSize }}
                 actions={{
                   applyMove: boardState.applyMove,
                   navigateBack: boardState.navigateBack,
                   navigateForward: boardState.navigateForward,
-                  onAnnotationsChange: annotationDraft.onAnnotationsChange,
+                  onAnnotationsChange: (arrows, circles) =>
+                    replaceAnnotations.mutate({ arrows, circles }),
                 }}
               />
               <ChessBoardSettings
@@ -116,8 +114,6 @@ function BrowseV2PageInner() {
                 onConfigChange={updater => useBoardSettings.getState().setConfig(updater(config))}
                 onFlipOrientation={boardState.flipOrientation}
                 onReset={boardState.reset}
-                annotationsDirty={annotationDraft.isDirty}
-                onResetAnnotations={annotationDraft.reset}
               />
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react'
+import { useEffect, useRef, useMemo, useState, type ReactNode } from 'react'
 import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
@@ -126,26 +126,50 @@ function getConfig({ fen, orientation, turn, check, interactive, dests, lastMove
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
-function useBoardConfig(
-  state: ChessBoardProps['state'],
-  arrows: ChessBoardProps['arrows'],
-  circles: ChessBoardProps['circles'],
-  actions: ChessBoardProps['actions'],
-): Config {
-  const { fen, orientation, interactive, lastMove } = state
-  const { applyMove, onAnnotationsChange = () => {} } = actions
+// Draft arrows/circles mirror the server-backed props but update immediately on
+// draw so the board doesn't wait on the persist round-trip. The board's fen
+// (Zustand store) and the arrows/circles (async query, keyed by fen) update on
+// different clocks, so the draft resyncs off arrows/circles reference changes
+// directly rather than off fen — this also catches the case where a fen switch
+// lands before that fen's annotations have finished loading.
+function useAnnotationDraft(
+  arrows: AnnotationArrow[],
+  circles: AnnotationCircle[]
+) {
+  const [draftArrows, setDraftArrows] = useState(arrows)
+  const [draftCircles, setDraftCircles] = useState(circles)
 
-  const chess = useMemo(() => new Chess(fen), [fen])
-  const moves = useMemo(() => chess.moves({ verbose: true }), [chess])
-  const dests = useMemo(() => interactive ? getDests(moves) : new Map(), [moves, interactive])
-  const shapes = useMemo(() => toDrawShapes(arrows, circles), [arrows, circles])
-  const onShapesChange = useCallback(
-    (next: DrawShape[]) => {
-      const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next)
-      onAnnotationsChange(nextArrows, nextCircles)
-    },
-    [onAnnotationsChange],
-  )
+  useEffect(() => {
+    setDraftArrows(arrows)
+  }, [arrows])
+
+  useEffect(() => {
+    setDraftCircles(circles)
+  }, [circles])
+
+  const onShapesChange = (next: DrawShape[]) => {
+    const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next)
+    setDraftArrows(nextArrows)
+    setDraftCircles(nextCircles)
+  }
+
+  const isArrowsDirty = draftArrows !== arrows
+
+  return [draftArrows, draftCircles, onShapesChange, isArrowsDirty] as const
+}
+
+function useBoardConfig(
+  fen: string,
+  orientation: 'white' | 'black',
+  interactive: boolean,
+  lastMove: string | undefined,
+  shapes: DrawShape[],
+  applyMove: (orig: Square, dest: Square) => void,
+  onShapesChange: (shapes: DrawShape[]) => void,
+): Config {
+  const chess = new Chess(fen)
+  const moves = chess.moves({ verbose: true })
+  const dests = interactive ? getDests(moves) : new Map()
 
   return useMemo(
     () => getConfig({ fen, orientation, turn: chess.turn() === 'w' ? 'white' : 'black', check: chess.inCheck(), interactive, dests, lastMove, shapes, onMove: applyMove, onShapesChange }),
@@ -192,13 +216,33 @@ function useBoardKeyNav(navigateBack: () => void, navigateForward: () => void) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ChessBoard(props: ChessBoardProps) {
-  const config = useBoardConfig(props.state, props.arrows, props.circles, props.actions)
+  const [draftArrows, draftCircles, onShapesChange, isArrowsDirty] = useAnnotationDraft(props.arrows, props.circles)
+  const shapes = toDrawShapes(draftArrows, draftCircles)
+
+  const config = useBoardConfig(
+    props.state.fen,
+    props.state.orientation,
+    props.state.interactive,
+    props.state.lastMove,
+    shapes,
+    props.actions.applyMove,
+    onShapesChange,
+  )
   const elRef = useChessground(config)
   useBoardKeyNav(props.actions.navigateBack, props.actions.navigateForward)
 
   return (
     <div className="relative">
       <div ref={elRef} style={{ width: props.config.boardSize, height: props.config.boardSize }} />
+      {isArrowsDirty && (
+        <button
+          type="button"
+          onClick={() => props.actions.onAnnotationsChange?.(draftArrows, draftCircles)}
+          className="absolute top-2 right-2 bg-white/[0.06] hover:bg-white/[0.1] border border-white/15 text-white/80 text-xs font-medium rounded px-3 py-1.5 transition-colors cursor-pointer"
+        >
+          Save annotations
+        </button>
+      )}
       {props.overlay}
       {/* TODO: promotion dialog */}
       {/* TODO: threat overlay */}
