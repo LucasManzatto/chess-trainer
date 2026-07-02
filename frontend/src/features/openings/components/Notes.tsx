@@ -2,19 +2,17 @@ import { useState } from 'react'
 
 export type NotesProps = {
   comments: { id: number; content: string }[]
-  isLoading: boolean
   onAdd: (content: string) => void
   addPending: boolean
 }
 
-export function Notes({ comments, isLoading, onAdd, addPending }: NotesProps) {
+export function Notes({ comments, onAdd, addPending }: NotesProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <NotesHeader />
       <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-5 p-4">
         <NotesSection
           comments={comments}
-          isLoading={isLoading}
           onAdd={onAdd}
           pending={addPending}
         />
@@ -38,12 +36,11 @@ function NotesHeader() {
 
 type NotesSectionProps = {
   comments: { id: number; content: string }[]
-  isLoading: boolean
   onAdd: (content: string) => void
   pending: boolean
 }
 
-function NotesSection({ comments, isLoading, onAdd, pending }: NotesSectionProps) {
+function NotesSection({ comments, onAdd, pending }: NotesSectionProps) {
   const [draft, setDraft] = useState('')
 
   function handleAdd() {
@@ -55,9 +52,7 @@ function NotesSection({ comments, isLoading, onAdd, pending }: NotesSectionProps
 
   return (
     <div className="flex flex-col gap-2.5">
-      {isLoading ? (
-        <p className="text-sm text-white/25">Loading…</p>
-      ) : comments.length === 0 ? (
+      {comments.length === 0 ? (
         <p className="text-sm text-white/25 italic">No notes yet.</p>
       ) : (
         <ul className="flex flex-col gap-1.5">

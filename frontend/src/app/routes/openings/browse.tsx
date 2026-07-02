@@ -14,7 +14,8 @@ import { OpeningsStoreProvider } from '../../../stores/openings/OpeningsStorePro
 import { Notes } from '../../../features/openings/components/Notes'
 import { usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
-import { PositionActions } from '../../../features/openings/components/PositionActions'
+import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
+import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { useBrowseDrillCard } from './hooks'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
@@ -95,23 +96,39 @@ function BrowsePageInner() {
       <section className={`${PANEL_CLASS} items-center justify-center`}>
         <div className="flex flex-col items-stretch">
           <div className="flex items-end justify-between gap-3 px-1 pb-3">
-            <PositionName
-              name={positionDetail.position?.name ?? null}
-              isSaving={upsert.isPending}
-              onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
-              className="text-2xl font-semibold tracking-tight text-white/90 cursor-text select-none"
-            />
-            <PositionActions
-              drillCard={drillCard}
-              existingCard={existingCard}
-              annotationsDirty={annotations.annotationsDirty}
-              onSaveAnnotations={() =>
-                replaceAnnotations.mutate(
-                  { arrows: annotations.draftArrows, circles: annotations.draftCircles },
-                  { onSuccess: annotations.markAnnotationsSaved },
-                )
-              }
-            />
+            {notesLoading ? (
+              <span className="text-2xl font-semibold tracking-tight text-white/20 italic select-none">
+                Loading...
+              </span>
+            ) : (
+              <PositionName
+                name={positionDetail.position?.name ?? null}
+                isSaving={upsert.isPending}
+                onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
+                className="text-2xl font-semibold tracking-tight text-white/90 cursor-text select-none"
+              />
+            )}
+            <div className="flex items-center gap-2">
+              {annotations.annotationsDirty && (
+                <SaveAnnotationsButton
+                  text={replaceAnnotations.isPending ? 'Saving...' : 'Save annotations'}
+                  disabled={replaceAnnotations.isPending}
+                  onSave={() =>
+                    replaceAnnotations.mutate(
+                      { arrows: annotations.draftArrows, circles: annotations.draftCircles },
+                      { onSuccess: annotations.markAnnotationsSaved },
+                    )
+                  }
+                />
+              )}
+              {drillCard && (
+                <AddToDrill
+                  card={drillCard}
+                  existingCard={existingCard}
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded px-3 py-1.5 transition-colors cursor-pointer"
+                />
+              )}
+            </div>
           </div>
           <div className="flex flex-row gap-2">
             <div
@@ -157,12 +174,15 @@ function BrowsePageInner() {
 
       {/* Notes per position */}
       <section className={PANEL_CLASS}>
-        <Notes
-          comments={comments}
-          isLoading={notesLoading}
-          onAdd={(content) => add.mutate(content)}
-          addPending={add.isPending}
-        />
+        {notesLoading ? (
+          <p className="text-sm text-white/25 p-4">Loading…</p>
+        ) : (
+          <Notes
+            comments={comments}
+            onAdd={(content) => add.mutate(content)}
+            addPending={add.isPending}
+          />
+        )}
       </section>
 
     </div>
