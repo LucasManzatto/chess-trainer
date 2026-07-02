@@ -89,7 +89,6 @@ function BrowseV2PageInner() {
               existingCard={existingCard}
               annotationsDirty={annotationDraft.isDirty}
               onSaveAnnotations={annotationDraft.commit}
-              savingAnnotations={annotationDraft.isSaving}
             />
           </div>
           <div className="flex flex-row gap-2">

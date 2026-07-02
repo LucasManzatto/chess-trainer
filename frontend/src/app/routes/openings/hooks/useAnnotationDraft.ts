@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import type { AnnotationArrow, AnnotationCircle } from '../../../../features/board/components/ChessBoard/ChessBoard'
 import type { PositionAnnotationArrow, PositionAnnotationCircle } from '../../../../features/openings/types'
@@ -24,30 +24,36 @@ export function useAnnotationDraft(
   isLoading: boolean,
   replace: ReplaceAnnotations,
 ) {
-  const [prevFen, setPrevFen] = useState(fen)
-  const [prevLoading, setPrevLoading] = useState(isLoading)
   const [draftArrows, setDraftArrows] = useState<AnnotationArrow[]>(() => toDraftArrows(arrows))
   const [draftCircles, setDraftCircles] = useState<AnnotationCircle[]>(() => toDraftCircles(circles))
   const [isDirty, setIsDirty] = useState(false)
 
-  function loadServerState() {
+  // Keep static track of the FEN across renders
+  const prevFenRef = useRef(fen)
+
+  // Keep server arrows/circles (and isDirty) handy for effects/callbacks without tracking
+  // them as dependencies
+  const latestServerState = useRef({ arrows, circles, isDirty })
+  latestServerState.current = { arrows, circles, isDirty }
+
+  // The moment the user plays a move and FEN changes, the draft always becomes the server
+  // state for the new position (arrows/circles for the new fen may already be cached).
+  if (fen !== prevFenRef.current) {
+    prevFenRef.current = fen
     setDraftArrows(toDraftArrows(arrows))
     setDraftCircles(toDraftCircles(circles))
     setIsDirty(false)
   }
 
-  if (fen !== prevFen) {
-    // Reset draft on position switch (arrows/circles for the new fen may already be cached).
-    setPrevFen(fen)
-    setPrevLoading(isLoading)
-    loadServerState()
-  } else if (isLoading !== prevLoading) {
-    setPrevLoading(isLoading)
-    // The initial fetch for this fen just resolved (was loading, arrows/circles were still
-    // empty when the draft state first initialized) — pick up the data that just arrived,
-    // unless the user already started drawing before the fetch resolved.
-    if (prevLoading && !isLoading && !isDirty) loadServerState()
-  }
+  // If the fen switch above landed while the query for the new position was still in
+  // flight, arrows/circles were still stale/empty — resync once that fetch resolves, unless
+  // the user already started drawing on this fen before it did.
+  useEffect(() => {
+    if (!isLoading) {
+      setDraftArrows(toDraftArrows(latestServerState.current.arrows))
+      setDraftCircles(toDraftCircles(latestServerState.current.circles))
+    }
+  }, [isLoading, fen])
 
   const onAnnotationsChange = useCallback((nextArrows: AnnotationArrow[], nextCircles: AnnotationCircle[]) => {
     setDraftArrows(nextArrows)
@@ -55,16 +61,18 @@ export function useAnnotationDraft(
     setIsDirty(true)
   }, [])
 
-  const commit = () => {
+  const commit = useCallback(() => {
     replace.mutate(
       { arrows: draftArrows, circles: draftCircles },
       { onSuccess: () => setIsDirty(false) },
     )
-  }
+  }, [replace, draftArrows, draftCircles])
 
-  const reset = () => {
-    loadServerState()
-  }
+  const reset = useCallback(() => {
+    setDraftArrows(toDraftArrows(latestServerState.current.arrows))
+    setDraftCircles(toDraftCircles(latestServerState.current.circles))
+    setIsDirty(false)
+  }, [])
 
   return {
     arrows: draftArrows,
@@ -73,6 +81,5 @@ export function useAnnotationDraft(
     isDirty,
     commit,
     reset,
-    isSaving: replace.isPending,
   }
 }
