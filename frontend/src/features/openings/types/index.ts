@@ -1,3 +1,5 @@
+import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+
 export type Position = {
   id: string
   fen: string
@@ -13,20 +15,9 @@ export type PositionComment = {
   created_at: string
 }
 
-export type PositionAnnotationArrow = {
-  id: number
-  fen: string
-  from_square: string
-  to_square: string
-  color: string
-}
+export type PositionAnnotationArrow = BoardAnnotationArrow & { id: number; fen: string }
 
-export type PositionAnnotationCircle = {
-  id: number
-  fen: string
-  square: string
-  color: string
-}
+export type PositionAnnotationCircle = BoardAnnotationCircle & { id: number; fen: string }
 
 export type PositionDetail = {
   position: Position | null

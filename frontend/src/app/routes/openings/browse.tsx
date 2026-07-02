@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChessBoardProvider, getSanMoves, getMoves, getActiveMove } from '../../../features/board'
 import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessBoard'
@@ -62,6 +63,16 @@ function BrowseV2PageInner() {
       boardSize: s.boardSize,
     })),
   )
+  const annotations = useChessBoardStore(
+    useShallow((s) => ({
+      draftArrows: s.draftArrows,
+      draftCircles: s.draftCircles,
+      annotationsDirty: s.annotationsDirty,
+      syncAnnotations: s.syncAnnotations,
+      setDraftAnnotations: s.setDraftAnnotations,
+      markAnnotationsSaved: s.markAnnotationsSaved,
+    })),
+  )
   const { score, isLoading } = usePositionEvaluation(boardState.fen)
 
   const { data: positionDetail, isLoading: notesLoading, upsert } = usePosition(boardState.fen)
@@ -69,6 +80,10 @@ function BrowseV2PageInner() {
   const { add } = usePositionComments(boardState.fen)
   const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
+
+  useEffect(() => {
+    annotations.syncAnnotations(arrows, circles)
+  }, [arrows, circles, annotations.syncAnnotations])
 
   return (
     <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
@@ -86,6 +101,13 @@ function BrowseV2PageInner() {
             <PositionActions
               drillCard={drillCard}
               existingCard={existingCard}
+              annotationsDirty={annotations.annotationsDirty}
+              onSaveAnnotations={() =>
+                replaceAnnotations.mutate(
+                  { arrows: annotations.draftArrows, circles: annotations.draftCircles },
+                  { onSuccess: annotations.markAnnotationsSaved },
+                )
+              }
             />
           </div>
           <div className="flex flex-row gap-2">
@@ -98,15 +120,14 @@ function BrowseV2PageInner() {
             <div className="relative">
               <ChessBoard
                 state={boardState}
-                arrows={arrows}
-                circles={circles}
+                arrows={annotations.draftArrows}
+                circles={annotations.draftCircles}
                 config={{ showBestMove: config.showBestMove, boardSize: config.boardSize }}
                 actions={{
                   applyMove: boardState.applyMove,
                   navigateBack: boardState.navigateBack,
                   navigateForward: boardState.navigateForward,
-                  onAnnotationsChange: (arrows, circles) =>
-                    replaceAnnotations.mutate({ arrows, circles }),
+                  onDrawableChange: annotations.setDraftAnnotations,
                 }}
               />
               <ChessBoardSettings
