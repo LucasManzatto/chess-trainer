@@ -16,7 +16,7 @@ export function PanelSection({ title, headerAction, children, className }: Panel
         <div className="px-4 h-11 flex items-center justify-between border-b border-white/[0.08] flex-shrink-0">
           <span
             className="text-white/80 font-semibold tracking-tight"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '13px' }}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px' }}
           >
             {title}
           </span>

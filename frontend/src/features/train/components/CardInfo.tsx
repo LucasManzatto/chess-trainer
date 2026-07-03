@@ -13,7 +13,7 @@ export function CardInfo({ card }: CardInfoProps) {
       <div className="flex items-center gap-2">
         <span
           className="text-white/90 font-semibold leading-tight truncate"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '15px' }}
+          style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px' }}
         >
           {card.name ?? 'Unknown Opening'}
         </span>

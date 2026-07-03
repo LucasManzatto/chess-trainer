@@ -24,7 +24,8 @@ export const Route = createFileRoute('/openings/browse')({
   component: BrowsePage,
 })
 
-const PANEL_CLASS = 'flex flex-col min-h-0 overflow-hidden bg-white/[0.055] border border-white/[0.09] rounded'
+const PANEL_CLASS = 'flex flex-col min-h-0 overflow-hidden'
+const DIVIDER_CLASS = 'border-l border-white/[0.07]'
 
 // ─── Root (providers only) ────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ function BrowsePageInner() {
 
   const { data: positionDetail, isLoading: notesLoading, upsert } = usePosition(boardState.fen)
   const { comments, arrows, circles } = positionDetail
-  const { add } = usePositionComments(boardState.fen)
+  const { add, remove: removeComment } = usePositionComments(boardState.fen)
   const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
 
@@ -90,12 +91,23 @@ function BrowsePageInner() {
   }, [arrows, circles, annotations.syncAnnotations])
 
   return (
-    <div className="grid grid-cols-[1fr_220px_280px] gap-5 p-6 h-full w-full overflow-hidden">
+    <div className="grid grid-cols-[220px_minmax(0,auto)_1fr] gap-5 p-6 h-full w-full overflow-hidden">
+
+      {/* Move list */}
+      <section className={PANEL_CLASS}>
+        <MovesList
+          moves={boardState.moves}
+          activeMove={boardState.activeMove}
+          onMoveClick={(moveNumber, color) =>
+            boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
+          }
+        />
+      </section>
 
       {/* Board + opening name + drill button */}
-      <section className={`${PANEL_CLASS} items-center justify-center`}>
-        <div className="flex flex-col items-stretch">
-          <div className="flex items-end justify-between gap-3 px-1 pb-3">
+      <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} pl-5 items-center justify-center`}>
+        <div className="flex flex-col items-stretch min-w-0">
+          <div className="flex items-end justify-between gap-3 px-1 pb-3 min-w-0">
             {notesLoading ? (
               <span className="text-2xl font-semibold tracking-tight text-white/20 italic select-none">
                 Loading...
@@ -105,10 +117,10 @@ function BrowsePageInner() {
                 name={positionDetail.position?.name ?? null}
                 isSaving={upsert.isPending}
                 onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
-                className="text-2xl font-semibold tracking-tight text-white/90 cursor-text select-none"
+                className="text-2xl font-semibold tracking-tight text-white/90 cursor-text select-none truncate min-w-0"
               />
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {annotations.annotationsDirty && (
                 <SaveAnnotationsButton
                   text={replaceAnnotations.isPending ? 'Saving...' : 'Save annotations'}
@@ -132,7 +144,7 @@ function BrowsePageInner() {
           </div>
           <div className="flex flex-row gap-2">
             <div
-              className="flex items-center rounded border border-white/10 bg-black/20 p-1"
+              className="flex items-center rounded p-1"
               style={{ height: config.boardSize }}
             >
               <EvaluationBar score={score} isLoading={isLoading} />
@@ -161,19 +173,8 @@ function BrowsePageInner() {
         </div>
       </section>
 
-      {/* Move list */}
-      <section className={PANEL_CLASS}>
-        <MovesList
-          moves={boardState.moves}
-          activeMove={boardState.activeMove}
-          onMoveClick={(moveNumber, color) =>
-            boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
-          }
-        />
-      </section>
-
-      {/* Notes per position */}
-      <section className={PANEL_CLASS}>
+      {/* Notes per position — fills remaining right-side space */}
+      <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} pl-5 w-full`}>
         {notesLoading ? (
           <p className="text-sm text-white/25 p-4">Loading…</p>
         ) : (
@@ -181,6 +182,33 @@ function BrowsePageInner() {
             comments={comments}
             onAdd={(content) => add.mutate(content)}
             addPending={add.isPending}
+            onRemove={(id) => removeComment.mutate(id)}
+            arrows={annotations.draftArrows}
+            circles={annotations.draftCircles}
+            onArrowColorChange={(index, color) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows.map((a, i) => (i === index ? { ...a, color } : a)),
+                annotations.draftCircles,
+              )
+            }
+            onCircleColorChange={(index, color) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows,
+                annotations.draftCircles.map((c, i) => (i === index ? { ...c, color } : c)),
+              )
+            }
+            onArrowCommentChange={(index, comment) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows.map((a, i) => (i === index ? { ...a, comment } : a)),
+                annotations.draftCircles,
+              )
+            }
+            onCircleCommentChange={(index, comment) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows,
+                annotations.draftCircles.map((c, i) => (i === index ? { ...c, comment } : c)),
+              )
+            }
           />
         )}
       </section>

@@ -73,17 +73,23 @@ function toDrawShapes(arrows: BoardAnnotationArrow[], circles: BoardAnnotationCi
   ]
 }
 
-function fromDrawShapes(shapes: DrawShape[]): { arrows: BoardAnnotationArrow[]; circles: BoardAnnotationCircle[] } {
+function fromDrawShapes(
+  shapes: DrawShape[],
+  prevArrows: BoardAnnotationArrow[],
+  prevCircles: BoardAnnotationCircle[],
+): { arrows: BoardAnnotationArrow[]; circles: BoardAnnotationCircle[] } {
   return {
-    arrows: shapes.filter(isArrowShape).map(s => ({
-      from_square: s.orig as string,
-      to_square: s.dest as string,
-      color: brushToColor(s.brush),
-    })),
-    circles: shapes.filter(s => !isArrowShape(s)).map(s => ({
-      square: s.orig as string,
-      color: brushToColor(s.brush),
-    })),
+    arrows: shapes.filter(isArrowShape).map(s => {
+      const from_square = s.orig as string
+      const to_square = s.dest as string
+      const prev = prevArrows.find(a => a.from_square === from_square && a.to_square === to_square)
+      return { from_square, to_square, color: brushToColor(s.brush), comment: prev?.comment ?? null }
+    }),
+    circles: shapes.filter(s => !isArrowShape(s)).map(s => {
+      const square = s.orig as string
+      const prev = prevCircles.find(c => c.square === square)
+      return { square, color: brushToColor(s.brush), comment: prev?.comment ?? null }
+    }),
   }
 }
 
@@ -111,9 +117,9 @@ function useBoardConfig(
   const shapes = useMemo(() => toDrawShapes(arrows, circles), [arrows, circles])
 
   const onDrawableChange = useCallback((next: DrawShape[]) => {
-    const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next)
+    const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next, arrows, circles)
     onAnnotationsChange(nextArrows, nextCircles)
-  }, [onAnnotationsChange])
+  }, [onAnnotationsChange, arrows, circles])
 
   return useMemo(
     (): Config => ({

@@ -18,7 +18,7 @@ export function TrainSetup({ mode, setMode, setPhase }: TrainSetupProps) {
     <div className="flex flex-col items-center gap-8 px-4 py-10 w-full max-w-sm mx-auto select-none">
       <h1
         className="text-white/90 text-2xl font-semibold tracking-tight"
-        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+        style={{ fontFamily: "'Inter', sans-serif" }}
       >
         Train
       </h1>

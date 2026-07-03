@@ -53,10 +53,7 @@ export function MovesList({ moves = [], activeMove, onMoveClick }: Props) {
 function MovesHeader() {
   return (
     <div className="px-4 h-11 flex items-center border-b border-white/[0.08] flex-shrink-0">
-      <span
-        className="text-white/80 font-semibold tracking-tight"
-        style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '13px' }}
-      >
+      <span className="text-white/80 font-semibold tracking-tight text-sm">
         Moves
       </span>
     </div>

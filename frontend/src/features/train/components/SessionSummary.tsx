@@ -17,7 +17,7 @@ export function SessionSummary({ onTrainAgain, onBack }: SessionSummaryProps) {
       <div className="flex flex-col items-center gap-1">
         <span
           className="text-amber-300 font-semibold leading-none"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '56px' }}
+          style={{ fontFamily: "'Inter', sans-serif", fontSize: '56px' }}
         >
           {reviewed}
         </span>

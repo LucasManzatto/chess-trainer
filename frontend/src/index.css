@@ -5,12 +5,12 @@
 @import "@lichess-org/chessground/assets/chessground.cburnett.css";
 
 @theme {
-  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --font-serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --font-display: 'Inter', sans-serif;
+  --font-serif: 'Inter', sans-serif;
 }
 
 :root {
-  font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 17px;
   line-height: 1.55;
   color-scheme: dark;

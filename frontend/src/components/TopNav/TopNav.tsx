@@ -25,7 +25,7 @@ export function TopNav() {
           <span className="text-amber-400 text-xl leading-none">♟</span>
           <span
             className="text-white font-semibold tracking-tight leading-none"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '15px' }}
+            style={{ fontFamily: "'Inter', sans-serif", fontSize: '15px' }}
           >
             Chess Trainer
           </span>

@@ -37,6 +37,7 @@ class PositionAnnotationArrow(Base):
     from_square: Mapped[str] = mapped_column("from", Text)
     to_square: Mapped[str] = mapped_column("to", Text)
     color: Mapped[str] = mapped_column(Text)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class PositionAnnotationCircle(Base):
@@ -46,3 +47,4 @@ class PositionAnnotationCircle(Base):
     fen: Mapped[str] = mapped_column(Text, ForeignKey("positions.fen", ondelete="CASCADE"))
     square: Mapped[str] = mapped_column(Text)
     color: Mapped[str] = mapped_column(Text)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
