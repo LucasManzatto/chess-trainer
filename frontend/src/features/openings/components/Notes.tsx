@@ -3,6 +3,7 @@ import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/ty
 import { AnnotationsList } from './AnnotationsList'
 
 export type NotesProps = {
+  fen: string
   comments: { id: number; content: string }[]
   onAdd: (content: string) => void
   addPending: boolean
@@ -16,6 +17,7 @@ export type NotesProps = {
 }
 
 export function Notes({
+  fen,
   comments,
   onAdd,
   addPending,
@@ -32,6 +34,7 @@ export function Notes({
       <NotesHeader />
       <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-4 p-3">
         <AnnotationsList
+          fen={fen}
           arrows={arrows}
           circles={circles}
           onArrowColorChange={onArrowColorChange}

@@ -1,4 +1,6 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import type { Square } from 'chess.js'
+import { arrowMoveLabel } from '../../../lib/chess'
 import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 
 // Matches the brush colors ChessBoard draws with (COLOR_TO_BRUSH in ChessBoard.tsx) — used for the color-picker swatches
@@ -9,6 +11,7 @@ const COLOR_ORDER = ['G', 'R', 'B', 'Y'] as const
 const CARD_CLASS = 'bg-white/[0.05] rounded-lg p-3'
 
 type Props = {
+  fen: string
   arrows: BoardAnnotationArrow[]
   circles: BoardAnnotationCircle[]
   onArrowColorChange: (index: number, color: string) => void
@@ -18,6 +21,7 @@ type Props = {
 }
 
 export function AnnotationsList({
+  fen,
   arrows,
   circles,
   onArrowColorChange,
@@ -46,7 +50,7 @@ export function AnnotationsList({
             <AnnotationRow
               key={`arrow-${i}`}
               icon={<ArrowIcon color={arrow.color} />}
-              label={`${arrow.from_square} → ${arrow.to_square}`}
+              label={arrowMoveLabel(fen, arrow.from_square as Square, arrow.to_square as Square)}
               color={arrow.color}
               comment={arrow.comment}
               onPickColor={(color) => onArrowColorChange(i, color)}
@@ -94,14 +98,21 @@ type AnnotationRowProps = {
 
 function AnnotationRow({ icon, label, color, comment, onPickColor, onCommentChange }: AnnotationRowProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(!!comment)
   const [draft, setDraft] = useState(comment ?? '')
+
+  useEffect(() => {
+    setDraft(comment ?? '')
+    setExpanded(!!comment)
+  }, [comment])
 
   function commitComment() {
     const trimmed = draft.trim()
     if (trimmed === (comment ?? '')) return
     onCommentChange(trimmed || null)
   }
+
+  const rows = Math.min(8, Math.max(4, draft.split('\n').length))
 
   return (
     <li className={`${CARD_CLASS} flex flex-col gap-2`}>
@@ -136,7 +147,7 @@ function AnnotationRow({ icon, label, color, comment, onPickColor, onCommentChan
           onChange={e => setDraft(e.target.value)}
           onBlur={commitComment}
           placeholder="Add a comment…"
-          rows={8}
+          rows={rows}
           className="w-full bg-transparent hover:bg-white/[0.04] focus:bg-white/[0.04] text-slate-300 text-sm rounded px-1.5 py-1 -mx-1.5 -my-1 resize-none placeholder-white/30 border border-dashed border-transparent hover:border-white/15 focus:border-white/20 focus:outline-none transition-colors"
         />
       )}

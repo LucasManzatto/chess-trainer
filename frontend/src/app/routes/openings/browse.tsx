@@ -179,6 +179,7 @@ function BrowsePageInner() {
           <p className="text-sm text-white/25 p-4">Loading…</p>
         ) : (
           <Notes
+            fen={boardState.fen}
             comments={comments}
             onAdd={(content) => add.mutate(content)}
             addPending={add.isPending}

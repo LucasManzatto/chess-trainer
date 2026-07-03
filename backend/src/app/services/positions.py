@@ -63,6 +63,7 @@ async def get_position_detail(session: AsyncSession, fen: str) -> PositionDetail
                     "from_square", PositionAnnotationArrow.from_square,
                     "to_square", PositionAnnotationArrow.to_square,
                     "color", PositionAnnotationArrow.color,
+                    "comment", PositionAnnotationArrow.comment,
                 )
             )
         )
@@ -79,6 +80,7 @@ async def get_position_detail(session: AsyncSession, fen: str) -> PositionDetail
                     "fen", PositionAnnotationCircle.fen,
                     "square", PositionAnnotationCircle.square,
                     "color", PositionAnnotationCircle.color,
+                    "comment", PositionAnnotationCircle.comment,
                 )
             )
         )
@@ -206,12 +208,17 @@ async def replace_position_annotations(
 
     arrows = [
         PositionAnnotationArrow(
-            fen=fen, from_square=a.from_square, to_square=a.to_square, color=a.color
+            fen=fen,
+            from_square=a.from_square,
+            to_square=a.to_square,
+            color=a.color,
+            comment=a.comment,
         )
         for a in body.arrows
     ]
     circles = [
-        PositionAnnotationCircle(fen=fen, square=c.square, color=c.color) for c in body.circles
+        PositionAnnotationCircle(fen=fen, square=c.square, color=c.color, comment=c.comment)
+        for c in body.circles
     ]
     session.add_all(arrows)
     session.add_all(circles)

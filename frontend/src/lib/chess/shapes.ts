@@ -49,6 +49,19 @@ function findKingSquare(board: ReturnType<Chess['board']>, kingColor: string): S
   return undefined
 }
 
+export function arrowMoveLabel(fen: string, from: Square, to: Square): string {
+  const chess = new Chess(fen)
+  const piece = chess.get(from)
+  if (!piece) return to
+
+  const legalMove = chess.moves({ square: from, verbose: true }).find(m => m.to === to)
+  if (legalMove) return legalMove.san
+
+  const capture = chess.get(to) != null
+  if (piece.type === 'p') return capture ? `${from[0]}x${to}` : to
+  return `${piece.type.toUpperCase()}${capture ? 'x' : ''}${to}`
+}
+
 export function computeCandidateShapes(
   moves: Map<string, number>,
   fen: string | undefined,

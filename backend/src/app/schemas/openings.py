@@ -40,6 +40,7 @@ class PositionAnnotationArrowInput(BaseModel):
     from_square: str
     to_square: str
     color: str
+    comment: str | None = None
 
 
 class PositionAnnotationArrowResponse(BaseModel):
@@ -50,11 +51,13 @@ class PositionAnnotationArrowResponse(BaseModel):
     from_square: str
     to_square: str
     color: str
+    comment: str | None
 
 
 class PositionAnnotationCircleInput(BaseModel):
     square: str
     color: str
+    comment: str | None = None
 
 
 class PositionAnnotationCircleResponse(BaseModel):
@@ -64,6 +67,7 @@ class PositionAnnotationCircleResponse(BaseModel):
     fen: str
     square: str
     color: str
+    comment: str | None
 
 
 class PositionAnnotationsReplace(BaseModel):

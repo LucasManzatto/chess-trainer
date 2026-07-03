@@ -84,8 +84,8 @@ export const positionCommentsApi = {
 export const positionAnnotationsApi = {
   replace: (
     fen: string,
-    arrows: Pick<PositionAnnotationArrow, 'from_square' | 'to_square' | 'color'>[],
-    circles: Pick<PositionAnnotationCircle, 'square' | 'color'>[],
+    arrows: Pick<PositionAnnotationArrow, 'from_square' | 'to_square' | 'color' | 'comment'>[],
+    circles: Pick<PositionAnnotationCircle, 'square' | 'color' | 'comment'>[],
   ) =>
     request<{ arrows: PositionAnnotationArrow[]; circles: PositionAnnotationCircle[] }>(
       `/api/v1/positions/${encodeURIComponent(fen)}/annotations`,
