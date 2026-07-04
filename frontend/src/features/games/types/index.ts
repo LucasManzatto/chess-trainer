@@ -53,5 +53,4 @@ export type GamesFilters = {
   result: 'win' | 'loss' | 'draw' | null
   color: 'white' | 'black' | null
   time_class: 'bullet' | 'blitz' | 'rapid' | 'daily' | null
-  eco: string
 }

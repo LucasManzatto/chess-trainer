@@ -32,7 +32,6 @@ export const gamesApi = {
     if (filters.result)     params.set('result', filters.result)
     if (filters.color)      params.set('color', filters.color)
     if (filters.time_class) params.set('time_class', filters.time_class)
-    if (filters.eco)        params.set('eco', filters.eco)
     params.set('limit', String(limit))
     params.set('offset', String(offset))
     return request<GamesListResponse>(`/api/v1/games?${params}`, { signal })

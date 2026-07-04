@@ -26,9 +26,8 @@ type UseGameAnalysisResult = {
 
 export function useGameAnalysis(
   game: Game | null,
-  saveAnalysis: (gameId: number, analysis: GameAnalysis) => Promise<Game>,
   depth = 18,
-  onComplete?: () => void,
+  onAnalyzed?: (gameId: number, analysis: GameAnalysis) => void,
 ): UseGameAnalysisResult {
   const allMoves = game?.moves ?? []
   const gameId = game?.id ?? null
@@ -37,8 +36,8 @@ export function useGameAnalysis(
   const [analysis, setAnalysis] = useState<GameAnalysis | null>(null)
   const abortRef = useRef(false)
   const mountedRef = useRef(false)
-  const onCompleteRef = useRef(onComplete)
-  useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
+  const onAnalyzedRef = useRef(onAnalyzed)
+  useEffect(() => { onAnalyzedRef.current = onAnalyzed }, [onAnalyzed])
 
   useEffect(() => {
     if (!mountedRef.current) {
@@ -129,17 +128,15 @@ export function useGameAnalysis(
         setStatus('idle')
         return
       }
-      const savedGame = await saveAnalysis(gameId, result)
-      const saved = savedGame.analysis ?? result
-      setAnalysis(saved)
+      setAnalysis(result)
       setStatus('done')
-      onCompleteRef.current?.()
+      onAnalyzedRef.current?.(gameId, result)
     } catch {
       if (!abortRef.current) setStatus('error')
     } finally {
       worker.terminate()
     }
-  }, [allMoves, gameId, saveAnalysis, depth, status])
+  }, [allMoves, gameId, depth, status])
 
   return { analyze, status, progress, analysis }
 }

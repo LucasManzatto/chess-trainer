@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import type { Game } from '../../types'
+import type { Game, GamesListResponse } from '../../types'
 import type { useGamesSync } from '../../../../data/hooks/useGames'
 import { SyncControls } from '../GamesTab/SyncControls'
 import { timeControlLabel } from '../../utils/gameFormatters'
@@ -193,9 +193,8 @@ function GameList({ games, isLoading, selectedId, onSelect }: GameListProps) {
 // ─── GamesList ────────────────────────────────────────────────────────────────
 
 type GamesListProps = {
-  games: Game[]
+  gamesData: GamesListResponse | undefined
   isLoading: boolean
-  total: number
   selectedId: number | null
   syncStatus: ReturnType<typeof useGamesSync>['syncStatus']
   isRunning: boolean
@@ -204,9 +203,8 @@ type GamesListProps = {
 }
 
 export const GamesList = memo(function GamesList({
-  games,
+  gamesData,
   isLoading,
-  total,
   selectedId,
   syncStatus,
   isRunning,
@@ -215,8 +213,8 @@ export const GamesList = memo(function GamesList({
 }: GamesListProps) {
   return (
     <div className="flex flex-col h-full">
-      <GamesListHeader total={total} syncStatus={syncStatus} isRunning={isRunning} onSync={onSync} />
-      <GameList games={games} isLoading={isLoading} selectedId={selectedId} onSelect={onSelect} />
+      <GamesListHeader total={gamesData?.total ?? 0} syncStatus={syncStatus} isRunning={isRunning} onSync={onSync} />
+      <GameList games={gamesData?.items ?? []} isLoading={isLoading} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 })

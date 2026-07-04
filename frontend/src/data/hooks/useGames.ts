@@ -2,9 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { gamesApi, profileApi, syncApi } from '../api'
 import { gamesKeys } from '../queryKeys'
-import type { GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
+import type { GameAnalysis, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
 
-export function useGames(filters: GamesFilters) {
+export function useGames(
+  result: 'win' | 'loss' | 'draw' | null,
+  color: 'white' | 'black' | null,
+  time_class: 'bullet' | 'blitz' | 'rapid' | 'daily' | null,
+) {
+  const filters = { result, color, time_class }
   const qc = useQueryClient()
   const query = useQuery<GamesListResponse>({
     queryKey: gamesKeys.list(filters),
@@ -13,7 +18,7 @@ export function useGames(filters: GamesFilters) {
 
   const invalidate = useCallback(
     () => qc.invalidateQueries({ queryKey: gamesKeys.list(filters) }),
-    [qc, filters],
+    [qc, result, color, time_class],
   )
 
   return { ...query, invalidate }
