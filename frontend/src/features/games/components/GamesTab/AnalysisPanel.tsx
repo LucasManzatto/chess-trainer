@@ -1,17 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { AccuracyBar } from './AccuracyBar'
 import { WinProbabilityCurve } from './WinProbabilityCurve'
 import { MoveQualityTable } from './MoveQualityTable'
 import { CriticalMomentsList } from './CriticalMomentsList'
-import { computeWinPercentTimeline, countClassifications } from '../../utils/analysisUtils'
+import { computeWinPercentTimeline, countClassifications, findCriticalMoves } from '../../utils/analysisUtils'
 import { PanelSection } from '../../../../components/ui/PanelSection'
-import { useGames } from '../../../../data/hooks/useGames'
-import { useGameBoard } from '../../hooks/useGameBoard'
-import { gamesKeys } from '../../../../data/queryKeys'
-import type { GamesFilters } from '../../types'
+import { computeOpeningMatch } from '../../utils/gameLogic'
 import type { OpeningMatch } from '../../utils/gameLogic'
+import type { Game, GameAnalysis } from '../../types'
+import type { Position } from '../../../openings/types'
 import type { AnalyzeStatus } from '../../../../features/board/hooks/useGameAnalysis'
 
 type OpeningSectionProps = {
@@ -73,42 +70,23 @@ function AnalysisHeader({ analyzeStatus, analyzeProgress, hasAnalysis, onAnalyze
   )
 }
 
-export function AnalysisPanel({ onOrientationChange }: { onOrientationChange?: (o: 'white' | 'black') => void }) {
-  const navigate = useNavigate()
-  const { result, color, time_class, eco, gameId } = useSearch({ from: '/_auth/games/list' })
+type AnalysisPanelProps = {
+  game: Game | null
+  analysis: GameAnalysis | null
+  openings: Position[] | undefined
+  analyzeStatus: AnalyzeStatus
+  analyzeProgress: { current: number; total: number }
+  onAnalyze: () => void
+}
 
-  const filters: GamesFilters = useMemo(
-    () => ({ result, color, time_class, eco }),
-    [result, color, time_class, eco],
-  )
-
-  const queryClient = useQueryClient()
-  const { data: gamesData, isLoading: gamesLoading } = useGames(filters)
-
-  const onAnalysisComplete = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: gamesKeys.list(filters) })
-  }, [queryClient, filters])
-
-  const board = useGameBoard(onAnalysisComplete, onOrientationChange)
-
-  const autoSelectedRef = useRef<number | null>(null)
-  const games = gamesData?.items ?? []
-
-  useEffect(() => {
-    if (!gameId || gamesLoading) return
-    if (autoSelectedRef.current === gameId) return
-
-    const game = games.find(g => g.id === gameId)
-    if (game) {
-      autoSelectedRef.current = gameId
-      board.selectGame(game)
-    } else {
-      navigate({ from: '/games/list', to: '/games/list', search: (prev) => ({ ...prev, gameId: undefined }), replace: true })
-    }
-  }, [gameId, games, gamesLoading, board.selectGame, navigate])
-
-  const game = board.selectedGame
-  const { analysis, criticalMoveIndices, openingMatch, analyzeStatus, analyzeProgress, analyze: onAnalyze } = board
+export function AnalysisPanel({
+  game,
+  analysis,
+  openings,
+  analyzeStatus,
+  analyzeProgress,
+  onAnalyze,
+}: AnalysisPanelProps) {
   const hasAnalysis = !!(game?.analysis) || analyzeStatus === 'done'
   const headerAction = game ? (
     <AnalysisHeader
@@ -131,6 +109,10 @@ export function AnalysisPanel({ onOrientationChange }: { onOrientationChange?: (
 
   const hasEco = !!(game.eco || game.opening_name)
   const effectiveAnalysis = analysis ?? game.analysis
+  const openingMatch = computeOpeningMatch(game.moves, openings ?? [])
+  const criticalMoveIndices = effectiveAnalysis
+    ? findCriticalMoves(effectiveAnalysis.moves, effectiveAnalysis.initial_score ?? 0, game.user_color)
+    : []
   const timeline = effectiveAnalysis
     ? computeWinPercentTimeline(
         effectiveAnalysis.initial_score ?? 0,

@@ -10,7 +10,6 @@ import { usePositionEvaluation } from '../../../features/board/hooks/usePosition
 import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
 import { MovesList } from '../../../components/MovesList/MovesList'
-import { OpeningsStoreProvider } from '../../../stores/openings/OpeningsStoreProvider'
 import { Notes } from '../../../features/openings/components/Notes'
 import { usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
@@ -32,9 +31,7 @@ const DIVIDER_CLASS = 'border-l border-white/[0.07]'
 function BrowsePage() {
   return (
     <ChessBoardProvider>
-      <OpeningsStoreProvider>
-        <BrowsePageInner />
-      </OpeningsStoreProvider>
+      <BrowsePageInner />
     </ChessBoardProvider>
   )
 }

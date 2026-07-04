@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { ChessBoard, ChessBoardProvider, getMoves, getActiveMove, useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getLastMove } from '../../../features/board'
 import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
-import { TrainStoreProvider } from '../../../stores/train/TrainStoreProvider'
 import { TrainSetup } from '../../../features/train/components/TrainSetup'
 import { TrainHeader } from '../../../features/train/components/TrainHeader'
 import { SessionSummary } from '../../../features/train/components/SessionSummary'
@@ -18,9 +17,7 @@ export const Route = createFileRoute('/openings/train')({
 function TrainPage() {
   return (
     <ChessBoardProvider>
-      <TrainStoreProvider>
-        <TrainPageInner />
-      </TrainStoreProvider>
+      <TrainPageInner />
     </ChessBoardProvider>
   )
 }

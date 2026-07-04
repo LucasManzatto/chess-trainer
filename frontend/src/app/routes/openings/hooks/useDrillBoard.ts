@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { HistoryEntry } from '../../../../lib/chess/types'
-import type { TrainPhase, TrainMode } from '../../../../stores/train/trainStore'
-import type { RepertoireCard } from '../../../../features/train/types'
+import type { TrainPhase, TrainMode, RepertoireCard } from '../../../../features/train/types'
 
 export function useDrillBoard(
   dueCards: RepertoireCard[],

@@ -1,10 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import type { GameAnalysis, MoveAnalysis } from '../../games/types'
-import { gamesApi } from '../../../data/api'
+import type { Game, GameAnalysis, MoveAnalysis } from '../../games/types'
 import { classifyMove, cpToWinPercent, computeAccuracy, evalFen } from '../../../lib/chess'
+import { buildHistoryFromMoves, INITIAL_FEN } from '../../../lib/chess/history'
 import { createStockfishWorker } from '../../../features/engine'
 import sfUrl from 'stockfish/bin/stockfish-18-lite-single.js?url'
 import sfWasmUrl from 'stockfish/bin/stockfish-18-lite-single.wasm?url'
+
+function buildAllFens(allMoves: string[]): string[] {
+  if (allMoves.length === 0) return []
+  try {
+    return [INITIAL_FEN, ...buildHistoryFromMoves(allMoves).map(h => h.fen)]
+  } catch {
+    return []
+  }
+}
 
 export type AnalyzeStatus = 'idle' | 'running' | 'done' | 'error'
 
@@ -16,12 +25,13 @@ type UseGameAnalysisResult = {
 }
 
 export function useGameAnalysis(
-  allFens: string[],
-  allMoves: string[],
-  gameId: number | null,
+  game: Game | null,
+  saveAnalysis: (gameId: number, analysis: GameAnalysis) => Promise<Game>,
   depth = 18,
   onComplete?: () => void,
 ): UseGameAnalysisResult {
+  const allMoves = game?.moves ?? []
+  const gameId = game?.id ?? null
   const [status, setStatus] = useState<AnalyzeStatus>('idle')
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   const [analysis, setAnalysis] = useState<GameAnalysis | null>(null)
@@ -44,6 +54,7 @@ export function useGameAnalysis(
   }, [gameId])
 
   const analyze = useCallback(async () => {
+    const allFens = buildAllFens(allMoves)
     if (!gameId || allFens.length < 2 || status === 'running') return
 
     abortRef.current = false
@@ -118,7 +129,7 @@ export function useGameAnalysis(
         setStatus('idle')
         return
       }
-      const savedGame = await gamesApi.saveAnalysis(gameId, result)
+      const savedGame = await saveAnalysis(gameId, result)
       const saved = savedGame.analysis ?? result
       setAnalysis(saved)
       setStatus('done')
@@ -128,7 +139,7 @@ export function useGameAnalysis(
     } finally {
       worker.terminate()
     }
-  }, [allFens, allMoves, gameId, depth, status])
+  }, [allMoves, gameId, saveAnalysis, depth, status])
 
   return { analyze, status, progress, analysis }
 }

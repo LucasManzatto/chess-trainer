@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { gamesApi, profileApi, syncApi } from '../api'
 import { gamesKeys } from '../queryKeys'
-import type { GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
+import type { GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
 
 export function useGames(filters: GamesFilters) {
-  return useQuery<GamesListResponse>({
+  const qc = useQueryClient()
+  const query = useQuery<GamesListResponse>({
     queryKey: gamesKeys.list(filters),
     queryFn: ({ signal }) => gamesApi.list(filters, 50, 0, signal),
+  })
+
+  const invalidate = useCallback(
+    () => qc.invalidateQueries({ queryKey: gamesKeys.list(filters) }),
+    [qc, filters],
+  )
+
+  return { ...query, invalidate }
+}
+
+export function useSaveGameAnalysis() {
+  return useMutation({
+    mutationFn: ({ gameId, analysis }: { gameId: number; analysis: GameAnalysis }) =>
+      gamesApi.saveAnalysis(gameId, analysis),
   })
 }
 

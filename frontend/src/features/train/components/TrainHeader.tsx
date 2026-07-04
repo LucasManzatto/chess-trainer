@@ -1,5 +1,5 @@
 import { useStats, useDueCards } from '../../../data/hooks/useTrain'
-import type { TrainMode } from '../../../stores/train/trainStore'
+import type { TrainMode } from '../types'
 
 interface TrainHeaderProps {
   mode: TrainMode

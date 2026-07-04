@@ -49,3 +49,12 @@ export type TrainStats = {
   review: number
   relearning: number
 }
+
+export type TrainMode = 'drill' | 'spar'
+
+export type TrainPhase =
+  | { type: 'idle' }
+  | { type: 'loading' }
+  | { type: 'awaiting_move' }
+  | { type: 'revealed' }
+  | { type: 'done' }

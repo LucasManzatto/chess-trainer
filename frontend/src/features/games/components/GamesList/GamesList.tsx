@@ -1,8 +1,7 @@
-import { memo, useCallback, useMemo } from 'react'
+import { memo, useCallback } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { Game } from '../../types'
-import { useGames } from '../../../../data/hooks/useGames'
-import { useGamesSync } from '../../../../data/hooks/useGames'
+import type { useGamesSync } from '../../../../data/hooks/useGames'
 import { SyncControls } from '../GamesTab/SyncControls'
 import { timeControlLabel } from '../../utils/gameFormatters'
 
@@ -193,30 +192,31 @@ function GameList({ games, isLoading, selectedId, onSelect }: GameListProps) {
 
 // ─── GamesList ────────────────────────────────────────────────────────────────
 
-export const GamesList = memo(function GamesList() {
-  const navigate = useNavigate()
-  const { result, color, time_class, gameId } = useSearch({ from: '/_auth/games/list' })
+type GamesListProps = {
+  games: Game[]
+  isLoading: boolean
+  total: number
+  selectedId: number | null
+  syncStatus: ReturnType<typeof useGamesSync>['syncStatus']
+  isRunning: boolean
+  onSync: () => void
+  onSelect: (game: Game) => void
+}
 
-  const filters = useMemo(
-    () => ({ result, color, time_class, eco: '' }),
-    [result, color, time_class],
-  )
-
-  const { data: gamesData, isLoading } = useGames(filters)
-  const { syncStatus, isRunning, triggerSync } = useGamesSync()
-  const games = gamesData?.items ?? []
-  const total = gamesData?.total ?? 0
-
-  const onSelect = useCallback(
-    (game: Game) =>
-      navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, gameId: game.id }), replace: true }),
-    [navigate],
-  )
-
+export const GamesList = memo(function GamesList({
+  games,
+  isLoading,
+  total,
+  selectedId,
+  syncStatus,
+  isRunning,
+  onSync,
+  onSelect,
+}: GamesListProps) {
   return (
     <div className="flex flex-col h-full">
-      <GamesListHeader total={total} syncStatus={syncStatus} isRunning={isRunning} onSync={triggerSync} />
-      <GameList games={games} isLoading={isLoading} selectedId={gameId ?? null} onSelect={onSelect} />
+      <GamesListHeader total={total} syncStatus={syncStatus} isRunning={isRunning} onSync={onSync} />
+      <GameList games={games} isLoading={isLoading} selectedId={selectedId} onSelect={onSelect} />
     </div>
   )
 })
