@@ -5,7 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..exceptions import BadRequestError, ConflictError, NotFoundError
 from ..models.games import Game
-from ..schemas.games import GamesListResponse, GameResponse, GameAnalysisCreate, SyncStatusResponse
+from ..schemas.games import (
+    AnalyzeStatusResponse,
+    GameAnalysisCreate,
+    GameResponse,
+    GamesListResponse,
+    SyncStatusResponse,
+)
+from .games_analysis import run_analysis
 from .games_sync import run_sync
 from .profile import get_or_create_profile
 
@@ -92,3 +99,44 @@ async def save_game_analysis(
     await session.commit()
     await session.refresh(game)
     return GameResponse.model_validate(game)
+
+
+async def trigger_analyze(
+    session: AsyncSession,
+    game_id: int,
+    user_id: str,
+    depth: int,
+    background_tasks: BackgroundTasks,
+) -> dict[str, str]:
+    result = await session.execute(
+        select(Game).where(Game.id == game_id, Game.user_id == user_id)
+    )
+    game = result.scalar_one_or_none()
+    if game is None:
+        raise NotFoundError("Game not found")
+
+    if game.analyze_status == "running":
+        raise ConflictError("Analysis already in progress")
+
+    background_tasks.add_task(run_analysis, game_id, game.moves, depth, session)
+    return {"detail": "Analysis started"}
+
+
+async def get_analyze_status(
+    session: AsyncSession,
+    game_id: int,
+    user_id: str,
+) -> AnalyzeStatusResponse:
+    result = await session.execute(
+        select(Game).where(Game.id == game_id, Game.user_id == user_id)
+    )
+    game = result.scalar_one_or_none()
+    if game is None:
+        raise NotFoundError("Game not found")
+
+    progress = game.analyze_progress or {}
+    return AnalyzeStatusResponse(
+        status=game.analyze_status,
+        current=progress.get("current"),
+        total=progress.get("total"),
+    )

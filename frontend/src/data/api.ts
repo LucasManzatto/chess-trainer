@@ -1,5 +1,5 @@
 import { request } from '../lib/api'
-import type { Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../features/games/types'
+import type { AnalyzeStatusResponse, Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../features/games/types'
 import type {
   Position,
   PositionAnnotationArrow,
@@ -41,6 +41,10 @@ export const gamesApi = {
       method: 'PUT',
       body: JSON.stringify({ ...analysis, analyzed_at: analysis.analyzed_at }),
     }),
+  analyze: (gameId: number, depth = 18) =>
+    request<{ detail: string }>(`/api/v1/games/${gameId}/analyze?depth=${depth}`, { method: 'POST' }),
+  analyzeStatus: (gameId: number, signal?: AbortSignal) =>
+    request<AnalyzeStatusResponse>(`/api/v1/games/${gameId}/analyze/status`, { signal }),
 }
 
 export async function fetchPositions(): Promise<Position[]> {

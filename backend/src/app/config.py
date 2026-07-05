@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ENV_FILE = Path(__file__).parent.parent.parent / ".env"
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
     neon_auth_url: str
     allowed_origins: list[str] = ["http://localhost:5173"]
     lichess_token: str | None = None
+    stockfish_path: str = "stockfish"
 
 
 settings = Settings()  # type: ignore[call-arg]  # pydantic-settings reads from env

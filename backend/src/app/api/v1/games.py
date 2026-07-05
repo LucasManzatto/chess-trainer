@@ -6,7 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...auth import get_current_user_id
 from ...db import get_session
-from ...schemas.games import GameAnalysisCreate, GameResponse, GamesListResponse, SyncStatusResponse
+from ...schemas.games import (
+    AnalyzeStatusResponse,
+    GameAnalysisCreate,
+    GameResponse,
+    GamesListResponse,
+    SyncStatusResponse,
+)
 from ...services import games as games_service
 
 router = APIRouter(prefix="/games", tags=["games"])
@@ -53,3 +59,21 @@ async def save_game_analysis(
     user_id: UserId,
 ) -> GameResponse:
     return await games_service.save_game_analysis(session, game_id, user_id, analysis)
+
+
+@router.post("/{game_id}/analyze", status_code=status.HTTP_202_ACCEPTED)
+async def trigger_analyze(
+    game_id: int,
+    background_tasks: BackgroundTasks,
+    session: Session,
+    user_id: UserId,
+    depth: int = Query(default=18),
+) -> dict[str, str]:
+    return await games_service.trigger_analyze(session, game_id, user_id, depth, background_tasks)
+
+
+@router.get("/{game_id}/analyze/status", response_model=AnalyzeStatusResponse)
+async def get_analyze_status(
+    game_id: int, session: Session, user_id: UserId,
+) -> AnalyzeStatusResponse:
+    return await games_service.get_analyze_status(session, game_id, user_id)

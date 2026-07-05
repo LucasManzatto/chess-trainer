@@ -1,11 +1,10 @@
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
-import type { Game, GameAnalysis } from '../../../../features/games/types'
+import type { Game } from '../../../../features/games/types'
 import { GamesList } from '../../../../features/games/components/GamesList/GamesList'
 import { AnalysisPanel } from '../../../../features/games/components/GamesTab/AnalysisPanel'
-import { useGames, useGamesSync, useSaveGameAnalysis } from '../../../../data/hooks/useGames'
+import { useGameAnalyze, useGames, useGamesSync } from '../../../../data/hooks/useGames'
 import { usePositions } from '../../../../data/hooks/usePositions'
-import { useGameAnalysis } from '../../../../features/board/hooks/useGameAnalysis'
 
 const searchSchema = z.object({
   result: z.enum(['win', 'loss', 'draw']).nullable().default(null).catch(null),
@@ -29,12 +28,7 @@ function GamesListPage() {
 
   const selectedGame = gamesData?.items.find(g => g.id === gameId) ?? null
 
-  const { mutateAsync: saveAnalysis } = useSaveGameAnalysis()
-  const onAnalyzed = (gameId: number, result: GameAnalysis) => {
-    saveAnalysis({ gameId, analysis: result })
-  }
-  const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
-    useGameAnalysis(selectedGame, 18, onAnalyzed)
+  const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
 
   const onSelect = (game: Game) =>
     navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, gameId: game.id }), replace: true })
@@ -57,7 +51,6 @@ function GamesListPage() {
 
       <AnalysisPanel
         game={selectedGame}
-        analysis={analysis}
         openings={openings}
         analyzeStatus={analyzeStatus}
         analyzeProgress={analyzeProgress}

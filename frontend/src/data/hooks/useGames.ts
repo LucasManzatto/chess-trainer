@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { gamesApi, profileApi, syncApi } from '../api'
 import { gamesKeys } from '../queryKeys'
-import type { GameAnalysis, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
+import type { AnalyzeStatus, GamesListResponse, SyncStatus, UserProfile } from '../../features/games/types'
 
 export function useGames(
   result: 'win' | 'loss' | 'draw' | null,
@@ -22,16 +22,6 @@ export function useGames(
   )
 
   return { ...query, invalidate }
-}
-
-export function useSaveGameAnalysis() {
-  const qc = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({ gameId, analysis }: { gameId: number; analysis: GameAnalysis }) =>
-      gamesApi.saveAnalysis(gameId, analysis),
-    onSuccess: () => qc.invalidateQueries({ queryKey: gamesKeys.all() }),
-  })
 }
 
 export function useGamesSync() {
@@ -81,6 +71,59 @@ export function useGamesSync() {
   const isRunning = syncStatus?.status === 'running' || isTriggerPending
 
   return { syncStatus, isRunning, triggerSync }
+}
+
+export function useGameAnalyze(gameId: number | null) {
+  const qc = useQueryClient()
+  const [analyzeStatus, setAnalyzeStatus] = useState<AnalyzeStatus>('idle')
+  const [analyzeProgress, setAnalyzeProgress] = useState({ current: 0, total: 0 })
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }, [])
+
+  const [analyzingGameId, setAnalyzingGameId] = useState<number | null>(null)
+
+  const startPolling = useCallback((id: number) => {
+    stopPolling()
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await gamesApi.analyzeStatus(id)
+        setAnalyzeStatus(status.status)
+        setAnalyzeProgress({ current: status.current ?? 0, total: status.total ?? 0 })
+        if (status.status !== 'running') {
+          stopPolling()
+          if (status.status === 'done') qc.invalidateQueries({ queryKey: gamesKeys.all() })
+        }
+      } catch {
+        stopPolling()
+      }
+    }, 1000)
+  }, [stopPolling, qc])
+
+  useEffect(() => () => stopPolling(), [stopPolling])
+
+  const analyze = useCallback(async () => {
+    if (!gameId) return
+    setAnalyzingGameId(gameId)
+    setAnalyzeStatus('running')
+    setAnalyzeProgress({ current: 0, total: 0 })
+    await gamesApi.analyze(gameId)
+    startPolling(gameId)
+  }, [gameId, startPolling])
+
+  // Status/progress belong to whichever game we last triggered analysis for —
+  // if the selected game changed since, treat as idle rather than showing stale state.
+  const isStale = analyzingGameId !== gameId
+  return {
+    analyzeStatus: isStale ? 'idle' : analyzeStatus,
+    analyzeProgress: isStale ? { current: 0, total: 0 } : analyzeProgress,
+    analyze,
+  }
 }
 
 export function useProfile() {

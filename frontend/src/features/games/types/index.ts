@@ -24,6 +24,14 @@ export type SyncStatus = {
   last_sync_at: string | null
 }
 
+export type AnalyzeStatus = 'idle' | 'running' | 'done' | 'error'
+
+export type AnalyzeStatusResponse = {
+  status: AnalyzeStatus
+  current: number | null
+  total: number | null
+}
+
 export type Game = {
   id: number
   chess_com_id: string

@@ -5,5 +5,5 @@ export * from './highlightMoves'
 export * from './history'
 export * from './position'
 // TODO: these belong in lib/engine — lib should not import from features
-export { classifyMove, cpToWinPercent, computeAccuracy } from '../../features/engine/evaluation'
+export { cpToWinPercent } from '../../features/engine/evaluation'
 export { evalFen } from '../../features/engine/stockfish'

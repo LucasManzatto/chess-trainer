@@ -7,9 +7,8 @@ import { computeWinPercentTimeline, countClassifications, findCriticalMoves } fr
 import { PanelSection } from '../../../../components/ui/PanelSection'
 import { computeOpeningMatch } from '../../utils/gameLogic'
 import type { OpeningMatch } from '../../utils/gameLogic'
-import type { Game, GameAnalysis } from '../../types'
+import type { AnalyzeStatus, Game } from '../../types'
 import type { Position } from '../../../openings/types'
-import type { AnalyzeStatus } from '../../../../features/board/hooks/useGameAnalysis'
 
 type OpeningSectionProps = {
   openingMatch: OpeningMatch | null
@@ -72,7 +71,6 @@ function AnalysisHeader({ analyzeStatus, analyzeProgress, hasAnalysis, onAnalyze
 
 type AnalysisPanelProps = {
   game: Game | null
-  analysis: GameAnalysis | null
   openings: Position[] | undefined
   analyzeStatus: AnalyzeStatus
   analyzeProgress: { current: number; total: number }
@@ -81,7 +79,6 @@ type AnalysisPanelProps = {
 
 export function AnalysisPanel({
   game,
-  analysis,
   openings,
   analyzeStatus,
   analyzeProgress,
@@ -108,7 +105,7 @@ export function AnalysisPanel({
   }
 
   const hasEco = !!(game.eco || game.opening_name)
-  const effectiveAnalysis = analysis ?? game.analysis
+  const effectiveAnalysis = game.analysis
   const openingMatch = computeOpeningMatch(game.moves, openings ?? [])
   const criticalMoveIndices = effectiveAnalysis
     ? findCriticalMoves(effectiveAnalysis.moves, effectiveAnalysis.initial_score ?? 0, game.user_color)

@@ -70,3 +70,9 @@ class SyncStatusResponse(BaseModel):
     total_months: int | None
     games_added: int | None
     last_sync_at: datetime | None
+
+
+class AnalyzeStatusResponse(BaseModel):
+    status: str
+    current: int | None
+    total: int | None
