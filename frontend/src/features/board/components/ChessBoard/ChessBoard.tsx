@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
@@ -104,49 +104,42 @@ function useBoardConfig(
   const { fen, orientation, interactive, lastMove } = state
   const { applyMove, onDrawableChange: onAnnotationsChange = noop } = actions
 
-  const { turn, check } = useMemo(() => {
-    const chess = new Chess(fen)
-    return { turn: chess.turn() === 'w' ? 'white' as const : 'black' as const, check: chess.inCheck() }
-  }, [fen])
+  const chess = new Chess(fen)
+  const turn = chess.turn() === 'w' ? 'white' as const : 'black' as const
+  const check = chess.inCheck()
 
-  const dests = useMemo(() => {
-    if (!interactive) return new Map()
-    return getDests(new Chess(fen).moves({ verbose: true }))
-  }, [fen, interactive])
+  const dests = interactive ? getDests(chess.moves({ verbose: true })) : new Map()
 
-  const shapes = useMemo(() => toDrawShapes(arrows, circles), [arrows, circles])
+  const shapes = toDrawShapes(arrows, circles)
 
-  const onDrawableChange = useCallback((next: DrawShape[]) => {
+  function onDrawableChange(next: DrawShape[]) {
     const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next, arrows, circles)
     onAnnotationsChange(nextArrows, nextCircles)
-  }, [onAnnotationsChange, arrows, circles])
+  }
 
-  return useMemo(
-    (): Config => ({
-      fen,
-      orientation,
-      turnColor: turn,
-      check,
-      lastMove: lastMove ? [lastMove.slice(0, 2) as Key, lastMove.slice(2, 4) as Key] : undefined,
-      viewOnly: !interactive,
-      movable: {
-        free: false,
-        color: interactive ? turn : undefined,
-        dests: interactive ? dests : undefined,
-        showDests: true,
-        events: { after: (orig: Key, dest: Key) => applyMove(orig as Square, dest as Square) },
-      },
-      drawable: {
-        shapes,
-        brushes: BRUSHES,
-        onChange: onDrawableChange,
-      },
-      animation: { enabled: true, duration: 300 },
-      highlight: { lastMove: true, check: true },
-      premovable: { enabled: false },
-    }),
-    [fen, orientation, turn, check, interactive, dests, lastMove, shapes, applyMove, onDrawableChange],
-  )
+  return {
+    fen,
+    orientation,
+    turnColor: turn,
+    check,
+    lastMove: lastMove ? [lastMove.slice(0, 2) as Key, lastMove.slice(2, 4) as Key] : undefined,
+    viewOnly: !interactive,
+    movable: {
+      free: false,
+      color: interactive ? turn : undefined,
+      dests: interactive ? dests : undefined,
+      showDests: true,
+      events: { after: (orig: Key, dest: Key) => applyMove(orig as Square, dest as Square) },
+    },
+    drawable: {
+      shapes,
+      brushes: BRUSHES,
+      onChange: onDrawableChange,
+    },
+    animation: { enabled: true, duration: 300 },
+    highlight: { lastMove: true, check: true },
+    premovable: { enabled: false },
+  }
 }
 
 function useChessground(config: Config) {
