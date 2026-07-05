@@ -45,6 +45,9 @@ async def init_db() -> None:
             **connect_args,
             "timeout": 30,
             "prepared_statement_cache_size": 0,  # pgBouncer transaction mode rejects PREPARE
+            # pgBouncer's pooled backend connections don't reliably pick up role-level
+            # search_path defaults set after the pool warmed up — set it explicitly.
+            "server_settings": {"search_path": "public"},
         },
         pool_pre_ping=True,
     )
