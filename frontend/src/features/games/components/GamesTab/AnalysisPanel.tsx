@@ -1,99 +1,16 @@
-import { Link } from '@tanstack/react-router'
 import { AccuracyBar } from './AccuracyBar'
 import { WinProbabilityCurve } from './WinProbabilityCurve'
 import { MoveQualityTable } from './MoveQualityTable'
 import { CriticalMomentsList } from './CriticalMomentsList'
 import { computeWinPercentTimeline, countClassifications, findCriticalMoves } from '../../utils/analysisUtils'
 import { PanelSection } from '../../../../components/ui/PanelSection'
-import { computeOpeningMatch } from '../../utils/gameLogic'
-import type { OpeningMatch } from '../../utils/gameLogic'
-import type { AnalyzeStatus, Game } from '../../types'
-import type { Position } from '../../../openings/types'
-
-type OpeningSectionProps = {
-  openingMatch: OpeningMatch | null
-  openingName: string
-}
-
-function OpeningSection({ openingMatch, openingName }: OpeningSectionProps) {
-  return (
-    <div className="px-3 py-2 border-b border-white/[0.06]">
-      {openingMatch ? (
-        <Link
-          to="/openings/browse"
-          search={{ modal: undefined }}
-          className="flex items-center gap-1.5 group"
-        >
-          <p className="text-xs text-gray-300 leading-snug group-hover:text-white transition-colors flex-1 min-w-0 truncate">
-            {openingMatch.opening.name}
-          </p>
-          <span className="text-[10px] text-amber-500/50 flex-shrink-0 group-hover:text-amber-400 transition-colors">→ View</span>
-        </Link>
-      ) : (
-        <div>
-          <span className="text-[10px] text-orange-400/70">not in library</span>
-          <p className="text-xs text-gray-500 leading-snug mt-0.5">{openingName}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-type AnalysisHeaderProps = {
-  analyzeStatus: AnalyzeStatus
-  analyzeProgress: { current: number; total: number }
-  hasAnalysis: boolean
-  onAnalyze: () => void
-}
-
-function AnalysisHeader({ analyzeStatus, analyzeProgress, hasAnalysis, onAnalyze }: AnalysisHeaderProps) {
-  return (
-    <div className="flex items-center gap-2">
-      {analyzeStatus === 'running' && (
-        <span className="text-xs text-gray-500">
-          {analyzeProgress.current}/{analyzeProgress.total}
-        </span>
-      )}
-      <button
-        onClick={onAnalyze}
-        disabled={analyzeStatus === 'running'}
-        className={`text-xs px-2 py-0.5 rounded transition-colors ${
-          analyzeStatus === 'running'
-            ? 'bg-white/5 text-gray-600 cursor-not-allowed'
-            : 'bg-blue-500/15 text-blue-300 hover:bg-blue-500/25'
-        }`}
-      >
-        {analyzeStatus === 'running' ? 'Analyzing…' : hasAnalysis ? 'Re-analyze' : 'Analyze'}
-      </button>
-    </div>
-  )
-}
+import type { Game } from '../../types'
 
 type AnalysisPanelProps = {
   game: Game | null
-  openings: Position[] | undefined
-  analyzeStatus: AnalyzeStatus
-  analyzeProgress: { current: number; total: number }
-  onAnalyze: () => void
 }
 
-export function AnalysisPanel({
-  game,
-  openings,
-  analyzeStatus,
-  analyzeProgress,
-  onAnalyze,
-}: AnalysisPanelProps) {
-  const hasAnalysis = !!(game?.analysis) || analyzeStatus === 'done'
-  const headerAction = game ? (
-    <AnalysisHeader
-      analyzeStatus={analyzeStatus}
-      analyzeProgress={analyzeProgress}
-      hasAnalysis={hasAnalysis}
-      onAnalyze={onAnalyze}
-    />
-  ) : null
-
+export function AnalysisPanel({ game }: AnalysisPanelProps) {
   if (!game) {
     return (
       <PanelSection title="Analysis">
@@ -104,9 +21,7 @@ export function AnalysisPanel({
     )
   }
 
-  const hasEco = !!(game.eco || game.opening_name)
   const effectiveAnalysis = game.analysis
-  const openingMatch = computeOpeningMatch(game.moves, openings ?? [])
   const criticalMoveIndices = effectiveAnalysis
     ? findCriticalMoves(effectiveAnalysis.moves, effectiveAnalysis.initial_score ?? 0, game.user_color)
     : []
@@ -121,14 +36,8 @@ export function AnalysisPanel({
     : null
 
   return (
-    <PanelSection title="Analysis" headerAction={headerAction}>
+    <PanelSection title="Analysis">
       <div className="flex-1 overflow-y-auto min-h-0">
-        {hasEco && (
-          <OpeningSection
-            openingMatch={openingMatch}
-            openingName={game.opening_name ?? game.eco ?? ''}
-          />
-        )}
         {effectiveAnalysis && timeline && counts && (
           <>
             <AccuracyBar

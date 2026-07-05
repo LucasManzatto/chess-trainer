@@ -1,8 +1,6 @@
-import { memo, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import type { Game, GamesListResponse } from '../../types'
-import type { useGamesSync } from '../../../../data/hooks/useGames'
-import { SyncControls } from '../GamesTab/SyncControls'
+import type { AnalyzeStatus, Game } from '../../types'
 import { timeControlLabel } from '../../utils/gameFormatters'
 
 // ─── ResultBadge ─────────────────────────────────────────────────────────────
@@ -90,71 +88,53 @@ function GamesFilters() {
   )
 }
 
-// ─── GameRow ──────────────────────────────────────────────────────────────────
+// ─── AnalyzeRowAction ─────────────────────────────────────────────────────────
 
-type GameRowProps = {
-  game: Game
-  selected: boolean
-  onSelect: (game: Game) => void
+type AnalyzeRowActionProps = {
+  hasAnalysis: boolean
+  analyzeStatus: AnalyzeStatus
+  analyzeProgress: { current: number; total: number }
+  onAnalyze: () => void
 }
 
-function GameRow({ game, selected, onSelect }: GameRowProps) {
-  const opponent = game.user_color === 'white' ? game.black_username : game.white_username
-  const opponentRating = game.user_color === 'white' ? game.black_rating : game.white_rating
-
+function AnalyzeRowAction({ hasAnalysis, analyzeStatus, analyzeProgress, onAnalyze }: AnalyzeRowActionProps) {
   return (
-    <button
-      onClick={() => onSelect(game)}
-      className={`w-full text-left px-3 py-2.5 border-b border-white/[0.04] transition-colors hover:bg-white/[0.04] ${
-        selected ? 'bg-amber-500/10 border-l-2 border-l-amber-500/60' : ''
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <ResultBadge result={game.result} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm text-gray-200 truncate font-medium">
-              vs {opponent}
-            </span>
-            {opponentRating && (
-              <span className="text-xs text-gray-500 flex-shrink-0">({opponentRating})</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {game.opening_name && (
-              <span className="text-xs text-gray-500 truncate">{game.opening_name}</span>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-          <span className="text-xs text-gray-600">{timeControlLabel(game.time_control)}</span>
-          {game.analysis && (
-            <span className="text-xs text-blue-400" title="Analysed">⬡</span>
-          )}
-        </div>
-      </div>
-    </button>
+    <div className="flex flex-col items-center gap-1">
+      {analyzeStatus === 'running' && (
+        <span className="text-[10px] text-gray-500">
+          {analyzeProgress.current}/{analyzeProgress.total}
+        </span>
+      )}
+      {!hasAnalysis && (
+        <button
+          onClick={e => { e.stopPropagation(); onAnalyze() }}
+          disabled={analyzeStatus === 'running'}
+          title={analyzeStatus === 'running' ? 'Analyzing…' : 'Analyze'}
+          className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+            analyzeStatus === 'running'
+              ? 'bg-white/5 text-gray-600 cursor-not-allowed animate-spin'
+              : 'bg-red-500/15 text-red-400 hover:bg-red-500/25'
+          }`}
+        >
+          ⬡
+        </button>
+      )}
+    </div>
   )
 }
 
 // ─── GamesListHeader ──────────────────────────────────────────────────────────
 
-type GamesListHeaderProps = {
+export type GamesListHeaderProps = {
   total: number
-  syncStatus: ReturnType<typeof useGamesSync>['syncStatus']
-  isRunning: boolean
-  onSync: () => void
 }
 
-function GamesListHeader({ total, syncStatus, isRunning, onSync }: GamesListHeaderProps) {
+export function GamesListHeader({ total }: GamesListHeaderProps) {
   return (
     <div className="px-3 py-2 border-b border-white/[0.06] flex flex-col gap-2 flex-shrink-0">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Games</span>
-          <span className="text-xs text-gray-600">{total}</span>
-        </div>
-        <SyncControls isRunning={isRunning} syncStatus={syncStatus} onSync={onSync} />
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Games</span>
+        <span className="text-xs text-gray-600">{total}</span>
       </div>
       <GamesFilters />
     </div>
@@ -163,58 +143,74 @@ function GamesListHeader({ total, syncStatus, isRunning, onSync }: GamesListHead
 
 // ─── GameList ─────────────────────────────────────────────────────────────────
 
-type GameListProps = {
+export type GameListProps = {
   games: Game[]
-  isLoading: boolean
-  selectedId: number | null
-  onSelect: (game: Game) => void
+  isSelected: (gameId: number) => boolean
+  analyzeStatus: AnalyzeStatus
+  analyzeProgress: { current: number; total: number }
+  onSelect: (gameId: number) => void
+  onAnalyze: () => void
 }
 
-function GameList({ games, isLoading, selectedId, onSelect }: GameListProps) {
+export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, onSelect, onAnalyze }: GameListProps) {
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
-      {isLoading ? (
-        <div className="flex items-center justify-center h-24 text-gray-600 text-sm">
-          Loading…
-        </div>
-      ) : games.length === 0 ? (
+      {games.length === 0 ? (
         <div className="flex items-center justify-center h-24 text-gray-600 text-sm text-center px-4">
           No games found
         </div>
       ) : (
-        games.map(g => (
-          <GameRow key={g.id} game={g} selected={g.id === selectedId} onSelect={onSelect} />
-        ))
+        games.map(g => {
+          const opponent = g.user_color === 'white' ? g.black_username : g.white_username
+          const opponentRating = g.user_color === 'white' ? g.black_rating : g.white_rating
+          const isAnalysed = !!g.analysis
+          const selected = isSelected(g.id)
+          const hasAnalysis = isAnalysed || (selected && analyzeStatus === 'done')
+
+          return (
+            <div
+              key={g.id}
+              className={`flex items-stretch border-b border-white/[0.04] transition-colors ${
+                selected ? 'bg-amber-500/10 border-l-2 border-l-amber-500/60' : ''
+              }`}
+            >
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect(g.id)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onSelect(g.id) }}
+                className="flex-1 min-w-0 flex items-center gap-2 text-left px-3 py-2.5 hover:bg-white/[0.04] transition-colors cursor-pointer"
+              >
+                <ResultBadge result={g.result} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm text-gray-200 truncate font-medium">
+                      vs {opponent}
+                    </span>
+                    {opponentRating && (
+                      <span className="text-xs text-gray-500 flex-shrink-0">({opponentRating})</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {g.opening_name && (
+                      <span className="text-xs text-gray-500 truncate">{g.opening_name}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                  <span className="text-xs text-gray-600">{timeControlLabel(g.time_control)}</span>
+                </div>
+                <AnalyzeRowAction
+                  hasAnalysis={hasAnalysis}
+                  analyzeStatus={selected ? analyzeStatus : 'idle'}
+                  analyzeProgress={analyzeProgress}
+                  onAnalyze={onAnalyze}
+                />
+              </div>
+            </div>
+          )
+        })
       )}
     </div>
   )
 }
-
-// ─── GamesList ────────────────────────────────────────────────────────────────
-
-type GamesListProps = {
-  gamesData: GamesListResponse | undefined
-  isLoading: boolean
-  selectedId: number | null
-  syncStatus: ReturnType<typeof useGamesSync>['syncStatus']
-  isRunning: boolean
-  onSync: () => void
-  onSelect: (game: Game) => void
-}
-
-export const GamesList = memo(function GamesList({
-  gamesData,
-  isLoading,
-  selectedId,
-  syncStatus,
-  isRunning,
-  onSync,
-  onSelect,
-}: GamesListProps) {
-  return (
-    <div className="flex flex-col h-full">
-      <GamesListHeader total={gamesData?.total ?? 0} syncStatus={syncStatus} isRunning={isRunning} onSync={onSync} />
-      <GameList games={gamesData?.items ?? []} isLoading={isLoading} selectedId={selectedId} onSelect={onSelect} />
-    </div>
-  )
-})
