@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { z } from 'zod'
 import type { Game, GameAnalysis } from '../../../../features/games/types'
@@ -24,40 +23,21 @@ function GamesListPage() {
   const navigate = useNavigate()
   const { result, color, time_class, gameId } = useSearch({ from: '/_auth/games/list' })
 
-  const { data: gamesData, isLoading, invalidate: invalidateGames } = useGames(result, color, time_class)
+  const { data: gamesData, isLoading } = useGames(result, color, time_class)
   const { syncStatus, isRunning, triggerSync } = useGamesSync()
   const { data: openings } = usePositions()
 
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const selectedGame = gamesData?.items.find(g => g.id === gameId) ?? null
 
   const { mutateAsync: saveAnalysis } = useSaveGameAnalysis()
   const onAnalyzed = (gameId: number, result: GameAnalysis) => {
     saveAnalysis({ gameId, analysis: result })
-    invalidateGames()
   }
   const { analyze, status: analyzeStatus, progress: analyzeProgress, analysis } =
     useGameAnalysis(selectedGame, 18, onAnalyzed)
 
   const onSelect = (game: Game) =>
     navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, gameId: game.id }), replace: true })
-
-  const onGameNotFound = () =>
-    navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, gameId: undefined }), replace: true })
-
-  const autoSelectedRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    if (!gameId || isLoading) return
-    if (autoSelectedRef.current === gameId) return
-
-    const game = gamesData?.items.find(g => g.id === gameId)
-    if (game) {
-      autoSelectedRef.current = gameId
-      setSelectedGame(game)
-    } else {
-      onGameNotFound()
-    }
-  }, [gameId, gamesData, isLoading, onGameNotFound])
 
   return (
     <div className="grid grid-cols-[300px_1fr_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">

@@ -3,6 +3,7 @@ import type { GamesFilters } from '../features/games/types'
 export const gamesKeys = {
   profile:    ()                    => ['games-profile'] as const,
   syncStatus: ()                    => ['games-sync-status'] as const,
+  all:        ()                    => ['games-list'] as const,
   list:       (f: GamesFilters)     => ['games-list', f] as const,
 }
 

@@ -25,9 +25,12 @@ export function useGames(
 }
 
 export function useSaveGameAnalysis() {
+  const qc = useQueryClient()
+
   return useMutation({
     mutationFn: ({ gameId, analysis }: { gameId: number; analysis: GameAnalysis }) =>
       gamesApi.saveAnalysis(gameId, analysis),
+    onSuccess: () => qc.invalidateQueries({ queryKey: gamesKeys.all() }),
   })
 }
 
