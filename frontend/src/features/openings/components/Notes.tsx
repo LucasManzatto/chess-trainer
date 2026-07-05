@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { highlightMoves } from '../../../lib/chess'
 import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 import { AnnotationsList } from './AnnotationsList'
 
@@ -82,7 +83,7 @@ function NotesSection({ comments, onRemove }: NotesSectionProps) {
     <ul className="flex flex-col gap-2">
       {comments.map(c => (
         <li key={c.id} className="group flex items-start justify-between gap-2 text-sm text-slate-300 bg-white/[0.05] rounded-lg p-3 leading-snug">
-          <span>{c.content}</span>
+          <span>{highlightMoves(c.content)}</span>
           <button
             type="button"
             onClick={() => onRemove(c.id)}
