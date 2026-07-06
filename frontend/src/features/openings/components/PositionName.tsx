@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Input } from '@/components/ui/input'
 
 type Props = {
   name: string | null
@@ -36,13 +37,13 @@ export function PositionName({ name, isSaving, onSave, placeholder = 'Unnamed po
 
   if (editing) {
     return (
-      <input
+      <Input
         ref={inputRef}
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={onKeyDown}
-        className={className ?? 'bg-transparent text-white/90 text-lg font-medium tracking-wide focus:outline-none border-b border-amber-400/50 text-center w-full'}
+        className={className ?? 'h-auto rounded-none border-0 border-b border-amber-400/50 bg-transparent px-0 text-center text-lg font-medium tracking-wide text-white/90 focus-visible:ring-0'}
       />
     )
   }
@@ -56,7 +57,7 @@ export function PositionName({ name, isSaving, onSave, placeholder = 'Unnamed po
       className={className ?? `text-lg font-medium tracking-wide cursor-text select-none ${name ? 'text-white/60' : 'text-white/20 italic'}`}
     >
       {name ?? placeholder}
-      {isSaving && <span className="ml-2 text-xs text-white/30">saving…</span>}
+      {isSaving && <span className="ml-2 text-xs text-muted-foreground">saving…</span>}
     </span>
   )
 }

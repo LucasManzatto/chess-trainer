@@ -1,14 +1,19 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Square } from 'chess.js'
+import { ChevronRightIcon } from 'lucide-react'
 import { arrowMoveLabel, highlightMoves } from '../../../lib/chess'
 import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 // Matches the brush colors ChessBoard draws with (COLOR_TO_BRUSH in ChessBoard.tsx) — used for the color-picker swatches
 const COLOR_HEX: Record<string, string> = { G: '#15781B', R: '#882020', B: '#003088', Y: '#e68f00' }
 // Lighter tints for on-dark legibility (WCAG AA against the ~10%-opacity pill bg) — used for the move-tag pill and its icon
 const TEXT_COLOR_HEX: Record<string, string> = { G: '#34d399', R: '#fda4af', B: '#60a5fa', Y: '#fbbf24' }
 const COLOR_ORDER = ['G', 'R', 'B', 'Y'] as const
-const CARD_CLASS = 'bg-white/[0.05] rounded-lg p-3'
 
 type Props = {
   fen: string
@@ -34,17 +39,20 @@ export function AnnotationsList({
   if (arrows.length === 0 && circles.length === 0) return null
 
   return (
-    <div className="flex flex-col gap-2">
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
-        className="flex items-center gap-1.5 text-xs text-white/40 uppercase tracking-wide cursor-pointer hover:text-white/60 transition-colors"
+    <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col gap-2">
+      <CollapsibleTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start text-xs text-muted-foreground uppercase tracking-wide"
+          />
+        }
       >
-        <ChevronIcon open={open} />
+        <ChevronRightIcon data-icon="inline-start" className={cn('transition-transform', open && 'rotate-90')} />
         Annotations
-      </button>
-      {open && (
+      </CollapsibleTrigger>
+      <CollapsibleContent>
         <ul className="flex flex-col gap-2">
           {arrows.map((arrow, i) => (
             <AnnotationRow
@@ -69,21 +77,8 @@ export function AnnotationsList({
             />
           ))}
         </ul>
-      )}
-    </div>
-  )
-}
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 16 16"
-      className={`flex-shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
-    >
-      <path d="M5 3l6 5-6 5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 
@@ -117,69 +112,66 @@ function AnnotationRow({ icon, label, color, comment, onPickColor, onCommentChan
   const rows = Math.min(8, Math.max(4, draft.split('\n').length))
 
   return (
-    <li className={`${CARD_CLASS} flex flex-col gap-2`}>
-      <div className="relative flex items-center justify-between">
-        <button
+    <li className="flex flex-col gap-2 bg-muted/50 rounded-lg p-3">
+      <div className="flex items-center justify-between">
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="font-mono text-xs font-medium"
+                style={{ backgroundColor: `${TEXT_COLOR_HEX[color] ?? color}1a`, color: TEXT_COLOR_HEX[color] ?? color }}
+              />
+            }
+          >
+            {icon}
+            {label}
+          </PopoverTrigger>
+          <PopoverContent className="w-auto flex-row gap-1.5 p-1.5">
+            {COLOR_ORDER.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => { onPickColor(c); setPickerOpen(false) }}
+                className="w-4 h-4 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform"
+                style={{ backgroundColor: COLOR_HEX[c] }}
+              />
+            ))}
+          </PopoverContent>
+        </Popover>
+        <Button
           type="button"
-          onClick={() => setPickerOpen(open => !open)}
-          className="flex items-center gap-1.5 px-2 py-1 rounded font-mono text-xs font-medium cursor-pointer transition-colors"
-          style={{ backgroundColor: `${TEXT_COLOR_HEX[color] ?? color}1a`, color: TEXT_COLOR_HEX[color] ?? color }}
-        >
-          {icon}
-          {label}
-        </button>
-        {pickerOpen && (
-          <ColorPicker
-            onPick={(next) => { onPickColor(next); setPickerOpen(false) }}
-          />
-        )}
-        <button
-          type="button"
+          variant="ghost"
+          size="icon-sm"
           onClick={() => setExpanded(e => !e)}
           aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
           aria-expanded={expanded}
-          className="text-white/30 hover:text-white/60 transition-colors cursor-pointer p-1"
         >
-          <ChevronIcon open={expanded} />
-        </button>
+          <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
+        </Button>
       </div>
       {expanded && (
         editing ? (
-          <textarea
+          <Textarea
             autoFocus
             value={draft}
             onChange={e => setDraft(e.target.value)}
             onBlur={commitComment}
             placeholder="Add a comment…"
             rows={rows}
-            className="w-full bg-transparent hover:bg-white/[0.04] focus:bg-white/[0.04] text-slate-300 text-sm rounded px-1.5 py-1 -mx-1.5 -my-1 resize-none placeholder-white/30 border border-dashed border-transparent hover:border-white/15 focus:border-white/20 focus:outline-none transition-colors"
+            className="text-sm"
           />
         ) : (
           <div
             onClick={() => setEditing(true)}
-            className="w-full text-slate-300 text-sm rounded px-1.5 py-1 -mx-1.5 -my-1 whitespace-pre-wrap cursor-text hover:bg-white/[0.04] transition-colors"
+            className="w-full text-foreground/80 text-sm rounded px-1.5 py-1 -mx-1.5 -my-1 whitespace-pre-wrap cursor-text hover:bg-muted transition-colors"
           >
             {highlightMoves(draft)}
           </div>
         )
       )}
     </li>
-  )
-}
-
-function ColorPicker({ onPick }: { onPick: (color: string) => void }) {
-  return (
-    <div className="absolute z-10 top-full mt-1 left-0 flex items-center gap-1.5 bg-neutral-900 border border-white/15 rounded-md px-2 py-1.5 shadow-lg">
-      {COLOR_ORDER.map((color) => (
-        <button
-          key={color}
-          type="button"
-          onClick={() => onPick(color)}
-          className="w-4 h-4 rounded-full border border-white/20 cursor-pointer hover:scale-110 transition-transform"
-          style={{ backgroundColor: COLOR_HEX[color] }}
-        />
-      ))}
-    </div>
   )
 }
 

@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { Trash2Icon } from 'lucide-react'
 import { highlightMoves } from '../../../lib/chess'
 import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 import { AnnotationsList } from './AnnotationsList'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 export type NotesProps = {
   fen: string
@@ -55,19 +58,11 @@ export function Notes({
 
 function NotesHeader() {
   return (
-    <div className="px-4 h-11 flex items-center border-b border-white/[0.08] flex-shrink-0">
-      <span className="text-white/80 font-semibold tracking-tight text-sm">
+    <div className="px-4 h-11 flex items-center border-b border-border flex-shrink-0">
+      <span className="text-foreground/80 font-semibold tracking-tight text-sm">
         Notes
       </span>
     </div>
-  )
-}
-
-function TrashIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <path d="M3 4.5h10M6.5 4.5V3a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1.5M12.5 4.5 12 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1L3.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }
 
@@ -82,16 +77,18 @@ function NotesSection({ comments, onRemove }: NotesSectionProps) {
   return (
     <ul className="flex flex-col gap-2">
       {comments.map(c => (
-        <li key={c.id} className="group flex items-start justify-between gap-2 text-sm text-slate-300 bg-white/[0.05] rounded-lg p-3 leading-snug">
+        <li key={c.id} className="group flex items-start justify-between gap-2 text-sm text-foreground/80 bg-muted/50 rounded-lg p-3 leading-snug">
           <span>{highlightMoves(c.content)}</span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onRemove(c.id)}
             aria-label="Remove note"
-            className="text-white/0 group-hover:text-white/40 hover:!text-red-400 transition-colors cursor-pointer flex-shrink-0 mt-0.5"
+            className="text-transparent group-hover:text-muted-foreground hover:!text-destructive flex-shrink-0"
           >
-            <TrashIcon />
-          </button>
+            <Trash2Icon />
+          </Button>
         </li>
       ))}
     </ul>
@@ -109,22 +106,23 @@ function AddNoteForm({ onAdd, pending }: { onAdd: (content: string) => void; pen
   }
 
   return (
-    <div className="flex-shrink-0 p-3 pt-2.5 border-t border-white/[0.08] flex flex-col gap-2">
-      <textarea
+    <div className="flex-shrink-0 p-3 pt-2.5 border-t border-border flex flex-col gap-2">
+      <Textarea
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } }}
         placeholder="Add a position note…"
         rows={2}
-        className="w-full bg-white/[0.04] text-white/80 text-sm rounded-lg px-3 py-2 resize-none placeholder-white/25 focus:outline-none transition-colors"
       />
-      <button
+      <Button
+        type="button"
+        size="sm"
         onClick={handleAdd}
         disabled={pending || !draft.trim()}
-        className="self-end bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 text-white text-xs font-medium px-4 py-1.5 rounded-md transition-colors cursor-pointer"
+        className="self-end bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 dark:bg-amber-500/20 dark:hover:bg-amber-500/30"
       >
         {pending ? 'Saving…' : 'Add note'}
-      </button>
+      </Button>
     </div>
   )
 }
