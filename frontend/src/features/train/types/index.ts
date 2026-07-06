@@ -24,6 +24,7 @@ export type CardCreate = {
   side: 'white' | 'black'
   name?: string | null
   user_plan?: string | null
+  position_id?: string  // set when a card already exists at this position
 }
 
 export type CardReview = {

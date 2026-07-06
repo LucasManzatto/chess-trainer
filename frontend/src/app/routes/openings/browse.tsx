@@ -15,6 +15,7 @@ import { usePositionComments, usePosition, usePositionAnnotations } from '../../
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
+import { useCommitMove, useDeleteCard } from '../../../data/hooks/useTrain'
 import { useBrowseDrillCard } from './hooks'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
@@ -80,7 +81,9 @@ function BrowsePageInner() {
   const { data: positionDetail, isLoading: notesLoading, upsert } = usePosition(boardState.fen)
   const { comments, arrows, circles } = positionDetail
   const { add, remove: removeComment } = usePositionComments(boardState.fen)
-  const { drillCard, existingCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
+  const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
+  const { mutate: commitMove, isPending: isAdding } = useCommitMove()
+  const { mutate: deleteCard, isPending: isRemoving } = useDeleteCard()
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
 
   useEffect(() => {
@@ -130,13 +133,13 @@ function BrowsePageInner() {
                   }
                 />
               )}
-              {drillCard && (
-                <AddToDrill
-                  card={drillCard}
-                  existingCard={existingCard}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded px-3 py-1.5 transition-colors cursor-pointer"
-                />
-              )}
+              <AddToDrill
+                card={drillCard}
+                commitMove={commitMove}
+                isAdding={isAdding}
+                deleteCard={deleteCard}
+                isRemoving={isRemoving}
+              />
             </div>
           </div>
           <div className="flex flex-row gap-2">
