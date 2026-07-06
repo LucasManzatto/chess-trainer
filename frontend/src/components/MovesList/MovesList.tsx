@@ -5,10 +5,12 @@ export type { MovePair, ActiveMove }
 type Props = {
   moves?: MovePair[]
   activeMove?: ActiveMove
+  criticalMoveIndices?: number[]
   onMoveClick?: (moveNumber: number, color: 'white' | 'black') => void
 }
 
-export function MovesList({ moves = [], activeMove, onMoveClick }: Props) {
+export function MovesList({ moves = [], activeMove, criticalMoveIndices = [], onMoveClick }: Props) {
+  const criticalSet = new Set(criticalMoveIndices)
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <MovesHeader />
@@ -29,12 +31,14 @@ export function MovesList({ moves = [], activeMove, onMoveClick }: Props) {
                   <MoveButton
                     san={white}
                     active={activeMove?.moveNumber === moveNumber && activeMove.color === 'white'}
+                    critical={criticalSet.has((moveNumber - 1) * 2)}
                     onClick={() => onMoveClick?.(moveNumber, 'white')}
                   />
                   {black != null ? (
                     <MoveButton
                       san={black}
                       active={activeMove?.moveNumber === moveNumber && activeMove.color === 'black'}
+                      critical={criticalSet.has((moveNumber - 1) * 2 + 1)}
                       onClick={() => onMoveClick?.(moveNumber, 'black')}
                     />
                   ) : (
@@ -63,17 +67,20 @@ function MovesHeader() {
 type MoveButtonProps = {
   san: string
   active: boolean
+  critical?: boolean
   onClick: () => void
 }
 
-function MoveButton({ san, active, onClick }: MoveButtonProps) {
+function MoveButton({ san, active, critical, onClick }: MoveButtonProps) {
   return (
     <button
       onClick={onClick}
       className={`text-left px-2 py-1 rounded transition-colors font-mono text-sm ${
         active
           ? 'bg-amber-500/20 text-amber-200'
-          : 'text-white/60 hover:bg-white/[0.07] hover:text-white/90'
+          : critical
+            ? 'text-red-400 hover:bg-white/[0.07] hover:text-red-300'
+            : 'text-white/60 hover:bg-white/[0.07] hover:text-white/90'
       }`}
     >
       {san}

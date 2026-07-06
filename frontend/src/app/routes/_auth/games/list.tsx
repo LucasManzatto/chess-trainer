@@ -9,6 +9,7 @@ import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync } from '../.
 import { ChessBoardProvider, ChessBoard, useChessBoardStore, getCurrentFen, getCurrentLan, getMoves, getActiveMove } from '../../../../features/board'
 import { useBoardSettings } from '../../../../stores/board/boardSettingsStore'
 import { MovesList } from '../../../../components/MovesList/MovesList'
+import { findCriticalMoves } from '../../../../features/games/utils/analysisUtils'
 
 const searchSchema = z.object({
   result: z.enum(['win', 'loss', 'draw']).nullable().default(null).catch(null),
@@ -72,6 +73,10 @@ function GamesListPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGame?.id])
 
+  const criticalMoveIndices = selectedGame?.analysis
+    ? findCriticalMoves(selectedGame.analysis.moves, selectedGame.analysis.initial_score ?? 0, selectedGame.user_color)
+    : []
+
   return (
     <div className="grid grid-cols-[300px_1fr_260px] gap-6 pt-6 pr-6 pb-6 h-full w-full overflow-hidden">
       <section className="overflow-y-hidden min-h-0 bg-white/[0.03] border border-white/[0.06] flex flex-col">
@@ -123,6 +128,7 @@ function GamesListPageInner() {
               <MovesList
                 moves={boardState.moves}
                 activeMove={boardState.activeMove}
+                criticalMoveIndices={criticalMoveIndices}
                 onMoveClick={(moveNumber, color) =>
                   boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
                 }
@@ -134,7 +140,7 @@ function GamesListPageInner() {
         )}
       </section>
 
-      <AnalysisPanel game={selectedGame} />
+      <AnalysisPanel game={selectedGame} criticalMoveIndices={criticalMoveIndices} />
     </div>
   )
 }

@@ -2,15 +2,16 @@ import { AccuracyBar } from './AccuracyBar'
 import { WinProbabilityCurve } from './WinProbabilityCurve'
 import { MoveQualityTable } from './MoveQualityTable'
 import { CriticalMomentsList } from './CriticalMomentsList'
-import { computeWinPercentTimeline, countClassifications, findCriticalMoves } from '../../utils/analysisUtils'
+import { computeWinPercentTimeline, countClassifications } from '../../utils/analysisUtils'
 import { PanelSection } from '../../../../components/ui/PanelSection'
 import type { Game } from '../../types'
 
 type AnalysisPanelProps = {
   game: Game | null
+  criticalMoveIndices: number[]
 }
 
-export function AnalysisPanel({ game }: AnalysisPanelProps) {
+export function AnalysisPanel({ game, criticalMoveIndices }: AnalysisPanelProps) {
   if (!game) {
     return (
       <PanelSection title="Analysis">
@@ -22,9 +23,6 @@ export function AnalysisPanel({ game }: AnalysisPanelProps) {
   }
 
   const effectiveAnalysis = game.analysis
-  const criticalMoveIndices = effectiveAnalysis
-    ? findCriticalMoves(effectiveAnalysis.moves, effectiveAnalysis.initial_score ?? 0, game.user_color)
-    : []
   const timeline = effectiveAnalysis
     ? computeWinPercentTimeline(
         effectiveAnalysis.initial_score ?? 0,
