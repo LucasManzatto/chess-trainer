@@ -8,7 +8,7 @@ export function LoginModal() {
   const open = modal === 'login'
 
   function close() {
-    navigate({ to: '.', search: (prev) => ({ ...prev, modal: undefined }), replace: true })
+    navigate({ to: '.', search: (prev: { modal?: 'login' }) => ({ ...prev, modal: undefined }), replace: true })
   }
 
   return (

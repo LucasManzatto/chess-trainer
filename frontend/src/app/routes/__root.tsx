@@ -19,7 +19,7 @@ function RootLayout() {
 
   useEffect(() => {
     function handleUnauthorized() {
-      navigate({ to: '.', search: (prev) => ({ ...prev, modal: 'login' as const }) })
+      navigate({ to: '.', search: (prev: { modal?: 'login' }) => ({ ...prev, modal: 'login' as const }) })
     }
     window.addEventListener('auth:unauthorized', handleUnauthorized)
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)

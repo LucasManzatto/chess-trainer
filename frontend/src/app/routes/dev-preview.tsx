@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { GameList, GamesListHeader } from '../../features/games/components/GamesList/GamesList'
-import type { Game } from '../../features/games/types'
+import type { Game, GamesFilters } from '../../features/games/types'
 
 export const Route = createFileRoute('/dev-preview')({
   component: DevPreview,
@@ -33,6 +33,7 @@ function DevPreview() {
   const [selected, setSelected] = useState<number | null>(null)
   const [games] = useState(MOCK_GAMES)
   const [emptyMode, setEmptyMode] = useState(false)
+  const [filters, setFilters] = useState<GamesFilters>({ result: null, color: null, time_class: null })
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -40,7 +41,11 @@ function DevPreview() {
         toggle empty ({String(emptyMode)})
       </button>
       <div className="flex w-80 flex-col border-r border-border">
-        <GamesListHeader total={games.length} />
+        <GamesListHeader
+          total={games.length}
+          filters={filters}
+          onFiltersChange={patch => setFilters(prev => ({ ...prev, ...patch }))}
+        />
         <GameList
           games={emptyMode ? [] : games}
           isSelected={id => id === selected}

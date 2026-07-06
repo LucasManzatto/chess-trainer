@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OpeningsRouteImport } from './routes/openings'
 import { Route as DevPreviewRouteImport } from './routes/dev-preview'
-import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
 import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
@@ -20,11 +19,6 @@ import { Route as OpeningsTrainRouteImport } from './routes/openings/train'
 import { Route as OpeningsBrowseRouteImport } from './routes/openings/browse'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
-import { Route as AuthGamesRouteImport } from './routes/_auth/games'
-import { Route as AuthGamesIndexRouteImport } from './routes/_auth/games/index'
-import { Route as AuthGamesListRouteImport } from './routes/_auth/games/list'
-import { Route as AuthGamesDashboardRouteImport } from './routes/_auth/games/dashboard'
-import { Route as AuthGamesGameIdRouteImport } from './routes/_auth/games/$gameId'
 
 const OpeningsRoute = OpeningsRouteImport.update({
   id: '/openings',
@@ -34,10 +28,6 @@ const OpeningsRoute = OpeningsRouteImport.update({
 const DevPreviewRoute = DevPreviewRouteImport.update({
   id: '/dev-preview',
   path: '/dev-preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -80,37 +70,11 @@ const AccountPathnameRoute = AccountPathnameRouteImport.update({
   path: '/account/$pathname',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthGamesRoute = AuthGamesRouteImport.update({
-  id: '/games',
-  path: '/games',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthGamesIndexRoute = AuthGamesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthGamesRoute,
-} as any)
-const AuthGamesListRoute = AuthGamesListRouteImport.update({
-  id: '/list',
-  path: '/list',
-  getParentRoute: () => AuthGamesRoute,
-} as any)
-const AuthGamesDashboardRoute = AuthGamesDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthGamesRoute,
-} as any)
-const AuthGamesGameIdRoute = AuthGamesGameIdRouteImport.update({
-  id: '/$gameId',
-  path: '/$gameId',
-  getParentRoute: () => AuthGamesRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
-  '/games': typeof AuthGamesRouteWithChildren
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
@@ -118,10 +82,6 @@ export interface FileRoutesByFullPath {
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
-  '/games/$gameId': typeof AuthGamesGameIdRoute
-  '/games/dashboard': typeof AuthGamesDashboardRoute
-  '/games/list': typeof AuthGamesListRoute
-  '/games/': typeof AuthGamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,18 +93,12 @@ export interface FileRoutesByTo {
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings': typeof OpeningsIndexRoute
   '/puzzles': typeof PuzzlesIndexRoute
-  '/games/$gameId': typeof AuthGamesGameIdRoute
-  '/games/dashboard': typeof AuthGamesDashboardRoute
-  '/games/list': typeof AuthGamesListRoute
-  '/games': typeof AuthGamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_auth': typeof AuthRouteWithChildren
   '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
-  '/_auth/games': typeof AuthGamesRouteWithChildren
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
@@ -152,10 +106,6 @@ export interface FileRoutesById {
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
-  '/_auth/games/$gameId': typeof AuthGamesGameIdRoute
-  '/_auth/games/dashboard': typeof AuthGamesDashboardRoute
-  '/_auth/games/list': typeof AuthGamesListRoute
-  '/_auth/games/': typeof AuthGamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -163,7 +113,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dev-preview'
     | '/openings'
-    | '/games'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
@@ -171,10 +120,6 @@ export interface FileRouteTypes {
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
-    | '/games/$gameId'
-    | '/games/dashboard'
-    | '/games/list'
-    | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -186,17 +131,11 @@ export interface FileRouteTypes {
     | '/puzzles/$puzzleId'
     | '/openings'
     | '/puzzles'
-    | '/games/$gameId'
-    | '/games/dashboard'
-    | '/games/list'
-    | '/games'
   id:
     | '__root__'
     | '/'
-    | '/_auth'
     | '/dev-preview'
     | '/openings'
-    | '/_auth/games'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
@@ -204,15 +143,10 @@ export interface FileRouteTypes {
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
-    | '/_auth/games/$gameId'
-    | '/_auth/games/dashboard'
-    | '/_auth/games/list'
-    | '/_auth/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRouteWithChildren
   DevPreviewRoute: typeof DevPreviewRoute
   OpeningsRoute: typeof OpeningsRouteWithChildren
   AccountPathnameRoute: typeof AccountPathnameRoute
@@ -235,13 +169,6 @@ declare module '@tanstack/react-router' {
       path: '/dev-preview'
       fullPath: '/dev-preview'
       preLoaderRoute: typeof DevPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -300,71 +227,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountPathnameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/games': {
-      id: '/_auth/games'
-      path: '/games'
-      fullPath: '/games'
-      preLoaderRoute: typeof AuthGamesRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/games/': {
-      id: '/_auth/games/'
-      path: '/'
-      fullPath: '/games/'
-      preLoaderRoute: typeof AuthGamesIndexRouteImport
-      parentRoute: typeof AuthGamesRoute
-    }
-    '/_auth/games/list': {
-      id: '/_auth/games/list'
-      path: '/list'
-      fullPath: '/games/list'
-      preLoaderRoute: typeof AuthGamesListRouteImport
-      parentRoute: typeof AuthGamesRoute
-    }
-    '/_auth/games/dashboard': {
-      id: '/_auth/games/dashboard'
-      path: '/dashboard'
-      fullPath: '/games/dashboard'
-      preLoaderRoute: typeof AuthGamesDashboardRouteImport
-      parentRoute: typeof AuthGamesRoute
-    }
-    '/_auth/games/$gameId': {
-      id: '/_auth/games/$gameId'
-      path: '/$gameId'
-      fullPath: '/games/$gameId'
-      preLoaderRoute: typeof AuthGamesGameIdRouteImport
-      parentRoute: typeof AuthGamesRoute
-    }
   }
 }
-
-interface AuthGamesRouteChildren {
-  AuthGamesGameIdRoute: typeof AuthGamesGameIdRoute
-  AuthGamesDashboardRoute: typeof AuthGamesDashboardRoute
-  AuthGamesListRoute: typeof AuthGamesListRoute
-  AuthGamesIndexRoute: typeof AuthGamesIndexRoute
-}
-
-const AuthGamesRouteChildren: AuthGamesRouteChildren = {
-  AuthGamesGameIdRoute: AuthGamesGameIdRoute,
-  AuthGamesDashboardRoute: AuthGamesDashboardRoute,
-  AuthGamesListRoute: AuthGamesListRoute,
-  AuthGamesIndexRoute: AuthGamesIndexRoute,
-}
-
-const AuthGamesRouteWithChildren = AuthGamesRoute._addFileChildren(
-  AuthGamesRouteChildren,
-)
-
-interface AuthRouteChildren {
-  AuthGamesRoute: typeof AuthGamesRouteWithChildren
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthGamesRoute: AuthGamesRouteWithChildren,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface OpeningsRouteChildren {
   OpeningsBrowseRoute: typeof OpeningsBrowseRoute
@@ -384,7 +248,6 @@ const OpeningsRouteWithChildren = OpeningsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRouteWithChildren,
   DevPreviewRoute: DevPreviewRoute,
   OpeningsRoute: OpeningsRouteWithChildren,
   AccountPathnameRoute: AccountPathnameRoute,

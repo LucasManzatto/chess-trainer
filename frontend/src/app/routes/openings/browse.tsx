@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChessBoardProvider, getSanMoves, getMoves, getActiveMove } from '../../../features/board'
 import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessBoard'
@@ -17,6 +17,12 @@ import { SaveAnnotationsButton } from '../../../features/openings/components/Sav
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { useCommitMove, useDeleteCard } from '../../../data/hooks/useTrain'
 import { useBrowseDrillCard } from './hooks'
+import { GamesListSheet } from '../../../features/games/components/GamesList/GamesListSheet'
+import { AnalysisSheet } from '../../../features/games/components/GamesTab/AnalysisSheet'
+import { PanelToggleButtons } from '../../../features/games/components/PanelToggleButtons'
+import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync } from '../../../data/hooks/useGames'
+import { findCriticalMoves } from '../../../features/games/utils/analysisUtils'
+import type { GamesFilters } from '../../../features/games/types'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +62,9 @@ function BrowsePageInner() {
       navigateToIndex: s.navigateToIndex,
       flipOrientation: s.flipOrientation,
       reset: s.reset,
+      loadMoves: s.loadMoves,
+      setOrientation: s.setOrientation,
+      setInteractive: s.setInteractive,
     })),
   )
   const config = useBoardSettings(
@@ -90,8 +99,47 @@ function BrowsePageInner() {
     annotations.syncAnnotations(arrows, circles)
   }, [arrows, circles, annotations.syncAnnotations])
 
+  const [gamesOpen, setGamesOpen] = useState(false)
+  const [analysisOpen, setAnalysisOpen] = useState(false)
+  const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
+  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, time_class: null })
+
+  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.time_class)
+  const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
+
+  const { syncStatus, isRunning, triggerSync } = useGamesSync()
+  const { analyzeAll, isRunning: isAnalyzingAll, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
+  const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
+
+  const onSelectGame = (id: number) => {
+    setSelectedGameId(id)
+    setGamesOpen(false)
+  }
+
+  const criticalMoveIndices = selectedGame?.analysis
+    ? findCriticalMoves(selectedGame.analysis.moves, selectedGame.analysis.initial_score ?? 0, selectedGame.user_color)
+    : []
+
+  useEffect(() => {
+    if (!selectedGame) return
+    boardState.loadMoves(selectedGame.moves)
+    boardState.setOrientation(selectedGame.user_color)
+    boardState.setInteractive(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGame?.id])
+
   return (
-    <div className="grid grid-cols-[220px_minmax(0,auto)_1fr] gap-5 p-6 h-full w-full overflow-hidden">
+    <>
+    <div className="flex items-center px-6 pt-3 flex-shrink-0">
+      <PanelToggleButtons
+        gamesOpen={gamesOpen}
+        onToggleGames={() => setGamesOpen(o => !o)}
+        analysisOpen={analysisOpen}
+        onToggleAnalysis={() => setAnalysisOpen(o => !o)}
+        analysisDisabled={!selectedGame}
+      />
+    </div>
+    <div className="grid grid-cols-[220px_minmax(0,auto)_1fr] gap-5 px-6 pb-6 pt-3 h-full w-full overflow-hidden">
 
       {/* Move list */}
       <section className={PANEL_CLASS}>
@@ -215,5 +263,36 @@ function BrowsePageInner() {
       </section>
 
     </div>
+
+    <GamesListSheet
+      open={gamesOpen}
+      onOpenChange={setGamesOpen}
+      games={gamesData?.items ?? []}
+      total={gamesData?.total ?? 0}
+      isLoading={gamesLoading}
+      isSelected={id => id === selectedGameId}
+      filters={gamesFilters}
+      onFiltersChange={patch => setGamesFilters(prev => ({ ...prev, ...patch }))}
+      analyzeStatus={analyzeStatus}
+      analyzeProgress={analyzeProgress}
+      onSelect={onSelectGame}
+      onAnalyze={analyze}
+      syncControls={{
+        isRunning,
+        syncStatus,
+        onSync: triggerSync,
+        isAnalyzingAll,
+        analyzeAllProgress,
+      pendingAnalyzeCount: pendingCount,
+        onAnalyzeAll: analyzeAll,
+      }}
+    />
+    <AnalysisSheet
+      open={analysisOpen}
+      onOpenChange={setAnalysisOpen}
+      game={selectedGame}
+      criticalMoveIndices={criticalMoveIndices}
+    />
+    </>
   )
 }

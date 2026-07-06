@@ -1,7 +1,5 @@
-import { useCallback } from 'react'
-import { useNavigate, useSearch } from '@tanstack/react-router'
 import { InboxIcon, ScanSearchIcon } from 'lucide-react'
-import type { AnalyzeStatus, Game } from '../../types'
+import type { AnalyzeStatus, Game, GamesFilters as GamesFiltersValue } from '../../types'
 import { timeControlLabel } from '../../utils/gameFormatters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -74,21 +72,17 @@ const TIME_CLASS_OPTIONS = [
   { label: 'Daily', value: 'daily' as const },
 ]
 
-function GamesFilters() {
-  const navigate = useNavigate()
-  const { result, color, time_class } = useSearch({ from: '/_auth/games/list' })
+type GamesFiltersProps = {
+  filters: GamesFiltersValue
+  onFiltersChange: (patch: Partial<GamesFiltersValue>) => void
+}
 
-  const setFilter = useCallback(
-    (patch: Partial<{ result: typeof result; color: typeof color; time_class: typeof time_class }>) =>
-      navigate({ from: '/games/list', to: '/games/list', search: prev => ({ ...prev, ...patch }), replace: true }),
-    [navigate],
-  )
-
+function GamesFilters({ filters, onFiltersChange }: GamesFiltersProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <FilterToggle value={result} options={RESULT_OPTIONS} onChange={v => setFilter({ result: v })} />
-      <FilterToggle value={color} options={COLOR_OPTIONS} onChange={v => setFilter({ color: v })} />
-      <FilterToggle value={time_class} options={TIME_CLASS_OPTIONS} onChange={v => setFilter({ time_class: v })} />
+      <FilterToggle value={filters.result} options={RESULT_OPTIONS} onChange={v => onFiltersChange({ result: v })} />
+      <FilterToggle value={filters.color} options={COLOR_OPTIONS} onChange={v => onFiltersChange({ color: v })} />
+      <FilterToggle value={filters.time_class} options={TIME_CLASS_OPTIONS} onChange={v => onFiltersChange({ time_class: v })} />
     </div>
   )
 }
@@ -130,16 +124,18 @@ function AnalyzeRowAction({ hasAnalysis, analyzeStatus, analyzeProgress, onAnaly
 
 export type GamesListHeaderProps = {
   total: number
+  filters: GamesFiltersValue
+  onFiltersChange: (patch: Partial<GamesFiltersValue>) => void
 }
 
-export function GamesListHeader({ total }: GamesListHeaderProps) {
+export function GamesListHeader({ total, filters, onFiltersChange }: GamesListHeaderProps) {
   return (
     <div className="flex flex-shrink-0 flex-col gap-2 border-b border-border px-3 py-2">
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Games</span>
         <Badge variant="secondary">{total}</Badge>
       </div>
-      <GamesFilters />
+      <GamesFilters filters={filters} onFiltersChange={onFiltersChange} />
     </div>
   )
 }
