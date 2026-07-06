@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OpeningsRouteImport } from './routes/openings'
+import { Route as DevPreviewRouteImport } from './routes/dev-preview'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
@@ -28,6 +29,11 @@ import { Route as AuthGamesGameIdRouteImport } from './routes/_auth/games/$gameI
 const OpeningsRoute = OpeningsRouteImport.update({
   id: '/openings',
   path: '/openings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevPreviewRoute = DevPreviewRouteImport.update({
+  id: '/dev-preview',
+  path: '/dev-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -102,6 +108,7 @@ const AuthGamesGameIdRoute = AuthGamesGameIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
   '/games': typeof AuthGamesRouteWithChildren
   '/account/$pathname': typeof AccountPathnameRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev-preview': typeof DevPreviewRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
+  '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
   '/_auth/games': typeof AuthGamesRouteWithChildren
   '/account/$pathname': typeof AccountPathnameRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dev-preview'
     | '/openings'
     | '/games'
     | '/account/$pathname'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dev-preview'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/dev-preview'
     | '/openings'
     | '/_auth/games'
     | '/account/$pathname'
@@ -201,6 +213,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  DevPreviewRoute: typeof DevPreviewRoute
   OpeningsRoute: typeof OpeningsRouteWithChildren
   AccountPathnameRoute: typeof AccountPathnameRoute
   AuthPathnameRoute: typeof AuthPathnameRoute
@@ -215,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/openings'
       fullPath: '/openings'
       preLoaderRoute: typeof OpeningsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev-preview': {
+      id: '/dev-preview'
+      path: '/dev-preview'
+      fullPath: '/dev-preview'
+      preLoaderRoute: typeof DevPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -365,6 +385,7 @@ const OpeningsRouteWithChildren = OpeningsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  DevPreviewRoute: DevPreviewRoute,
   OpeningsRoute: OpeningsRouteWithChildren,
   AccountPathnameRoute: AccountPathnameRoute,
   AuthPathnameRoute: AuthPathnameRoute,

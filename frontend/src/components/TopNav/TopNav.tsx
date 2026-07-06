@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import { authClient } from '../../lib/auth'
 import { useRouteMemoryStore } from '../../stores/routeMemoryStore'
+import { Button } from '@/components/ui/button'
 
 const navLinks = [
   { to: '/' as const, label: 'Free Play', exact: true },
@@ -62,12 +63,14 @@ export function TopNav() {
             <span className="hidden sm:inline">{session.user.name ?? session.user.email}</span>
           </Link>
         ) : (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => navigate({ to: '/', search: { modal: 'login' } })}
-            className="px-3 py-1.5 rounded text-sm border border-amber-500/30 text-amber-300/80 hover:border-amber-400/60 hover:text-amber-200 transition-colors"
+            className="bg-transparent border-amber-500/30 text-amber-300/80 hover:bg-transparent hover:border-amber-400/60 hover:text-amber-200"
           >
             Sign In
-          </button>
+          </Button>
         )}
       </div>
     </header>
