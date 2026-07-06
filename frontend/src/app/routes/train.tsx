@@ -1,16 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ChessBoard, ChessBoardProvider, getMoves, getActiveMove, useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getLastMove } from '../../../features/board'
-import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
+import { ChessBoard, ChessBoardProvider, getMoves, getActiveMove, useChessBoardStore, useChessBoardStoreApi, getCurrentFen, getLastMove } from '../../features/board'
+import { useBoardSettings } from '../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
-import { TrainSetup } from '../../../features/train/components/TrainSetup'
-import { TrainHeader } from '../../../features/train/components/TrainHeader'
-import { SessionSummary } from '../../../features/train/components/SessionSummary'
-import { CorrectBanner, GradeButtons } from '../../../features/train/components/MoveReveal'
-import { MovesList } from '../../../components/MovesList/MovesList'
-import { useDueCards } from '../../../data/hooks/useTrain'
-import { useDrillBoard } from './hooks'
+import { TrainSetup } from '../../features/train/components/TrainSetup'
+import { TrainHeader } from '../../features/train/components/TrainHeader'
+import { SessionSummary } from '../../features/train/components/SessionSummary'
+import { CorrectBanner, GradeButtons } from '../../features/train/components/MoveReveal'
+import { MovesList } from '../../components/MovesList/MovesList'
+import { useDueCards } from '../../data/hooks/useTrain'
+import { useDrillBoard } from '../../features/train/hooks/useDrillBoard'
 
-export const Route = createFileRoute('/openings/train')({
+export const Route = createFileRoute('/train')({
   component: TrainPage,
 })
 

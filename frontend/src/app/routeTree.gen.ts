@@ -9,17 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrainRouteImport } from './routes/train'
 import { Route as OpeningsRouteImport } from './routes/openings'
 import { Route as DevPreviewRouteImport } from './routes/dev-preview'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PuzzlesIndexRouteImport } from './routes/puzzles/index'
 import { Route as OpeningsIndexRouteImport } from './routes/openings/index'
 import { Route as PuzzlesPuzzleIdRouteImport } from './routes/puzzles/$puzzleId'
-import { Route as OpeningsTrainRouteImport } from './routes/openings/train'
 import { Route as OpeningsBrowseRouteImport } from './routes/openings/browse'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
 
+const TrainRoute = TrainRouteImport.update({
+  id: '/train',
+  path: '/train',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OpeningsRoute = OpeningsRouteImport.update({
   id: '/openings',
   path: '/openings',
@@ -50,11 +55,6 @@ const PuzzlesPuzzleIdRoute = PuzzlesPuzzleIdRouteImport.update({
   path: '/puzzles/$puzzleId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OpeningsTrainRoute = OpeningsTrainRouteImport.update({
-  id: '/train',
-  path: '/train',
-  getParentRoute: () => OpeningsRoute,
-} as any)
 const OpeningsBrowseRoute = OpeningsBrowseRouteImport.update({
   id: '/browse',
   path: '/browse',
@@ -75,10 +75,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
+  '/train': typeof TrainRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
-  '/openings/train': typeof OpeningsTrainRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
@@ -86,10 +86,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
+  '/train': typeof TrainRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
-  '/openings/train': typeof OpeningsTrainRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings': typeof OpeningsIndexRoute
   '/puzzles': typeof PuzzlesIndexRoute
@@ -99,10 +99,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
+  '/train': typeof TrainRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
-  '/openings/train': typeof OpeningsTrainRoute
   '/puzzles/$puzzleId': typeof PuzzlesPuzzleIdRoute
   '/openings/': typeof OpeningsIndexRoute
   '/puzzles/': typeof PuzzlesIndexRoute
@@ -113,10 +113,10 @@ export interface FileRouteTypes {
     | '/'
     | '/dev-preview'
     | '/openings'
+    | '/train'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
-    | '/openings/train'
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
@@ -124,10 +124,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dev-preview'
+    | '/train'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
-    | '/openings/train'
     | '/puzzles/$puzzleId'
     | '/openings'
     | '/puzzles'
@@ -136,10 +136,10 @@ export interface FileRouteTypes {
     | '/'
     | '/dev-preview'
     | '/openings'
+    | '/train'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
-    | '/openings/train'
     | '/puzzles/$puzzleId'
     | '/openings/'
     | '/puzzles/'
@@ -149,6 +149,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DevPreviewRoute: typeof DevPreviewRoute
   OpeningsRoute: typeof OpeningsRouteWithChildren
+  TrainRoute: typeof TrainRoute
   AccountPathnameRoute: typeof AccountPathnameRoute
   AuthPathnameRoute: typeof AuthPathnameRoute
   PuzzlesPuzzleIdRoute: typeof PuzzlesPuzzleIdRoute
@@ -157,6 +158,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/train': {
+      id: '/train'
+      path: '/train'
+      fullPath: '/train'
+      preLoaderRoute: typeof TrainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/openings': {
       id: '/openings'
       path: '/openings'
@@ -199,13 +207,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PuzzlesPuzzleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/openings/train': {
-      id: '/openings/train'
-      path: '/train'
-      fullPath: '/openings/train'
-      preLoaderRoute: typeof OpeningsTrainRouteImport
-      parentRoute: typeof OpeningsRoute
-    }
     '/openings/browse': {
       id: '/openings/browse'
       path: '/browse'
@@ -232,13 +233,11 @@ declare module '@tanstack/react-router' {
 
 interface OpeningsRouteChildren {
   OpeningsBrowseRoute: typeof OpeningsBrowseRoute
-  OpeningsTrainRoute: typeof OpeningsTrainRoute
   OpeningsIndexRoute: typeof OpeningsIndexRoute
 }
 
 const OpeningsRouteChildren: OpeningsRouteChildren = {
   OpeningsBrowseRoute: OpeningsBrowseRoute,
-  OpeningsTrainRoute: OpeningsTrainRoute,
   OpeningsIndexRoute: OpeningsIndexRoute,
 }
 
@@ -250,6 +249,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DevPreviewRoute: DevPreviewRoute,
   OpeningsRoute: OpeningsRouteWithChildren,
+  TrainRoute: TrainRoute,
   AccountPathnameRoute: AccountPathnameRoute,
   AuthPathnameRoute: AuthPathnameRoute,
   PuzzlesPuzzleIdRoute: PuzzlesPuzzleIdRoute,

@@ -7,6 +7,7 @@ const navLinks = [
   { to: '/' as const, label: 'Free Play', exact: true },
   { to: '/puzzles' as const, label: 'Puzzles', exact: false },
   { to: '/openings' as const, label: 'Openings', exact: false },
+  { to: '/train' as const, label: 'Train', exact: false },
 ]
 
 export function TopNav() {
