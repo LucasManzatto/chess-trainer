@@ -59,7 +59,7 @@ export function MovesList({ moves = [], activeMove, criticalMoveIndices = [], on
 
 function MovesHeader() {
   return (
-    <div className="px-4 h-11 flex items-center border-b border-white/[0.08] flex-shrink-0">
+    <div className="px-4 h-11 flex items-center border-white/[0.08] flex-shrink-0">
       <span className="text-white/80 font-semibold tracking-tight text-sm">
         Moves
       </span>

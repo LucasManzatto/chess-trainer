@@ -130,19 +130,18 @@ function BrowsePageInner() {
 
   return (
     <>
-    <div className="flex items-center px-6 pt-3 flex-shrink-0">
-      <PanelToggleButtons
-        gamesOpen={gamesOpen}
-        onToggleGames={() => setGamesOpen(o => !o)}
-        analysisOpen={analysisOpen}
-        onToggleAnalysis={() => setAnalysisOpen(o => !o)}
-        analysisDisabled={!selectedGame}
-      />
-    </div>
-    <div className="grid grid-cols-[220px_minmax(0,auto)_1fr] gap-5 px-6 pb-6 pt-3 h-full w-full overflow-hidden">
+    <div className="flex h-full w-full overflow-hidden">
+    <PanelToggleButtons
+      gamesOpen={gamesOpen}
+      onToggleGames={() => setGamesOpen(o => !o)}
+      analysisOpen={analysisOpen}
+      onToggleAnalysis={() => setAnalysisOpen(o => !o)}
+      analysisDisabled={!selectedGame}
+    />
+    <div className="grid grid-cols-[194px_minmax(0,auto)_1fr] min-w-0 flex-1 overflow-hidden">
 
       {/* Move list */}
-      <section className={PANEL_CLASS}>
+      <section className={`${PANEL_CLASS} h-full w-full`}>
         <MovesList
           moves={boardState.moves}
           activeMove={boardState.activeMove}
@@ -153,43 +152,43 @@ function BrowsePageInner() {
       </section>
 
       {/* Board + opening name + drill button */}
-      <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} pl-5 items-center justify-center`}>
-        <div className="flex flex-col items-stretch min-w-0">
-          <div className="flex items-end justify-between gap-3 px-1 pb-3 min-w-0">
-            {notesLoading ? (
-              <span className="text-2xl font-semibold tracking-tight text-white/20 italic select-none">
-                Loading...
-              </span>
-            ) : (
-              <PositionName
-                name={positionDetail.position?.name ?? null}
-                isSaving={upsert.isPending}
-                onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
-                className="text-2xl font-semibold tracking-tight text-white/90 cursor-text select-none truncate min-w-0"
+      <section className={`${PANEL_CLASS} ${DIVIDER_CLASS}`}>
+        <div className="flex h-11 w-full items-center justify-between gap-3 px-4 border-white/[0.08] flex-shrink-0">
+          {notesLoading ? (
+            <span className="text-sm font-semibold tracking-tight text-white/20 italic select-none">
+              Loading...
+            </span>
+          ) : (
+            <PositionName
+              name={positionDetail.position?.name ?? null}
+              isSaving={upsert.isPending}
+              onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
+              className="text-sm font-semibold tracking-tight text-white/90 cursor-text select-none truncate min-w-0"
+            />
+          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {annotations.annotationsDirty && (
+              <SaveAnnotationsButton
+                text={replaceAnnotations.isPending ? 'Saving...' : 'Save annotations'}
+                disabled={replaceAnnotations.isPending}
+                onSave={() =>
+                  replaceAnnotations.mutate(
+                    { arrows: annotations.draftArrows, circles: annotations.draftCircles },
+                    { onSuccess: annotations.markAnnotationsSaved },
+                  )
+                }
               />
             )}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {annotations.annotationsDirty && (
-                <SaveAnnotationsButton
-                  text={replaceAnnotations.isPending ? 'Saving...' : 'Save annotations'}
-                  disabled={replaceAnnotations.isPending}
-                  onSave={() =>
-                    replaceAnnotations.mutate(
-                      { arrows: annotations.draftArrows, circles: annotations.draftCircles },
-                      { onSuccess: annotations.markAnnotationsSaved },
-                    )
-                  }
-                />
-              )}
-              <AddToDrill
-                card={drillCard}
-                commitMove={commitMove}
-                isAdding={isAdding}
-                deleteCard={deleteCard}
-                isRemoving={isRemoving}
-              />
-            </div>
+            <AddToDrill
+              card={drillCard}
+              commitMove={commitMove}
+              isAdding={isAdding}
+              deleteCard={deleteCard}
+              isRemoving={isRemoving}
+            />
           </div>
+        </div>
+        <div className="flex flex-1 min-h-0 items-center justify-center pl-5 pr-12">
           <div className="flex flex-row gap-2">
             <div
               className="flex items-center rounded p-1"
@@ -222,7 +221,7 @@ function BrowsePageInner() {
       </section>
 
       {/* Notes per position — fills remaining right-side space */}
-      <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} pl-5 w-full`}>
+      <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} w-full`}>
         {notesLoading ? (
           <p className="text-sm text-white/25 p-4">Loading…</p>
         ) : (
@@ -262,6 +261,7 @@ function BrowsePageInner() {
         )}
       </section>
 
+    </div>
     </div>
 
     <GamesListSheet

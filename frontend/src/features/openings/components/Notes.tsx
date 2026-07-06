@@ -58,8 +58,8 @@ export function Notes({
 
 function NotesHeader() {
   return (
-    <div className="px-4 h-11 flex items-center border-b border-border flex-shrink-0">
-      <span className="text-foreground/80 font-semibold tracking-tight text-sm">
+    <div className="px-4 h-11 flex items-center border-white/[0.08] flex-shrink-0">
+      <span className="text-white/80 font-semibold tracking-tight text-sm">
         Notes
       </span>
     </div>

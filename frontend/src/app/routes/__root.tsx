@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { createRootRoute, Outlet, useNavigate } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui'
 import { authClient } from '../../lib/auth'
 import { TopNav } from '../../components/TopNav/TopNav'
@@ -41,7 +40,6 @@ function RootLayout() {
         </div>
         <LoginModal />
       </div>
-      {import.meta.env.DEV && <TanStackRouterDevtools />}
     </NeonAuthUIProvider>
   )
 }

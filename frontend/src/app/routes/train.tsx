@@ -106,7 +106,7 @@ function TrainPageInner() {
         </div>
       </section>
 
-      <section className="flex flex-col min-h-0 h-full w-[220px] overflow-hidden border border-white/[0.09] rounded">
+      <section className="flex flex-col min-h-0 h-full w-[176px] overflow-hidden border border-white/[0.09] rounded">
         <MovesList moves={boardState.moves} activeMove={boardState.activeMove} onMoveClick={onMoveClick} />
       </section>
     </div>
