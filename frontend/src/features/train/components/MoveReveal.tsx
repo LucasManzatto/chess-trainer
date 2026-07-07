@@ -1,4 +1,5 @@
 import { useReviewCard } from '../../../data/hooks/useTrain'
+import { Button } from '@/components/ui/button'
 import type { CardReview, RepertoireCard } from '../types'
 
 type Grade = CardReview['grade']
@@ -48,19 +49,20 @@ export function GradeButtons({ card, onGrade }: GradeButtonsProps) {
   return (
     <div className="grid grid-cols-4 gap-2 select-none">
       {GRADES.map(({ label, interval, color, grade }) => (
-        <button
+        <Button
           key={label}
+          variant="outline"
           onClick={() => {
             if (card) {
               reviewCard({ position_id: card.position_id, grade })
               onGrade()
             }
           }}
-          className={`flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg border transition-colors ${color}`}
+          className={`h-auto flex-col gap-0.5 py-2 px-1 bg-transparent ${color}`}
         >
           <span className="text-xs font-semibold">{label}</span>
           <span className="text-[10px] opacity-60">{interval}</span>
-        </button>
+        </Button>
       ))}
     </div>
   )

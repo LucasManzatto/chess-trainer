@@ -9,9 +9,10 @@ export function useDrillBoard(
   setOrientation: (orientation: 'white' | 'black') => void,
   setInteractive: (interactive: boolean) => void,
   reset: () => void,
+  initialMode: TrainMode = 'drill',
 ) {
   const [phase, setPhase] = useState<TrainPhase>({ type: 'idle' })
-  const [mode, setMode] = useState<TrainMode>('drill')
+  const [mode, setMode] = useState<TrainMode>(initialMode)
   const [currentCard, setCurrentCard] = useState<RepertoireCard | null>(null)
   // null = not yet graded, boolean = result of last answered card
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)

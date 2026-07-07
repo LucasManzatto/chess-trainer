@@ -15,11 +15,15 @@ import { usePositionComments, usePosition, usePositionAnnotations } from '../../
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
-import { useCommitMove, useDeleteCard } from '../../../data/hooks/useTrain'
+import { GradeButtons } from '../../../features/train/components/MoveReveal'
+import { useCommitMove, useDeleteCard, useDueCards } from '../../../data/hooks/useTrain'
+import { useDrillBoard } from '../../../features/train/hooks/useDrillBoard'
 import { useBrowseDrillCard } from './hooks'
 import { GamesListSheet } from '../../../features/games/components/GamesList/GamesListSheet'
 import { AnalysisSheet } from '../../../features/games/components/GamesTab/AnalysisSheet'
 import { PanelToggleButtons } from '../../../features/games/components/PanelToggleButtons'
+import { TrainSheet } from '../../../features/train/components/TrainSheet'
+import type { TrainMode } from '../../../features/train/types'
 import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync } from '../../../data/hooks/useGames'
 import { findCriticalMoves } from '../../../features/games/utils/analysisUtils'
 import type { GamesFilters } from '../../../features/games/types'
@@ -46,6 +50,7 @@ function BrowsePage() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function BrowsePageInner() {
+  // ─── Store data ────────────────────────────────────────────────────────────
   const boardState = useChessBoardStore(
     useShallow((s) => ({
       fen: getCurrentFen(s),
@@ -56,6 +61,7 @@ function BrowsePageInner() {
       orientation: s.orientation,
       interactive: s.interactive,
       lastMove: getCurrentLan(s),
+      history: s.history,
       applyMove: s.applyMove,
       navigateBack: s.navigateBack,
       navigateForward: s.navigateForward,
@@ -85,40 +91,61 @@ function BrowsePageInner() {
       markAnnotationsSaved: s.markAnnotationsSaved,
     })),
   )
-  const { score, isLoading } = usePositionEvaluation(boardState.fen)
 
-  const { data: positionDetail, isLoading: notesLoading, upsert } = usePosition(boardState.fen)
-  const { comments, arrows, circles } = positionDetail
-  const { add, remove: removeComment } = usePositionComments(boardState.fen)
-  const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
-  const { mutate: commitMove, isPending: isAdding } = useCommitMove()
-  const { mutate: deleteCard, isPending: isRemoving } = useDeleteCard()
-  const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
-
-  useEffect(() => {
-    annotations.syncAnnotations(arrows, circles)
-  }, [arrows, circles, annotations.syncAnnotations])
-
+  // ─── Local state ───────────────────────────────────────────────────────────
+  // (declared before API data — some queries below are parameterized by these)
   const [gamesOpen, setGamesOpen] = useState(false)
   const [analysisOpen, setAnalysisOpen] = useState(false)
+  const [trainMode, setTrainMode] = useState<TrainMode | null>(null)
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
   const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, time_class: null })
 
-  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.time_class)
-  const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
+  // ─── API data: position (eval, notes, comments, annotations) ────────────────
+  const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
+  const { data: positionDetail, isLoading: positionLoading, upsert } = usePosition(boardState.fen)
+  const { comments, arrows, circles } = positionDetail
+  const { add, remove: removeComment } = usePositionComments(boardState.fen)
+  const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
 
-  const { syncStatus, isRunning, triggerSync } = useGamesSync()
-  const { analyzeAll, isRunning: isAnalyzingAll, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
-  const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
+  // ─── API data: drill / train ─────────────────────────────────────────────
+  const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
+  const { mutate: commitMove, isPending: commitPending } = useCommitMove()
+  const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
+  const { data: dueCards = [] } = useDueCards()
+  const { phase: trainPhase, setPhase: setTrainPhase, currentCard: trainCard } = useDrillBoard(
+    dueCards,
+    boardState.history,
+    boardState.loadMoves,
+    boardState.setOrientation,
+    boardState.setInteractive,
+    boardState.reset,
+  )
+
+  // ─── API data: games ─────────────────────────────────────────────────────
+  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.time_class)
+  const { syncStatus, isRunning: syncRunning, triggerSync } = useGamesSync()
+  const { analyzeAll, isRunning: analyzeAllRunning, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
+
+  // ─── Derived state ─────────────────────────────────────────────────────────
+  const trainRevealed = trainMode !== null && trainPhase.type === 'revealed'
+  const trainHideOverlay = trainMode !== null && !trainRevealed
+  const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
+  const criticalMoveIndices = selectedGame?.analysis
+    ? findCriticalMoves(selectedGame.analysis.moves, selectedGame.analysis.initial_score ?? 0, selectedGame.user_color)
+    : []
 
   const onSelectGame = (id: number) => {
     setSelectedGameId(id)
     setGamesOpen(false)
   }
 
-  const criticalMoveIndices = selectedGame?.analysis
-    ? findCriticalMoves(selectedGame.analysis.moves, selectedGame.analysis.initial_score ?? 0, selectedGame.user_color)
-    : []
+  // useGameAnalyze depends on the derived `selectedGame` above.
+  const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
+
+  // ─── Effects ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    annotations.syncAnnotations(arrows, circles)
+  }, [arrows, circles, annotations.syncAnnotations])
 
   useEffect(() => {
     if (!selectedGame) return
@@ -131,12 +158,16 @@ function BrowsePageInner() {
   return (
     <>
     <div className="flex h-full w-full overflow-hidden">
-    <PanelToggleButtons
+  <PanelToggleButtons
       gamesOpen={gamesOpen}
       onToggleGames={() => setGamesOpen(o => !o)}
       analysisOpen={analysisOpen}
       onToggleAnalysis={() => setAnalysisOpen(o => !o)}
       analysisDisabled={!selectedGame}
+      drillOpen={trainMode === 'drill'}
+      onToggleDrill={() => setTrainMode(m => (m === 'drill' ? null : 'drill'))}
+      sparOpen={trainMode === 'spar'}
+      onToggleSpar={() => setTrainMode(m => (m === 'spar' ? null : 'spar'))}
     />
     <div className="grid grid-cols-[194px_minmax(0,auto)_1fr] min-w-0 flex-1 overflow-hidden">
 
@@ -154,7 +185,7 @@ function BrowsePageInner() {
       {/* Board + opening name + drill button */}
       <section className={`${PANEL_CLASS} ${DIVIDER_CLASS}`}>
         <div className="flex h-11 w-full items-center justify-between gap-3 px-4 border-white/[0.08] flex-shrink-0">
-          {notesLoading ? (
+          {positionLoading ? (
             <span className="text-sm font-semibold tracking-tight text-white/20 italic select-none">
               Loading...
             </span>
@@ -182,9 +213,9 @@ function BrowsePageInner() {
             <AddToDrill
               card={drillCard}
               commitMove={commitMove}
-              isAdding={isAdding}
+              isAdding={commitPending}
               deleteCard={deleteCard}
-              isRemoving={isRemoving}
+              isRemoving={deletePending}
             />
           </div>
         </div>
@@ -194,27 +225,34 @@ function BrowsePageInner() {
               className="flex items-center rounded p-1"
               style={{ height: config.boardSize }}
             >
-              <EvaluationBar score={score} isLoading={isLoading} />
+              <EvaluationBar score={evalScore} isLoading={evalLoading} />
             </div>
-            <div className="relative">
-              <ChessBoard
-                state={boardState}
-                arrows={annotations.draftArrows}
-                circles={annotations.draftCircles}
-                config={{ showBestMove: config.showBestMove, boardSize: config.boardSize }}
-                actions={{
-                  applyMove: boardState.applyMove,
-                  navigateBack: boardState.navigateBack,
-                  navigateForward: boardState.navigateForward,
-                  onDrawableChange: annotations.setDraftAnnotations,
-                }}
-              />
-              <ChessBoardSettings
-                config={config}
-                onConfigChange={updater => setConfig(updater(config))}
-                onFlipOrientation={boardState.flipOrientation}
-                onReset={boardState.reset}
-              />
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <ChessBoard
+                  state={boardState}
+                  arrows={trainHideOverlay ? [] : annotations.draftArrows}
+                  circles={trainHideOverlay ? [] : annotations.draftCircles}
+                  config={{ showBestMove: trainHideOverlay ? false : config.showBestMove, boardSize: config.boardSize }}
+                  actions={{
+                    applyMove: boardState.applyMove,
+                    navigateBack: boardState.navigateBack,
+                    navigateForward: boardState.navigateForward,
+                    onDrawableChange: annotations.setDraftAnnotations,
+                  }}
+                />
+                <ChessBoardSettings
+                  config={config}
+                  onConfigChange={updater => setConfig(updater(config))}
+                  onFlipOrientation={boardState.flipOrientation}
+                  onReset={boardState.reset}
+                />
+              </div>
+              {trainRevealed && (
+                <div className="w-full px-5 pt-3 pb-3">
+                  <GradeButtons card={trainCard} onGrade={() => setTrainPhase({ type: 'done' })} />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -222,7 +260,7 @@ function BrowsePageInner() {
 
       {/* Notes per position — fills remaining right-side space */}
       <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} w-full`}>
-        {notesLoading ? (
+        {trainMode !== null && trainPhase.type === 'awaiting_move' ? null : positionLoading ? (
           <p className="text-sm text-white/25 p-4">Loading…</p>
         ) : (
           <Notes
@@ -278,10 +316,10 @@ function BrowsePageInner() {
       onSelect={onSelectGame}
       onAnalyze={analyze}
       syncControls={{
-        isRunning,
+        isRunning: syncRunning,
         syncStatus,
         onSync: triggerSync,
-        isAnalyzingAll,
+        isAnalyzingAll: analyzeAllRunning,
         analyzeAllProgress,
       pendingAnalyzeCount: pendingCount,
         onAnalyzeAll: analyzeAll,
@@ -292,6 +330,20 @@ function BrowsePageInner() {
       onOpenChange={setAnalysisOpen}
       game={selectedGame}
       criticalMoveIndices={criticalMoveIndices}
+    />
+    <TrainSheet
+      open={trainMode === 'drill' && trainPhase.type === 'idle'}
+      onOpenChange={o => setTrainMode(o ? 'drill' : null)}
+      mode="drill"
+      onModeChange={setTrainMode}
+      onStart={() => setTrainPhase({ type: 'loading' })}
+    />
+    <TrainSheet
+      open={trainMode === 'spar' && trainPhase.type === 'idle'}
+      onOpenChange={o => setTrainMode(o ? 'spar' : null)}
+      mode="spar"
+      onModeChange={setTrainMode}
+      onStart={() => setTrainPhase({ type: 'loading' })}
     />
     </>
   )
