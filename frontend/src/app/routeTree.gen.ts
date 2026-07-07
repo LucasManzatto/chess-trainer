@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TrainRouteImport } from './routes/train'
 import { Route as OpeningsRouteImport } from './routes/openings'
 import { Route as DevPreviewRouteImport } from './routes/dev-preview'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,11 +19,6 @@ import { Route as OpeningsBrowseRouteImport } from './routes/openings/browse'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AccountPathnameRouteImport } from './routes/account/$pathname'
 
-const TrainRoute = TrainRouteImport.update({
-  id: '/train',
-  path: '/train',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OpeningsRoute = OpeningsRouteImport.update({
   id: '/openings',
   path: '/openings',
@@ -75,7 +69,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
-  '/train': typeof TrainRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
@@ -86,7 +79,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
-  '/train': typeof TrainRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
@@ -99,7 +91,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dev-preview': typeof DevPreviewRoute
   '/openings': typeof OpeningsRouteWithChildren
-  '/train': typeof TrainRoute
   '/account/$pathname': typeof AccountPathnameRoute
   '/auth/$pathname': typeof AuthPathnameRoute
   '/openings/browse': typeof OpeningsBrowseRoute
@@ -113,7 +104,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dev-preview'
     | '/openings'
-    | '/train'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
@@ -124,7 +114,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dev-preview'
-    | '/train'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
@@ -136,7 +125,6 @@ export interface FileRouteTypes {
     | '/'
     | '/dev-preview'
     | '/openings'
-    | '/train'
     | '/account/$pathname'
     | '/auth/$pathname'
     | '/openings/browse'
@@ -149,7 +137,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DevPreviewRoute: typeof DevPreviewRoute
   OpeningsRoute: typeof OpeningsRouteWithChildren
-  TrainRoute: typeof TrainRoute
   AccountPathnameRoute: typeof AccountPathnameRoute
   AuthPathnameRoute: typeof AuthPathnameRoute
   PuzzlesPuzzleIdRoute: typeof PuzzlesPuzzleIdRoute
@@ -158,13 +145,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/train': {
-      id: '/train'
-      path: '/train'
-      fullPath: '/train'
-      preLoaderRoute: typeof TrainRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/openings': {
       id: '/openings'
       path: '/openings'
@@ -249,7 +229,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DevPreviewRoute: DevPreviewRoute,
   OpeningsRoute: OpeningsRouteWithChildren,
-  TrainRoute: TrainRoute,
   AccountPathnameRoute: AccountPathnameRoute,
   AuthPathnameRoute: AuthPathnameRoute,
   PuzzlesPuzzleIdRoute: PuzzlesPuzzleIdRoute,

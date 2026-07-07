@@ -16,7 +16,7 @@ import { PositionName } from '../../../features/openings/components/PositionName
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { GradeButtons } from '../../../features/train/components/MoveReveal'
-import { useCommitMove, useDeleteCard, useDueCards } from '../../../data/hooks/useTrain'
+import { useCommitMove, useCoverage, useDeleteCard, useDueCards } from '../../../data/hooks/useTrain'
 import { useDrillBoard } from '../../../features/train/hooks/useDrillBoard'
 import { useBrowseDrillCard } from './hooks'
 import { GamesListSheet } from '../../../features/games/components/GamesList/GamesListSheet'
@@ -112,6 +112,7 @@ function BrowsePageInner() {
   const { mutate: commitMove, isPending: commitPending } = useCommitMove()
   const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
   const { data: dueCards = [] } = useDueCards()
+  const { data: coverage } = useCoverage()
   const { phase: trainPhase, setPhase: setTrainPhase, currentCard: trainCard } = useDrillBoard(
     dueCards,
     boardState.history,
@@ -337,6 +338,8 @@ function BrowsePageInner() {
       mode="drill"
       onModeChange={setTrainMode}
       onStart={() => setTrainPhase({ type: 'loading' })}
+      coverage={coverage}
+      dueCards={dueCards}
     />
     <TrainSheet
       open={trainMode === 'spar' && trainPhase.type === 'idle'}
@@ -344,6 +347,8 @@ function BrowsePageInner() {
       mode="spar"
       onModeChange={setTrainMode}
       onStart={() => setTrainPhase({ type: 'loading' })}
+      coverage={coverage}
+      dueCards={dueCards}
     />
     </>
   )

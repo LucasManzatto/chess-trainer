@@ -13,31 +13,6 @@ const GRADES: { label: string; grade: Grade; interval: string; color: string }[]
 ]
 // TODO: compute interval hints from card.interval_days + card.ease (SM-2 estimates)
 
-export function CorrectBanner({ correct }: { correct: boolean }) {
-  return (
-    <div className="absolute z-20 pointer-events-none" style={{ top: '50%', left: '50%', animation: 'popoverIn 150ms ease-out both' }}>
-      <div
-        className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border shadow-lg backdrop-blur-sm ${
-          correct
-            ? 'bg-green-950/80 border-green-400/30 text-green-300'
-            : 'bg-red-950/80 border-red-400/30 text-red-300'
-        }`}
-      >
-        {correct ? (
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 6 6 18" /><path d="m6 6 12 12" />
-          </svg>
-        )}
-        <span className="text-sm font-semibold tracking-wide">{correct ? 'Correct!' : 'Incorrect'}</span>
-      </div>
-    </div>
-  )
-}
-
 interface GradeButtonsProps {
   card: RepertoireCard | null
   onGrade: () => void

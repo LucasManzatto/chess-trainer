@@ -1,17 +1,17 @@
-import { useCoverage, useDueCards } from '../../../data/hooks/useTrain'
-import type { TrainMode, TrainPhase } from '../types'
+import { Button } from '@/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import type { CoverageStats, RepertoireCard, TrainMode, TrainPhase } from '../types'
 import { ResetCardsButton } from './ResetCardsButton'
 
 interface TrainSetupProps {
   mode: TrainMode
   setMode: (mode: TrainMode) => void
   setPhase: (phase: TrainPhase) => void
+  coverage: CoverageStats | undefined
+  dueCards: RepertoireCard[]
 }
 
-export function TrainSetup({ mode, setMode, setPhase }: TrainSetupProps) {
-  const { data: coverage } = useCoverage()
-  const { data: dueCards = [] } = useDueCards()
-
+export function TrainSetup({ mode, setMode, setPhase, coverage, dueCards }: TrainSetupProps) {
   const nothingDue = !!coverage && coverage.total > 0 && dueCards.length === 0
 
   return (
@@ -24,28 +24,20 @@ export function TrainSetup({ mode, setMode, setPhase }: TrainSetupProps) {
       </h1>
 
       {/* Mode tabs */}
-      <div className="flex w-full rounded-lg border border-white/[0.08] overflow-hidden">
-        <button
-          onClick={() => setMode('drill')}
-          className={`flex-1 py-2 text-sm font-medium transition-colors ${
-            mode === 'drill'
-              ? 'bg-amber-400/15 text-amber-300'
-              : 'text-white/40 hover:text-white/70'
-          }`}
-        >
+      <ToggleGroup
+        value={[mode]}
+        onValueChange={(v: string[]) => v[0] && setMode(v[0] as TrainMode)}
+        variant="outline"
+        spacing={0}
+        className="w-full"
+      >
+        <ToggleGroupItem value="drill" className="flex-1">
           Drill
-        </button>
-        <button
-          onClick={() => setMode('spar')}
-          className={`flex-1 py-2 text-sm font-medium transition-colors border-l border-white/[0.08] ${
-            mode === 'spar'
-              ? 'bg-amber-400/15 text-amber-300'
-              : 'text-white/40 hover:text-white/70'
-          }`}
-        >
+        </ToggleGroupItem>
+        <ToggleGroupItem value="spar" className="flex-1">
           Spar
-        </button>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
 
       {/* Coverage stats */}
       <div className="flex w-full gap-3">
@@ -72,13 +64,13 @@ export function TrainSetup({ mode, setMode, setPhase }: TrainSetupProps) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={() => setPhase({ type: 'loading' })}
         disabled={dueCards.length === 0}
-        className="w-full py-2.5 rounded-lg bg-amber-400/15 border border-amber-400/20 text-amber-300 text-sm font-medium transition-colors hover:bg-amber-400/25 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full h-auto py-2.5 bg-amber-400/15 border border-amber-400/20 text-amber-300 hover:bg-amber-400/25"
       >
         Start Session
-      </button>
+      </Button>
 
       <ResetCardsButton />
     </div>
