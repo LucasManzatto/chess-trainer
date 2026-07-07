@@ -45,7 +45,7 @@ export function AnnotationsList({
           <Button
             variant="ghost"
             size="sm"
-            className="self-start text-xs text-muted-foreground uppercase tracking-wide"
+            className="self-start text-xs border-0 text-muted-foreground uppercase tracking-wide"
           />
         }
       >

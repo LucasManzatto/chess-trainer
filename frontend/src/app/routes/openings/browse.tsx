@@ -104,7 +104,7 @@ function BrowsePageInner() {
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
   const { data: positionDetail, isLoading: positionLoading, upsert } = usePosition(boardState.fen)
   const { comments, arrows, circles } = positionDetail
-  const { add, remove: removeComment } = usePositionComments(boardState.fen)
+  const { add, update: updateComment } = usePositionComments(boardState.fen)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
 
   // ─── API data: drill / train ─────────────────────────────────────────────
@@ -268,8 +268,7 @@ function BrowsePageInner() {
             fen={boardState.fen}
             comments={comments}
             onAdd={(content) => add.mutate(content)}
-            addPending={add.isPending}
-            onRemove={(id) => removeComment.mutate(id)}
+            onUpdate={(id, content) => updateComment.mutate({ commentId: id, content })}
             arrows={annotations.draftArrows}
             circles={annotations.draftCircles}
             onArrowColorChange={(index, color) =>

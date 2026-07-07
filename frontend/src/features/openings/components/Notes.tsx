@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import { Trash2Icon } from 'lucide-react'
+import { ChevronRightIcon } from 'lucide-react'
 import { highlightMoves } from '../../../lib/chess'
 import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 import { AnnotationsList } from './AnnotationsList'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
 
 export type NotesProps = {
   fen: string
   comments: { id: number; content: string }[]
   onAdd: (content: string) => void
-  addPending: boolean
-  onRemove: (id: number) => void
+  onUpdate: (id: number, content: string) => void
   arrows: BoardAnnotationArrow[]
   circles: BoardAnnotationCircle[]
   onArrowColorChange: (index: number, color: string) => void
@@ -24,8 +25,7 @@ export function Notes({
   fen,
   comments,
   onAdd,
-  addPending,
-  onRemove,
+  onUpdate,
   arrows,
   circles,
   onArrowColorChange,
@@ -37,6 +37,7 @@ export function Notes({
     <div className="flex flex-col h-full overflow-hidden font-sans">
       <NotesHeader />
       <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-4 p-3">
+        <NotesSection comments={comments} onAdd={onAdd} onUpdate={onUpdate} />
         <AnnotationsList
           fen={fen}
           arrows={arrows}
@@ -46,12 +47,7 @@ export function Notes({
           onArrowCommentChange={onArrowCommentChange}
           onCircleCommentChange={onCircleCommentChange}
         />
-        <NotesSection
-          comments={comments}
-          onRemove={onRemove}
-        />
       </div>
-      <AddNoteForm onAdd={onAdd} pending={addPending} />
     </div>
   )
 }
@@ -68,61 +64,106 @@ function NotesHeader() {
 
 type NotesSectionProps = {
   comments: { id: number; content: string }[]
-  onRemove: (id: number) => void
+  onAdd: (content: string) => void
+  onUpdate: (id: number, content: string) => void
 }
 
-function NotesSection({ comments, onRemove }: NotesSectionProps) {
-  if (comments.length === 0) return null
+function NotesSection({ comments, onAdd, onUpdate }: NotesSectionProps) {
+  const [open, setOpen] = useState(true)
 
   return (
-    <ul className="flex flex-col gap-2">
-      {comments.map(c => (
-        <li key={c.id} className="group flex items-start justify-between gap-2 text-sm text-foreground/80 bg-muted/50 rounded-lg p-3 leading-snug">
-          <span>{highlightMoves(c.content)}</span>
+    <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col gap-2">
+      <CollapsibleTrigger
+        render={
           <Button
-            type="button"
             variant="ghost"
-            size="icon-sm"
-            onClick={() => onRemove(c.id)}
-            aria-label="Remove note"
-            className="text-transparent group-hover:text-muted-foreground hover:!text-destructive flex-shrink-0"
-          >
-            <Trash2Icon />
-          </Button>
-        </li>
-      ))}
-    </ul>
+            size="sm"
+            className="self-start border-0 text-xs text-muted-foreground uppercase tracking-wide"
+          />
+        }
+      >
+        <ChevronRightIcon data-icon="inline-start" className={cn('transition-transform', open && 'rotate-90')} />
+        Notes
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        {comments.length === 0 ? (
+          <NewNoteItem onSave={onAdd} />
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {comments.map(c => (
+              <NoteItem
+                key={`${c.id}:${c.content}`}
+                content={c.content}
+                onSave={content => onUpdate(c.id, content)}
+              />
+            ))}
+          </ul>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 
-function AddNoteForm({ onAdd, pending }: { onAdd: (content: string) => void; pending: boolean }) {
+function NewNoteItem({ onSave }: { onSave: (content: string) => void }) {
   const [draft, setDraft] = useState('')
 
-  function handleAdd() {
+  function commit() {
     const trimmed = draft.trim()
-    if (!trimmed) return
-    onAdd(trimmed)
-    setDraft('')
+    if (trimmed) {
+      onSave(trimmed)
+      setDraft('')
+    }
   }
 
   return (
-    <div className="flex-shrink-0 p-3 pt-2.5 border-t border-border flex flex-col gap-2">
-      <Textarea
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } }}
-        placeholder="Add a position note…"
-        rows={2}
-      />
-      <Button
-        type="button"
-        size="sm"
-        onClick={handleAdd}
-        disabled={pending || !draft.trim()}
-        className="self-end bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 dark:bg-amber-500/20 dark:hover:bg-amber-500/30"
-      >
-        {pending ? 'Saving…' : 'Add note'}
-      </Button>
-    </div>
+    <Textarea
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={commit}
+      placeholder="Add a note…"
+      rows={2}
+      className="text-sm bg-muted/50"
+    />
+  )
+}
+
+function NoteItem({
+  content,
+  onSave,
+}: {
+  content: string
+  onSave: (content: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(content)
+
+  function commit() {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== content) onSave(trimmed)
+    setEditing(false)
+  }
+
+  const rows = Math.min(8, Math.max(2, draft.split('\n').length))
+
+  return (
+    <li className="bg-muted/50 rounded-lg p-3">
+      {editing ? (
+        <Textarea
+          autoFocus
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          rows={rows}
+          className="text-sm"
+        />
+      ) : (
+        <div
+          onClick={() => setEditing(true)}
+          className="text-foreground/80 text-sm rounded px-1.5 py-1 -mx-1.5 -my-1 whitespace-pre-wrap cursor-text hover:bg-muted transition-colors"
+        >
+          {highlightMoves(draft)}
+        </div>
+      )}
+    </li>
   )
 }
