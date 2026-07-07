@@ -249,11 +249,9 @@ function BrowsePageInner() {
                   onReset={boardState.reset}
                 />
               </div>
-              {trainRevealed && (
-                <div className="w-full px-5 pt-3 pb-3">
-                  <GradeButtons card={trainCard} onGrade={() => setTrainPhase({ type: 'done' })} />
-                </div>
-              )}
+              <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
+                <GradeButtons card={trainCard} onGrade={() => setTrainPhase({ type: 'done' })} />
+              </div>
             </div>
           </div>
         </div>

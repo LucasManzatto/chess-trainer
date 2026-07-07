@@ -65,7 +65,14 @@ export function useDrillBoard(
     console.log('[train] phase: done', { dueCards: cards.length })
     reset()
     setInteractive(true)
-    if (cards.length > 0) setPhase({ type: 'loading' })
+    if (cards.length > 0) {
+      setPhase({ type: 'loading' })
+    } else {
+      // No cards left to review — exit the drill session back to setup.
+      setCurrentCard(null)
+      setIsCorrect(null)
+      setPhase({ type: 'idle' })
+    }
   }, [phase, reset, setInteractive])
 
   return { phase, setPhase, currentCard, setCurrentCard, isCorrect, mode, setMode }
