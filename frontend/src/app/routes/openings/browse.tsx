@@ -334,7 +334,7 @@ function BrowsePageInner() {
     />
     <TrainSheet
       open={trainMode === 'drill' && trainPhase.type === 'idle'}
-      onOpenChange={o => setTrainMode(o ? 'drill' : null)}
+      onClose={() => setTrainMode(null)}
       mode="drill"
       onModeChange={setTrainMode}
       onStart={() => setTrainPhase({ type: 'loading' })}
@@ -343,7 +343,7 @@ function BrowsePageInner() {
     />
     <TrainSheet
       open={trainMode === 'spar' && trainPhase.type === 'idle'}
-      onOpenChange={o => setTrainMode(o ? 'spar' : null)}
+      onClose={() => setTrainMode(null)}
       mode="spar"
       onModeChange={setTrainMode}
       onStart={() => setTrainPhase({ type: 'loading' })}

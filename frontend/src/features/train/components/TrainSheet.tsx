@@ -5,7 +5,7 @@ import type { CoverageStats, RepertoireCard, TrainMode } from '../types'
 
 type TrainSheetProps = {
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
   mode: TrainMode
   onModeChange: (mode: TrainMode) => void
   onStart: () => void
@@ -13,7 +13,7 @@ type TrainSheetProps = {
   dueCards: RepertoireCard[]
 }
 
-export function TrainSheet({ open, onOpenChange, mode, onModeChange, onStart, coverage, dueCards }: TrainSheetProps) {
+export function TrainSheet({ open, onClose, mode, onModeChange, onStart, coverage, dueCards }: TrainSheetProps) {
   const [localMode, setLocalMode] = useState(mode)
 
   const setMode = (next: TrainMode) => {
@@ -22,7 +22,7 @@ export function TrainSheet({ open, onOpenChange, mode, onModeChange, onStart, co
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={o => { if (!o) onClose() }}>
       <DialogContent className="flex max-w-[calc(100%-2rem)] w-[39vw] flex-col p-0 sm:max-w-none">
         <DialogHeader className="sr-only">
           <DialogTitle>{mode === 'drill' ? 'Drill' : 'Spar'}</DialogTitle>
