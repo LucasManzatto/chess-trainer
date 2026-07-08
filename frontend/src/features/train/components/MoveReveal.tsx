@@ -29,8 +29,7 @@ export function GradeButtons({ card, onGrade }: GradeButtonsProps) {
           variant="outline"
           onClick={() => {
             if (card) {
-              reviewCard({ position_id: card.position_id, grade })
-              onGrade()
+              reviewCard({ position_id: card.position_id, grade }, { onSuccess: onGrade })
             }
           }}
           className={`h-auto flex-col gap-0.5 py-2 px-1 bg-transparent ${color}`}

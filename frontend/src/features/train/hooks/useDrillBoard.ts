@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { HistoryEntry } from '../../../lib/chess/types'
 import type { TrainPhase, TrainMode, RepertoireCard } from '../types'
 import { useDueCards } from '../../../data/hooks/useTrain'
@@ -39,7 +39,9 @@ export function useDrillBoard(
   }
 
   // Derived transition: history is the source of truth for "did the user answer yet".
-  // Computed during render (not an effect) since it's a pure function of props/state.
+  // Computed during render (not an effect) since it only sets this hook's own state —
+  // setInteractive is an external store setter, so that part still needs an effect
+  // (calling it during render updates a different component mid-render).
   if (
     phase.type === 'awaiting_move' &&
     currentCard &&
@@ -48,9 +50,13 @@ export function useDrillBoard(
     const last = history[history.length - 1]
     const answerUci = currentCard.answer.slice(0, 4)
     setIsCorrect(last.from + last.to === answerUci)
-    setInteractive(false)
     setPhase({ type: 'revealed' })
   }
+
+  useEffect(() => {
+    if (phase.type !== 'revealed') return
+    setInteractive(false)
+  }, [phase, setInteractive])
 
   return { phase, setPhase, currentCard, setCurrentCard, isCorrect, mode, setMode, dueCards, startSession }
 }
