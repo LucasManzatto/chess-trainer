@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChessBoardProvider, getSanMoves, getMoves, getActiveMove } from '../../../features/board'
 import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessBoard'
@@ -9,6 +9,7 @@ import { getCurrentFen, getCurrentLan, getParentFen } from '../../../stores/boar
 import { usePositionEvaluation } from '../../../features/board/hooks/usePositionEvaluation'
 import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
+import { Button } from '@/components/ui/button'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 import { usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
@@ -95,7 +96,8 @@ function BrowsePageInner() {
   // (declared before API data — some queries below are parameterized by these)
   const [gamesOpen, setGamesOpen] = useState(false)
   const [analysisOpen, setAnalysisOpen] = useState(false)
-  const [trainMode, setTrainMode] = useState<TrainMode | null>(null)
+  const [drillDialogOpen, setDrillDialogOpen] = useState(false)
+  const [activeTrainMode, setActiveTrainMode] = useState<TrainMode | null>(null)
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
   const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null })
 
@@ -112,6 +114,9 @@ function BrowsePageInner() {
   const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
   const { data: dueCards = [] } = useDueCards()
   const { data: coverage } = useCoverage()
+  // Indirection so useDrillBoard can call the latest exitTrainingSession without a
+  // circular dependency (exitTrainingSession needs setTrainPhase, which the hook returns).
+  const exitTrainingSessionRef = useRef<() => void>(() => {})
   const { phase: trainPhase, setPhase: setTrainPhase, currentCard: trainCard } = useDrillBoard(
     dueCards,
     boardState.history,
@@ -119,6 +124,7 @@ function BrowsePageInner() {
     boardState.setOrientation,
     boardState.setInteractive,
     boardState.reset,
+    () => exitTrainingSessionRef.current(),
   )
 
   // ─── API data: games ─────────────────────────────────────────────────────
@@ -127,15 +133,36 @@ function BrowsePageInner() {
   const { analyzeAll, isRunning: analyzeAllRunning, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
 
   // ─── Derived state ─────────────────────────────────────────────────────────
-  const trainRevealed = trainMode !== null && trainPhase.type === 'revealed'
-  const trainHideOverlay = trainMode !== null && !trainRevealed
+  const trainRevealed = activeTrainMode !== null && trainPhase.type === 'revealed'
+  const trainHideOverlay = activeTrainMode !== null && !trainRevealed
   const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
   const criticalMoveIndices = selectedGame?.critical_moves ?? []
 
   const onSelectGame = (id: number) => {
+    exitTrainingSession()
     setSelectedGameId(id)
     setGamesOpen(false)
+
+    const game = gamesData?.items.find(g => g.id === id)
+    if (game) {
+      boardState.loadMoves(game.moves)
+      boardState.setOrientation(game.user_color)
+    }
   }
+
+  const startTrainSession = (mode: TrainMode) => {
+    setActiveTrainMode(mode)
+    setTrainPhase({ type: 'loading' })
+    setDrillDialogOpen(false)
+  }
+
+  const exitTrainingSession = () => {
+    setActiveTrainMode(null)
+    setTrainPhase({ type: 'idle' })
+    boardState.setInteractive(true)
+    boardState.reset()
+  }
+  exitTrainingSessionRef.current = exitTrainingSession
 
   // useGameAnalyze depends on the derived `selectedGame` above.
   const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
@@ -144,14 +171,6 @@ function BrowsePageInner() {
   useEffect(() => {
     annotations.syncAnnotations(arrows, circles)
   }, [arrows, circles, annotations.syncAnnotations])
-
-  useEffect(() => {
-    if (!selectedGame) return
-    boardState.loadMoves(selectedGame.moves)
-    boardState.setOrientation(selectedGame.user_color)
-    // boardState.setInteractive(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGame?.id])
 
   return (
     <>
@@ -162,10 +181,8 @@ function BrowsePageInner() {
       analysisOpen={analysisOpen}
       onToggleAnalysis={() => setAnalysisOpen(o => !o)}
       analysisDisabled={!selectedGame}
-      drillOpen={trainMode === 'drill'}
-      onToggleDrill={() => setTrainMode(m => (m === 'drill' ? null : 'drill'))}
-      sparOpen={trainMode === 'spar'}
-      onToggleSpar={() => setTrainMode(m => (m === 'spar' ? null : 'spar'))}
+      drillOpen={drillDialogOpen}
+      onToggleDrill={() => setDrillDialogOpen(true)}
     />
     <div className="grid grid-cols-[194px_minmax(0,auto)_1fr] min-w-0 flex-1 overflow-hidden">
 
@@ -251,6 +268,16 @@ function BrowsePageInner() {
               <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
                 <GradeButtons card={trainCard} onGrade={() => setTrainPhase({ type: 'done' })} />
               </div>
+              {activeTrainMode !== null && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={exitTrainingSession}
+                  className="mt-2 text-white/40 hover:text-white/70"
+                >
+                  Exit session
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -258,7 +285,7 @@ function BrowsePageInner() {
 
       {/* Notes per position — fills remaining right-side space */}
       <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} w-full`}>
-        {trainMode !== null && trainPhase.type === 'awaiting_move' ? null : positionLoading ? (
+        {activeTrainMode !== null && trainPhase.type === 'awaiting_move' ? null : positionLoading ? (
           <p className="text-sm text-white/25 p-4">Loading…</p>
         ) : (
           <Notes
@@ -329,20 +356,10 @@ function BrowsePageInner() {
       criticalMoveIndices={criticalMoveIndices}
     />
     <TrainSheet
-      open={trainMode === 'drill' && trainPhase.type === 'idle'}
-      onClose={() => setTrainMode(null)}
+      open={drillDialogOpen}
+      onOpenChange={open => { if (!open) setDrillDialogOpen(false) }}
       mode="drill"
-      onModeChange={setTrainMode}
-      onStart={() => setTrainPhase({ type: 'loading' })}
-      coverage={coverage}
-      dueCards={dueCards}
-    />
-    <TrainSheet
-      open={trainMode === 'spar' && trainPhase.type === 'idle'}
-      onClose={() => setTrainMode(null)}
-      mode="spar"
-      onModeChange={setTrainMode}
-      onStart={() => setTrainPhase({ type: 'loading' })}
+      onModeChange={startTrainSession}
       coverage={coverage}
       dueCards={dueCards}
     />

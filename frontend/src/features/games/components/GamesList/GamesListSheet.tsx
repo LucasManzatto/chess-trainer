@@ -46,6 +46,7 @@ export function GamesListSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
+        showCloseButton={false}
         className="data-[side=right]:w-[30vw] data-[side=right]:sm:max-w-none flex flex-col p-0"
       >
         <SheetHeader className="sr-only">

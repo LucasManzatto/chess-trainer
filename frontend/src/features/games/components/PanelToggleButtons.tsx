@@ -1,5 +1,5 @@
 import { useState, type ComponentType } from 'react'
-import { LayoutListIcon, ChartNoAxesColumnIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, TargetIcon, SwordsIcon } from 'lucide-react'
+import { LayoutListIcon, ChartNoAxesColumnIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, TargetIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -12,8 +12,6 @@ type PanelToggleButtonsProps = {
   analysisDisabled?: boolean
   drillOpen: boolean
   onToggleDrill: () => void
-  sparOpen: boolean
-  onToggleSpar: () => void
 }
 
 type NavItem = {
@@ -33,8 +31,6 @@ export function PanelToggleButtons({
   analysisDisabled,
   drillOpen,
   onToggleDrill,
-  sparOpen,
-  onToggleSpar,
 }: PanelToggleButtonsProps) {
   const [expanded, setExpanded] = useState(true)
 
@@ -42,7 +38,6 @@ export function PanelToggleButtons({
     { key: 'games', label: 'Games', icon: LayoutListIcon, active: gamesOpen, onClick: onToggleGames },
     { key: 'analysis', label: 'Analysis', icon: ChartNoAxesColumnIcon, active: analysisOpen, disabled: analysisDisabled, onClick: onToggleAnalysis },
     { key: 'drill', label: 'Drill', icon: TargetIcon, active: drillOpen, onClick: onToggleDrill },
-    { key: 'spar', label: 'Spar', icon: SwordsIcon, active: sparOpen, onClick: onToggleSpar },
   ]
 
   return (

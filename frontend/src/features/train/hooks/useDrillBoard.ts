@@ -9,6 +9,7 @@ export function useDrillBoard(
   setOrientation: (orientation: 'white' | 'black') => void,
   setInteractive: (interactive: boolean) => void,
   reset: () => void,
+  exitTrainingSession: () => void,
   initialMode: TrainMode = 'drill',
 ) {
   const [phase, setPhase] = useState<TrainPhase>({ type: 'idle' })
@@ -71,9 +72,9 @@ export function useDrillBoard(
       // No cards left to review — exit the drill session back to setup.
       setCurrentCard(null)
       setIsCorrect(null)
-      setPhase({ type: 'idle' })
+      exitTrainingSession()
     }
-  }, [phase, reset, setInteractive])
+  }, [phase, reset, setInteractive, exitTrainingSession])
 
   return { phase, setPhase, currentCard, setCurrentCard, isCorrect, mode, setMode }
 }
