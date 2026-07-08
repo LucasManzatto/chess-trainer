@@ -5,6 +5,7 @@ import { FlipBoardButton } from '../settings/FlipBoardButton'
 import { ShowThreatsButton } from '../settings/ShowThreatsButton'
 import { ShowBestMoveButton } from '../settings/ShowBestMoveButton'
 import { ResetBoardButton } from '../settings/ResetBoardButton'
+import { CopyFenButton } from '../settings/CopyFenButton'
 import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -12,6 +13,7 @@ import { Label } from '@/components/ui/label'
 
 export type ChessBoardSettingsProps = {
   config: BoardConfig
+  fen: string
   onConfigChange: (updater: (prev: BoardConfig) => BoardConfig) => void
   onFlipOrientation: () => void
   onReset: () => void
@@ -19,6 +21,7 @@ export type ChessBoardSettingsProps = {
 
 export function ChessBoardSettings({
   config,
+  fen,
   onConfigChange,
   onFlipOrientation,
   onReset,
@@ -70,6 +73,7 @@ export function ChessBoardSettings({
       <FlipBoardButton onClick={onFlipOrientation} />
       <ShowThreatsButton active={config.showThreats} onClick={() => update('showThreats', !config.showThreats)} />
       <ShowBestMoveButton active={config.showBestMove} onClick={() => update('showBestMove', !config.showBestMove)} />
+      <CopyFenButton fen={fen} />
       <ResetBoardButton onClick={onReset} />
     </div>
   )

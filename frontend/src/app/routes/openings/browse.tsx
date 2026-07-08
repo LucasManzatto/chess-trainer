@@ -152,7 +152,7 @@ function BrowsePageInner() {
     if (!selectedGame) return
     boardState.loadMoves(selectedGame.moves)
     boardState.setOrientation(selectedGame.user_color)
-    boardState.setInteractive(false)
+    // boardState.setInteractive(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGame?.id])
 
@@ -177,6 +177,7 @@ function BrowsePageInner() {
         <MovesList
           moves={boardState.moves}
           activeMove={boardState.activeMove}
+          criticalMoveIndices={criticalMoveIndices}
           onMoveClick={(moveNumber, color) =>
             boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
           }
@@ -244,6 +245,7 @@ function BrowsePageInner() {
                 />
                 <ChessBoardSettings
                   config={config}
+                  fen={boardState.fen}
                   onConfigChange={updater => setConfig(updater(config))}
                   onFlipOrientation={boardState.flipOrientation}
                   onReset={boardState.reset}
