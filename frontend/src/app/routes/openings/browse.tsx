@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChessBoardProvider, getSanMoves, getMoves, getActiveMove } from '../../../features/board'
 import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessBoard'
@@ -17,7 +17,7 @@ import { PositionName } from '../../../features/openings/components/PositionName
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { GradeButtons } from '../../../features/train/components/MoveReveal'
-import { useCommitMove, useCoverage, useDeleteCard, useDueCards } from '../../../data/hooks/useTrain'
+import { useCommitMove, useCoverage, useDeleteCard } from '../../../data/hooks/useTrain'
 import { useDrillBoard } from '../../../features/train/hooks/useDrillBoard'
 import { useBrowseDrillCard } from './hooks'
 import { GamesListSheet } from '../../../features/games/components/GamesList/GamesListSheet'
@@ -112,19 +112,21 @@ function BrowsePageInner() {
   const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
   const { mutate: commitMove, isPending: commitPending } = useCommitMove()
   const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
-  const { data: dueCards = [] } = useDueCards()
   const { data: coverage } = useCoverage()
-  // Indirection so useDrillBoard can call the latest exitTrainingSession without a
-  // circular dependency (exitTrainingSession needs setTrainPhase, which the hook returns).
-  const exitTrainingSessionRef = useRef<() => void>(() => {})
-  const { phase: trainPhase, setPhase: setTrainPhase, currentCard: trainCard } = useDrillBoard(
-    dueCards,
+
+  const exitTrainingSession = () => {
+    setActiveTrainMode(null)
+    boardState.setInteractive(true)
+    boardState.reset()
+  }
+
+  const { phase: trainPhase, currentCard: trainCard, dueCards, startSession } = useDrillBoard(
     boardState.history,
     boardState.loadMoves,
     boardState.setOrientation,
     boardState.setInteractive,
     boardState.reset,
-    () => exitTrainingSessionRef.current(),
+    exitTrainingSession,
   )
 
   // ─── API data: games ─────────────────────────────────────────────────────
@@ -152,17 +154,9 @@ function BrowsePageInner() {
 
   const startTrainSession = (mode: TrainMode) => {
     setActiveTrainMode(mode)
-    setTrainPhase({ type: 'loading' })
     setDrillDialogOpen(false)
+    void startSession()
   }
-
-  const exitTrainingSession = () => {
-    setActiveTrainMode(null)
-    setTrainPhase({ type: 'idle' })
-    boardState.setInteractive(true)
-    boardState.reset()
-  }
-  exitTrainingSessionRef.current = exitTrainingSession
 
   // useGameAnalyze depends on the derived `selectedGame` above.
   const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
@@ -266,7 +260,7 @@ function BrowsePageInner() {
                 />
               </div>
               <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
-                <GradeButtons card={trainCard} onGrade={() => setTrainPhase({ type: 'done' })} />
+                <GradeButtons card={trainCard} onGrade={() => void startSession()} />
               </div>
               {activeTrainMode !== null && (
                 <Button

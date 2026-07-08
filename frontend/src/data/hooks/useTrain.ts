@@ -35,7 +35,6 @@ export function useDueCards(limit = 20) {
   return useQuery({
     queryKey: trainKeys.due(),
     queryFn: ({ signal }) => trainApi.getDueCards(limit, signal),
-    refetchInterval: 5_000,
   })
 }
 
