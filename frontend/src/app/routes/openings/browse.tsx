@@ -109,16 +109,10 @@ function BrowsePageInner() {
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
 
   // ─── API data: drill / train ─────────────────────────────────────────────
-  const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves)
+  const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves, boardState.lastMove)
   const { mutate: commitMove, isPending: commitPending } = useCommitMove()
   const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
   const { data: coverage } = useCoverage()
-
-  const exitTrainingSession = () => {
-    setActiveTrainMode(null)
-    boardState.setInteractive(true)
-    boardState.reset()
-  }
 
   const { phase: trainPhase, currentCard: trainCard, dueCards, startSession } = useDrillBoard(
     boardState.history,
@@ -126,7 +120,6 @@ function BrowsePageInner() {
     boardState.setOrientation,
     boardState.setInteractive,
     boardState.reset,
-    exitTrainingSession,
   )
 
   // ─── API data: games ─────────────────────────────────────────────────────
@@ -140,6 +133,23 @@ function BrowsePageInner() {
   const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
   const criticalMoveIndices = selectedGame?.critical_moves ?? []
 
+  const runSession = async () => {
+    const found = await startSession()
+    if (!found) exitTrainingSession()
+  }
+
+  const startTrainSession = (mode: TrainMode) => {
+    setActiveTrainMode(mode)
+    setDrillDialogOpen(false)
+    void runSession()
+  }
+
+  const exitTrainingSession = () => {
+    setActiveTrainMode(null)
+    boardState.setInteractive(true)
+    boardState.reset()
+  }
+
   const onSelectGame = (id: number) => {
     exitTrainingSession()
     setSelectedGameId(id)
@@ -150,12 +160,6 @@ function BrowsePageInner() {
       boardState.loadMoves(game.moves)
       boardState.setOrientation(game.user_color)
     }
-  }
-
-  const startTrainSession = (mode: TrainMode) => {
-    setActiveTrainMode(mode)
-    setDrillDialogOpen(false)
-    void startSession()
   }
 
   // useGameAnalyze depends on the derived `selectedGame` above.
@@ -260,7 +264,7 @@ function BrowsePageInner() {
                 />
               </div>
               <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
-                <GradeButtons card={trainCard} onGrade={() => void startSession()} />
+                <GradeButtons card={trainCard} onGrade={() => void runSession()} />
               </div>
               {activeTrainMode !== null && (
                 <Button

@@ -9,7 +9,6 @@ export function useDrillBoard(
   setOrientation: (orientation: 'white' | 'black') => void,
   setInteractive: (interactive: boolean) => void,
   reset: () => void,
-  exitTrainingSession: () => void,
   initialMode: TrainMode = 'drill',
 ) {
   const { data: dueCards = [], refetch: refetchDueCards } = useDueCards()
@@ -20,7 +19,8 @@ export function useDrillBoard(
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
 
   // Loads the next due card. Called directly from the Start button and after
-  // grading, rather than reactively from a phase-watching effect.
+  // grading, rather than reactively from a phase-watching effect. Returns
+  // whether a card was found — the caller decides what to do if not.
   const startSession = async () => {
     reset()
     const { data } = await refetchDueCards()
@@ -28,14 +28,14 @@ export function useDrillBoard(
     if (!card) {
       setCurrentCard(null)
       setIsCorrect(null)
-      exitTrainingSession()
-      return
+      return false
     }
     loadMoves(card.line)
     setOrientation(card.side)
     setInteractive(true)
     setCurrentCard(card)
     setPhase({ type: 'awaiting_move' })
+    return true
   }
 
   // Derived transition: history is the source of truth for "did the user answer yet".
