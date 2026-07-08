@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -43,6 +43,8 @@ class Game(Base):
     analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     analyze_status: Mapped[str] = mapped_column(String(16), default="idle")
     analyze_progress: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    critical_moves: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), nullable=True)
 
 
 class SyncedMonth(Base):

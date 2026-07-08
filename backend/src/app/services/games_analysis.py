@@ -37,6 +37,34 @@ def compute_accuracy(win_percent_losses: list[float]) -> float:
     return max(0.0, min(100.0, raw))
 
 
+def find_critical_moves(
+    moves: list[MoveAnalysis],
+    initial_score: float,
+    user_color: str,
+) -> list[int]:
+    """Indices of the user's moves that dropped win% by more than 15 points."""
+    if not moves:
+        return []
+
+    timeline = [cp_to_win_percent(initial_score)] + [
+        cp_to_win_percent(m.score if m.score is not None else 0.0) for m in moves
+    ]
+    user_is_white = user_color == "white"
+    critical: list[int] = []
+
+    for i in range(len(moves)):
+        is_user_move = (i % 2 == 0) if user_is_white else (i % 2 != 0)
+        if not is_user_move:
+            continue
+
+        win_before = timeline[i] if user_is_white else 100 - timeline[i]
+        win_after = timeline[i + 1] if user_is_white else 100 - timeline[i + 1]
+        if win_before - win_after > 15:
+            critical.append(i)
+
+    return critical
+
+
 def _build_boards(moves: list[str]) -> list[chess.Board]:
     """One Board snapshot per position: starting position plus one per ply."""
     board = chess.Board()
@@ -124,6 +152,9 @@ async def run_analysis(
         )
 
         game.analysis = analysis.model_dump(mode="json")
+        game.critical_moves = find_critical_moves(
+            moves_analysis, analysis.initial_score or 0.0, game.user_color,
+        )
         game.analyze_status = "done"
         game.analyze_progress = {"current": total, "total": total}
         await session.commit()

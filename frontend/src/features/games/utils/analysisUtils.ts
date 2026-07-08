@@ -5,32 +5,6 @@ export function computeWinPercentTimeline(initialScore: number, scores: number[]
   return [cpToWinPercent(initialScore), ...scores.map(cpToWinPercent)]
 }
 
-export function findCriticalMoves(
-  moves: MoveAnalysis[],
-  initialScore: number,
-  userColor: 'white' | 'black',
-): number[] {
-  if (moves.length === 0) return []
-
-  const scores = moves.map(m => m.score ?? 0)
-  const timeline = computeWinPercentTimeline(initialScore, scores)
-  const userIsWhite = userColor === 'white'
-  const critical: number[] = []
-
-  for (let i = 0; i < moves.length; i++) {
-    const isUserMove = userIsWhite ? i % 2 === 0 : i % 2 !== 0
-    if (!isUserMove) continue
-
-    const winBefore = userIsWhite ? timeline[i] : 100 - timeline[i]
-    const winAfter = userIsWhite ? timeline[i + 1] : 100 - timeline[i + 1]
-    const drop = winBefore - winAfter
-
-    if (drop > 15) critical.push(i)
-  }
-
-  return critical
-}
-
 export function countClassifications(
   moves: MoveAnalysis[],
   userColor: 'white' | 'black',

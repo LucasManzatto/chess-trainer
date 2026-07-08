@@ -43,12 +43,14 @@ async def list_games(
     user_id: UserId,
     result: str | None = Query(default=None),
     color: str | None = Query(default=None),
-    time_class: str | None = Query(default=None),
     eco: str | None = Query(default=None),
+    has_critical_moves: bool | None = Query(default=None),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> GamesListResponse:
-    return await games_service.list_games(session, user_id, result, color, time_class, eco, limit, offset)
+    return await games_service.list_games(
+        session, user_id, result, color, eco, has_critical_moves, limit, offset,
+    )
 
 
 @router.put("/{game_id}/analysis", response_model=GameResponse)

@@ -25,7 +25,6 @@ import { PanelToggleButtons } from '../../../features/games/components/PanelTogg
 import { TrainSheet } from '../../../features/train/components/TrainSheet'
 import type { TrainMode } from '../../../features/train/types'
 import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync } from '../../../data/hooks/useGames'
-import { findCriticalMoves } from '../../../features/games/utils/analysisUtils'
 import type { GamesFilters } from '../../../features/games/types'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
@@ -98,7 +97,7 @@ function BrowsePageInner() {
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [trainMode, setTrainMode] = useState<TrainMode | null>(null)
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
-  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, time_class: null })
+  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null })
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -123,7 +122,7 @@ function BrowsePageInner() {
   )
 
   // ─── API data: games ─────────────────────────────────────────────────────
-  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.time_class)
+  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves)
   const { syncStatus, isRunning: syncRunning, triggerSync } = useGamesSync()
   const { analyzeAll, isRunning: analyzeAllRunning, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
 
@@ -131,9 +130,7 @@ function BrowsePageInner() {
   const trainRevealed = trainMode !== null && trainPhase.type === 'revealed'
   const trainHideOverlay = trainMode !== null && !trainRevealed
   const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
-  const criticalMoveIndices = selectedGame?.analysis
-    ? findCriticalMoves(selectedGame.analysis.moves, selectedGame.analysis.initial_score ?? 0, selectedGame.user_color)
-    : []
+  const criticalMoveIndices = selectedGame?.critical_moves ?? []
 
   const onSelectGame = (id: number) => {
     setSelectedGameId(id)

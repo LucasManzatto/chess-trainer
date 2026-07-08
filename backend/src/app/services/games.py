@@ -12,7 +12,7 @@ from ..schemas.games import (
     GamesListResponse,
     SyncStatusResponse,
 )
-from .games_analysis import run_analysis
+from .games_analysis import find_critical_moves, run_analysis
 from .games_sync import run_sync
 from .profile import get_or_create_profile
 
@@ -52,8 +52,8 @@ async def list_games(
     user_id: str,
     result: str | None,
     color: str | None,
-    time_class: str | None,
     eco: str | None,
+    has_critical_moves: bool | None,
     limit: int,
     offset: int,
 ) -> GamesListResponse:
@@ -63,10 +63,11 @@ async def list_games(
         q = q.where(Game.result == result)
     if color:
         q = q.where(Game.user_color == color)
-    if time_class:
-        q = q.where(Game.time_class == time_class)
     if eco:
         q = q.where(Game.eco.like(f"{eco}%"))
+    if has_critical_moves:
+        q = q.where(Game.critical_moves.isnot(None))
+        q = q.where(func.cardinality(Game.critical_moves) > 0)
 
     count_q = select(func.count()).select_from(q.subquery())
     total_result = await session.execute(count_q)
@@ -96,6 +97,9 @@ async def save_game_analysis(
         raise NotFoundError("Game not found")
 
     game.analysis = analysis.model_dump(mode="json")
+    game.critical_moves = find_critical_moves(
+        analysis.moves, analysis.initial_score or 0.0, game.user_color,
+    )
     await session.commit()
     await session.refresh(game)
     return GameResponse.model_validate(game)

@@ -50,6 +50,8 @@ export type Game = {
   pgn: string
   played_at: string | null
   analysis: GameAnalysis | null
+  reviewed: boolean
+  critical_moves: number[] | null
 }
 
 export type GamesListResponse = {
@@ -60,5 +62,5 @@ export type GamesListResponse = {
 export type GamesFilters = {
   result: 'win' | 'loss' | 'draw' | null
   color: 'white' | 'black' | null
-  time_class: 'bullet' | 'blitz' | 'rapid' | 'daily' | null
+  has_critical_moves: boolean | null
 }

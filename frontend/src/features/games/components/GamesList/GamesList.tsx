@@ -65,13 +65,6 @@ const COLOR_OPTIONS = [
   { label: '♚ Black', value: 'black' as const },
 ]
 
-const TIME_CLASS_OPTIONS = [
-  { label: 'Bullet', value: 'bullet' as const },
-  { label: 'Blitz', value: 'blitz' as const },
-  { label: 'Rapid', value: 'rapid' as const },
-  { label: 'Daily', value: 'daily' as const },
-]
-
 type GamesFiltersProps = {
   filters: GamesFiltersValue
   onFiltersChange: (patch: Partial<GamesFiltersValue>) => void
@@ -82,7 +75,14 @@ function GamesFilters({ filters, onFiltersChange }: GamesFiltersProps) {
     <div className="flex flex-wrap items-center gap-2">
       <FilterToggle value={filters.result} options={RESULT_OPTIONS} onChange={v => onFiltersChange({ result: v })} />
       <FilterToggle value={filters.color} options={COLOR_OPTIONS} onChange={v => onFiltersChange({ color: v })} />
-      <FilterToggle value={filters.time_class} options={TIME_CLASS_OPTIONS} onChange={v => onFiltersChange({ time_class: v })} />
+      <ToggleGroup
+        value={filters.has_critical_moves ? ['critical'] : []}
+        onValueChange={(v: string[]) => onFiltersChange({ has_critical_moves: v.length > 0 ? true : null })}
+        variant="outline"
+        size="sm"
+      >
+        <ToggleGroupItem value="critical">Critical moments</ToggleGroupItem>
+      </ToggleGroup>
     </div>
   )
 }
@@ -171,6 +171,8 @@ export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, on
           const isAnalysed = !!g.analysis
           const selected = isSelected(g.id)
           const hasAnalysis = isAnalysed || (selected && analyzeStatus === 'done')
+          const criticalCount = g.critical_moves?.length ?? 0
+          const firstCriticalMoveNumber = criticalCount > 0 ? Math.floor(g.critical_moves![0] / 2) + 1 : null
 
           return (
             <div
@@ -200,6 +202,11 @@ export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, on
                   <div className="mt-0.5 flex items-center gap-1.5">
                     {g.opening_name && (
                       <span className="truncate text-xs text-muted-foreground">{g.opening_name}</span>
+                    )}
+                    {criticalCount > 0 && (
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        · {criticalCount} critical{firstCriticalMoveNumber !== null && ` (1st @ move ${firstCriticalMoveNumber})`}
+                      </span>
                     )}
                   </div>
                 </div>

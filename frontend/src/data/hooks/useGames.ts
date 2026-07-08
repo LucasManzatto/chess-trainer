@@ -7,9 +7,9 @@ import type { AnalyzeStatus, GamesListResponse, SyncStatus, UserProfile } from '
 export function useGames(
   result: 'win' | 'loss' | 'draw' | null,
   color: 'white' | 'black' | null,
-  time_class: 'bullet' | 'blitz' | 'rapid' | 'daily' | null,
+  has_critical_moves: boolean | null = null,
 ) {
-  const filters = { result, color, time_class }
+  const filters = { result, color, has_critical_moves }
   const qc = useQueryClient()
   const query = useQuery<GamesListResponse>({
     queryKey: gamesKeys.list(filters),
@@ -18,7 +18,7 @@ export function useGames(
 
   const invalidate = useCallback(
     () => qc.invalidateQueries({ queryKey: gamesKeys.list(filters) }),
-    [qc, result, color, time_class],
+    [qc, result, color, has_critical_moves],
   )
 
   return { ...query, invalidate }

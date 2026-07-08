@@ -57,6 +57,8 @@ class GameResponse(BaseModel):
     pgn: str
     played_at: datetime | None
     analysis: dict | None = None
+    reviewed: bool
+    critical_moves: list[int] | None = None
 
 
 class GamesListResponse(BaseModel):

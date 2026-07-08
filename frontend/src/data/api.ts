@@ -31,7 +31,7 @@ export const gamesApi = {
     const params = new URLSearchParams()
     if (filters.result)     params.set('result', filters.result)
     if (filters.color)      params.set('color', filters.color)
-    if (filters.time_class) params.set('time_class', filters.time_class)
+    if (filters.has_critical_moves) params.set('has_critical_moves', 'true')
     params.set('limit', String(limit))
     params.set('offset', String(offset))
     return request<GamesListResponse>(`/api/v1/games?${params}`, { signal })
