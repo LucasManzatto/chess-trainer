@@ -82,9 +82,10 @@ export function useGamesSync() {
     }
   }, [startPolling])
 
-  const isRunning = syncStatus?.status === 'running' || isTriggerPending
+  const status: 'idle' | 'triggering' | 'running' =
+    isTriggerPending ? 'triggering' : syncStatus?.status === 'running' ? 'running' : 'idle'
 
-  return { syncStatus, isRunning, triggerSync }
+  return { syncStatus, status, triggerSync }
 }
 
 export function useGameAnalyze(gameId: number | null) {
@@ -142,32 +143,32 @@ export function useGameAnalyze(gameId: number | null) {
 
 export function useAnalyzeAllGames(games: { id: number; analysis?: unknown }[] | undefined) {
   const qc = useQueryClient()
-  const [isRunning, setIsRunning] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'running'>('idle')
   const [progress, setProgress] = useState({ current: 0, total: 0 })
 
   const pending = (games ?? []).filter(g => !g.analysis)
 
   const analyzeAll = useCallback(async () => {
     if (pending.length === 0) return
-    setIsRunning(true)
+    setStatus('running')
     setProgress({ current: 0, total: pending.length })
     try {
       for (let i = 0; i < pending.length; i++) {
         await gamesApi.analyze(pending[i].id)
         while (true) {
           await new Promise(r => setTimeout(r, 1000))
-          const status = await gamesApi.analyzeStatus(pending[i].id)
-          if (status.status !== 'running') break
+          const analyzeStatus = await gamesApi.analyzeStatus(pending[i].id)
+          if (analyzeStatus.status !== 'running') break
         }
         setProgress({ current: i + 1, total: pending.length })
         qc.invalidateQueries({ queryKey: gamesKeys.all() })
       }
     } finally {
-      setIsRunning(false)
+      setStatus('idle')
     }
   }, [pending, qc])
 
-  return { analyzeAll, isRunning, progress, pendingCount: pending.length }
+  return { analyzeAll, status, progress, pendingCount: pending.length }
 }
 
 export function useProfile() {

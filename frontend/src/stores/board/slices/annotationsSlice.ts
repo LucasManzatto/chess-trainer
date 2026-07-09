@@ -24,10 +24,18 @@ export function getInitialAnnotationsState(): AnnotationsState {
   }
 }
 
+function dedupeArrows(arrows: BoardAnnotationArrow[]): BoardAnnotationArrow[] {
+  const byKey = new Map<string, BoardAnnotationArrow>()
+  for (const a of arrows) byKey.set(`${a.from_square}-${a.to_square}`, a)
+  return [...byKey.values()]
+}
+
 export const createAnnotationsSlice: StateCreator<ChessBoardStoreType, [], [], AnnotationsSlice> = (set) => ({
   ...getInitialAnnotationsState(),
 
-  syncAnnotations: (arrows, circles) => set({ draftArrows: arrows, draftCircles: circles, annotationsDirty: false }),
-  setDraftAnnotations: (arrows, circles) => set({ draftArrows: arrows, draftCircles: circles, annotationsDirty: true }),
+  syncAnnotations: (arrows, circles) =>
+    set({ draftArrows: dedupeArrows(arrows), draftCircles: circles, annotationsDirty: false }),
+  setDraftAnnotations: (arrows, circles) =>
+    set({ draftArrows: dedupeArrows(arrows), draftCircles: circles, annotationsDirty: true }),
   markAnnotationsSaved: () => set({ annotationsDirty: false }),
 })

@@ -124,9 +124,9 @@ function BrowsePageInner() {
   )
 
   // ─── API data: games ─────────────────────────────────────────────────────
-  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move)
-  const { syncStatus, isRunning: syncRunning, triggerSync } = useGamesSync()
-  const { analyzeAll, isRunning: analyzeAllRunning, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
+  const { data: gamesData, status: gamesStatus } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move)
+  const { syncStatus, status: syncStatusPhase, triggerSync } = useGamesSync()
+  const { analyzeAll, status: analyzeAllStatus, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
   const { mutate: setGameReviewed } = useSetGameReviewed()
 
   // ─── Derived state ─────────────────────────────────────────────────────────
@@ -139,8 +139,12 @@ function BrowsePageInner() {
     ? (boardState.activeMove.moveNumber - 1) * 2 + (boardState.activeMove.color === 'black' ? 1 : 0)
     : -1
   const bestMove = config.showBestMove ? selectedGame?.analysis?.moves[activeMoveIndex + 1]?.best_move : undefined
-  const bestMoveArrow: BoardAnnotationArrow[] = bestMove
-    ? [{ from_square: bestMove.slice(0, 2), to_square: bestMove.slice(2, 4), color: 'B', comment: null }]
+  const bestMoveFromTo = bestMove ? { from_square: bestMove.slice(0, 2), to_square: bestMove.slice(2, 4) } : null
+  const hasMatchingDraftArrow = bestMoveFromTo
+    ? annotations.draftArrows.some(a => a.from_square === bestMoveFromTo.from_square && a.to_square === bestMoveFromTo.to_square)
+    : false
+  const bestMoveArrow: BoardAnnotationArrow[] = bestMoveFromTo && !hasMatchingDraftArrow
+    ? [{ ...bestMoveFromTo, color: 'B', comment: null }]
     : []
 
   const runSession = async () => {
@@ -335,34 +339,30 @@ function BrowsePageInner() {
     </div>
 
     <GamesListSheet
-      open={gamesOpen}
-      onOpenChange={setGamesOpen}
-      games={{
-        items: gamesData?.items ?? [],
+      data={{
+        games: gamesData?.items ?? [],
         total: gamesData?.total ?? 0,
-        isLoading: gamesLoading,
+        syncStatus,
+        analyzeAllProgress,
+        pendingAnalyzeCount: pendingCount,
       }}
-      filters={{
-        value: gamesFilters,
-        onChange: patch => setGamesFilters(prev => ({ ...prev, ...patch })),
-      }}
-      rowState={{
+      state={{
+        open: gamesOpen,
+        status: gamesStatus,
+        filters: gamesFilters,
         isSelected: id => id === selectedGameId,
         analyzeStatus,
         analyzeProgress,
+        sync: syncStatusPhase,
+        analyzeAll: analyzeAllStatus,
       }}
-      rowActions={{
+      actions={{
+        onOpenChange: setGamesOpen,
+        onFiltersChange: patch => setGamesFilters(prev => ({ ...prev, ...patch })),
         onSelect: onSelectGame,
         onAnalyze: analyze,
         onToggleReviewed: setGameReviewed,
-      }}
-      syncControls={{
-        isRunning: syncRunning,
-        syncStatus,
         onSync: triggerSync,
-        isAnalyzingAll: analyzeAllRunning,
-        analyzeAllProgress,
-        pendingAnalyzeCount: pendingCount,
         onAnalyzeAll: analyzeAll,
       }}
     />
