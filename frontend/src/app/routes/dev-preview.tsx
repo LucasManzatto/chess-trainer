@@ -36,7 +36,7 @@ function DevPreview() {
   const [selected, setSelected] = useState<number | null>(null)
   const [games] = useState(MOCK_GAMES)
   const [emptyMode, setEmptyMode] = useState(false)
-  const [filters, setFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null })
+  const [filters, setFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null })
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -56,6 +56,7 @@ function DevPreview() {
           analyzeProgress={{ current: 1, total: 3 }}
           onSelect={setSelected}
           onAnalyze={() => alert('analyze clicked')}
+          onToggleReviewed={(id, reviewed) => alert(`toggle reviewed ${id} -> ${reviewed}`)}
         />
       </div>
     </div>

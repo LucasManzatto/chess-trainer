@@ -1,8 +1,10 @@
-import { InboxIcon, ScanSearchIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CheckIcon, InboxIcon, ScanSearchIcon } from 'lucide-react'
 import type { AnalyzeStatus, Game, GamesFilters as GamesFiltersValue } from '../../types'
 import { timeControlLabel } from '../../utils/gameFormatters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
@@ -52,6 +54,41 @@ function FilterToggle<T extends string>({ value, options, onChange }: FilterTogg
   )
 }
 
+// ─── FirstCriticalMoveFilter ────────────────────────────────────────────────
+
+type FirstCriticalMoveFilterProps = {
+  value: number | null
+  onChange: (v: number | null) => void
+}
+
+function FirstCriticalMoveFilter({ value, onChange }: FirstCriticalMoveFilterProps) {
+  const [draft, setDraft] = useState(value !== null ? String(value) : '')
+
+  useEffect(() => {
+    setDraft(value !== null ? String(value) : '')
+  }, [value])
+
+  const commit = () => {
+    const n = draft === '' ? null : Number(draft)
+    onChange(n !== null && n >= 1 ? n : null)
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground whitespace-nowrap">First critical moment in:</span>
+      <Input
+        type="number"
+        min={1}
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+        className="h-7 w-16"
+      />
+    </div>
+  )
+}
+
 // ─── GamesFilters ─────────────────────────────────────────────────────────────
 
 const RESULT_OPTIONS = [
@@ -63,6 +100,11 @@ const RESULT_OPTIONS = [
 const COLOR_OPTIONS = [
   { label: '♔ White', value: 'white' as const },
   { label: '♚ Black', value: 'black' as const },
+]
+
+const REVIEWED_OPTIONS = [
+  { label: 'Unreviewed', value: 'unreviewed' as const },
+  { label: 'Reviewed', value: 'reviewed' as const },
 ]
 
 type GamesFiltersProps = {
@@ -83,6 +125,15 @@ function GamesFilters({ filters, onFiltersChange }: GamesFiltersProps) {
       >
         <ToggleGroupItem value="critical">Critical moments</ToggleGroupItem>
       </ToggleGroup>
+      <FilterToggle
+        value={filters.reviewed === null ? null : filters.reviewed ? 'reviewed' : 'unreviewed'}
+        options={REVIEWED_OPTIONS}
+        onChange={v => onFiltersChange({ reviewed: v === null ? null : v === 'reviewed' })}
+      />
+      <FirstCriticalMoveFilter
+        value={filters.first_critical_move}
+        onChange={v => onFiltersChange({ first_critical_move: v })}
+      />
     </div>
   )
 }
@@ -120,6 +171,26 @@ function AnalyzeRowAction({ hasAnalysis, analyzeStatus, analyzeProgress, onAnaly
   )
 }
 
+// ─── ReviewedRowAction ─────────────────────────────────────────────────────────
+
+type ReviewedRowActionProps = {
+  reviewed: boolean
+  onToggleReviewed: () => void
+}
+
+function ReviewedRowAction({ reviewed, onToggleReviewed }: ReviewedRowActionProps) {
+  return (
+    <Button
+      variant={reviewed ? 'default' : 'outline'}
+      size="icon-xs"
+      title={reviewed ? 'Mark as unreviewed' : 'Mark as reviewed'}
+      onClick={e => { e.stopPropagation(); onToggleReviewed() }}
+    >
+      <CheckIcon />
+    </Button>
+  )
+}
+
 // ─── GamesListHeader ──────────────────────────────────────────────────────────
 
 export type GamesListHeaderProps = {
@@ -149,9 +220,10 @@ export type GameListProps = {
   analyzeProgress: { current: number; total: number }
   onSelect: (gameId: number) => void
   onAnalyze: () => void
+  onToggleReviewed: (gameId: number, reviewed: boolean) => void
 }
 
-export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, onSelect, onAnalyze }: GameListProps) {
+export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, onSelect, onAnalyze, onToggleReviewed }: GameListProps) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       {games.length === 0 ? (
@@ -213,6 +285,10 @@ export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, on
                 <div className="flex shrink-0 flex-col items-end gap-0.5">
                   <span className="text-xs text-muted-foreground">{timeControlLabel(g.time_control)}</span>
                 </div>
+                <ReviewedRowAction
+                  reviewed={g.reviewed}
+                  onToggleReviewed={() => onToggleReviewed(g.id, !g.reviewed)}
+                />
                 <AnalyzeRowAction
                   hasAnalysis={hasAnalysis}
                   analyzeStatus={selected ? analyzeStatus : 'idle'}

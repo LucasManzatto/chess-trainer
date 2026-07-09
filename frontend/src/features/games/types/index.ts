@@ -63,4 +63,6 @@ export type GamesFilters = {
   result: 'win' | 'loss' | 'draw' | null
   color: 'white' | 'black' | null
   has_critical_moves: boolean | null
+  reviewed: boolean | null
+  first_critical_move: number | null
 }

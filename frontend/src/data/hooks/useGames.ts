@@ -8,8 +8,10 @@ export function useGames(
   result: 'win' | 'loss' | 'draw' | null,
   color: 'white' | 'black' | null,
   has_critical_moves: boolean | null = null,
+  reviewed: boolean | null = null,
+  first_critical_move: number | null = null,
 ) {
-  const filters = { result, color, has_critical_moves }
+  const filters = { result, color, has_critical_moves, reviewed, first_critical_move }
   const qc = useQueryClient()
   const query = useQuery<GamesListResponse>({
     queryKey: gamesKeys.list(filters),
@@ -18,10 +20,22 @@ export function useGames(
 
   const invalidate = useCallback(
     () => qc.invalidateQueries({ queryKey: gamesKeys.list(filters) }),
-    [qc, result, color, has_critical_moves],
+    [qc, result, color, has_critical_moves, reviewed, first_critical_move],
   )
 
   return { ...query, invalidate }
+}
+
+export function useSetGameReviewed() {
+  const qc = useQueryClient()
+  const mutate = useCallback(
+    async (gameId: number, reviewed: boolean) => {
+      await gamesApi.setReviewed(gameId, reviewed)
+      qc.invalidateQueries({ queryKey: gamesKeys.all() })
+    },
+    [qc],
+  )
+  return { mutate }
 }
 
 export function useGamesSync() {

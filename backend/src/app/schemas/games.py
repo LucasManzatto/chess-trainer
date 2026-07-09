@@ -23,6 +23,10 @@ class GameAnalysisCreate(BaseModel):
     initial_score: float | None = None
 
 
+class GameReviewedUpdate(BaseModel):
+    reviewed: bool
+
+
 class UserProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

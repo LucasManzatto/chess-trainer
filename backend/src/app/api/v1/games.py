@@ -10,6 +10,7 @@ from ...schemas.games import (
     AnalyzeStatusResponse,
     GameAnalysisCreate,
     GameResponse,
+    GameReviewedUpdate,
     GamesListResponse,
     SyncStatusResponse,
 )
@@ -45,11 +46,14 @@ async def list_games(
     color: str | None = Query(default=None),
     eco: str | None = Query(default=None),
     has_critical_moves: bool | None = Query(default=None),
+    reviewed: bool | None = Query(default=None),
+    first_critical_move: int | None = Query(default=None, ge=1),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> GamesListResponse:
     return await games_service.list_games(
-        session, user_id, result, color, eco, has_critical_moves, limit, offset,
+        session, user_id, result, color, eco,
+        has_critical_moves, reviewed, first_critical_move, limit, offset,
     )
 
 
@@ -61,6 +65,16 @@ async def save_game_analysis(
     user_id: UserId,
 ) -> GameResponse:
     return await games_service.save_game_analysis(session, game_id, user_id, analysis)
+
+
+@router.put("/{game_id}/reviewed", response_model=GameResponse)
+async def set_game_reviewed(
+    game_id: int,
+    update: GameReviewedUpdate,
+    session: Session,
+    user_id: UserId,
+) -> GameResponse:
+    return await games_service.set_game_reviewed(session, game_id, user_id, update)
 
 
 @router.post("/{game_id}/analyze", status_code=status.HTTP_202_ACCEPTED)

@@ -25,8 +25,9 @@ import { AnalysisSheet } from '../../../features/games/components/GamesTab/Analy
 import { PanelToggleButtons } from '../../../features/games/components/PanelToggleButtons'
 import { TrainSheet } from '../../../features/train/components/TrainSheet'
 import type { TrainMode } from '../../../features/train/types'
-import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync } from '../../../data/hooks/useGames'
+import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync, useSetGameReviewed } from '../../../data/hooks/useGames'
 import type { GamesFilters } from '../../../features/games/types'
+import type { BoardAnnotationArrow } from '../../../features/board/types'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -99,7 +100,7 @@ function BrowsePageInner() {
   const [drillDialogOpen, setDrillDialogOpen] = useState(false)
   const [activeTrainMode, setActiveTrainMode] = useState<TrainMode | null>(null)
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
-  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null })
+  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null })
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -123,15 +124,24 @@ function BrowsePageInner() {
   )
 
   // ─── API data: games ─────────────────────────────────────────────────────
-  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves)
+  const { data: gamesData, isLoading: gamesLoading } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move)
   const { syncStatus, isRunning: syncRunning, triggerSync } = useGamesSync()
   const { analyzeAll, isRunning: analyzeAllRunning, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
+  const { mutate: setGameReviewed } = useSetGameReviewed()
 
   // ─── Derived state ─────────────────────────────────────────────────────────
   const trainRevealed = activeTrainMode !== null && trainPhase.type === 'revealed'
   const trainHideOverlay = activeTrainMode !== null && !trainRevealed
   const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
   const criticalMoveIndices = selectedGame?.critical_moves ?? []
+
+  const activeMoveIndex = boardState.activeMove
+    ? (boardState.activeMove.moveNumber - 1) * 2 + (boardState.activeMove.color === 'black' ? 1 : 0)
+    : -1
+  const bestMove = config.showBestMove ? selectedGame?.analysis?.moves[activeMoveIndex + 1]?.best_move : undefined
+  const bestMoveArrow: BoardAnnotationArrow[] = bestMove
+    ? [{ from_square: bestMove.slice(0, 2), to_square: bestMove.slice(2, 4), color: 'B', comment: null }]
+    : []
 
   const runSession = async () => {
     const found = await startSession()
@@ -245,7 +255,7 @@ function BrowsePageInner() {
               <div className="relative">
                 <ChessBoard
                   state={boardState}
-                  arrows={trainHideOverlay ? [] : annotations.draftArrows}
+                  arrows={trainHideOverlay ? [] : [...annotations.draftArrows, ...bestMoveArrow]}
                   circles={trainHideOverlay ? [] : annotations.draftCircles}
                   config={{ showBestMove: trainHideOverlay ? false : config.showBestMove, boardSize: config.boardSize }}
                   actions={{
@@ -327,23 +337,32 @@ function BrowsePageInner() {
     <GamesListSheet
       open={gamesOpen}
       onOpenChange={setGamesOpen}
-      games={gamesData?.items ?? []}
-      total={gamesData?.total ?? 0}
-      isLoading={gamesLoading}
-      isSelected={id => id === selectedGameId}
-      filters={gamesFilters}
-      onFiltersChange={patch => setGamesFilters(prev => ({ ...prev, ...patch }))}
-      analyzeStatus={analyzeStatus}
-      analyzeProgress={analyzeProgress}
-      onSelect={onSelectGame}
-      onAnalyze={analyze}
+      games={{
+        items: gamesData?.items ?? [],
+        total: gamesData?.total ?? 0,
+        isLoading: gamesLoading,
+      }}
+      filters={{
+        value: gamesFilters,
+        onChange: patch => setGamesFilters(prev => ({ ...prev, ...patch })),
+      }}
+      rowState={{
+        isSelected: id => id === selectedGameId,
+        analyzeStatus,
+        analyzeProgress,
+      }}
+      rowActions={{
+        onSelect: onSelectGame,
+        onAnalyze: analyze,
+        onToggleReviewed: setGameReviewed,
+      }}
       syncControls={{
         isRunning: syncRunning,
         syncStatus,
         onSync: triggerSync,
         isAnalyzingAll: analyzeAllRunning,
         analyzeAllProgress,
-      pendingAnalyzeCount: pendingCount,
+        pendingAnalyzeCount: pendingCount,
         onAnalyzeAll: analyzeAll,
       }}
     />

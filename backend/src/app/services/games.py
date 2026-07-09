@@ -9,6 +9,7 @@ from ..schemas.games import (
     AnalyzeStatusResponse,
     GameAnalysisCreate,
     GameResponse,
+    GameReviewedUpdate,
     GamesListResponse,
     SyncStatusResponse,
 )
@@ -54,6 +55,8 @@ async def list_games(
     color: str | None,
     eco: str | None,
     has_critical_moves: bool | None,
+    reviewed: bool | None,
+    first_critical_move: int | None,
     limit: int,
     offset: int,
 ) -> GamesListResponse:
@@ -68,6 +71,14 @@ async def list_games(
     if has_critical_moves:
         q = q.where(Game.critical_moves.isnot(None))
         q = q.where(func.cardinality(Game.critical_moves) > 0)
+    if reviewed is not None:
+        q = q.where(Game.reviewed == reviewed)
+    if first_critical_move is not None:
+        ply_low = (first_critical_move - 1) * 2
+        ply_high = ply_low + 1
+        q = q.where(Game.critical_moves.isnot(None))
+        q = q.where(func.cardinality(Game.critical_moves) > 0)
+        q = q.where(Game.critical_moves[1].between(ply_low, ply_high))
 
     count_q = select(func.count()).select_from(q.subquery())
     total_result = await session.execute(count_q)
@@ -100,6 +111,25 @@ async def save_game_analysis(
     game.critical_moves = find_critical_moves(
         analysis.moves, analysis.initial_score or 0.0, game.user_color,
     )
+    await session.commit()
+    await session.refresh(game)
+    return GameResponse.model_validate(game)
+
+
+async def set_game_reviewed(
+    session: AsyncSession,
+    game_id: int,
+    user_id: str,
+    update: GameReviewedUpdate,
+) -> GameResponse:
+    result = await session.execute(
+        select(Game).where(Game.id == game_id, Game.user_id == user_id)
+    )
+    game = result.scalar_one_or_none()
+    if game is None:
+        raise NotFoundError("Game not found")
+
+    game.reviewed = update.reviewed
     await session.commit()
     await session.refresh(game)
     return GameResponse.model_validate(game)

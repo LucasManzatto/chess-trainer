@@ -32,6 +32,8 @@ export const gamesApi = {
     if (filters.result)     params.set('result', filters.result)
     if (filters.color)      params.set('color', filters.color)
     if (filters.has_critical_moves) params.set('has_critical_moves', 'true')
+    if (filters.reviewed !== null && filters.reviewed !== undefined) params.set('reviewed', String(filters.reviewed))
+    if (filters.first_critical_move) params.set('first_critical_move', String(filters.first_critical_move))
     params.set('limit', String(limit))
     params.set('offset', String(offset))
     return request<GamesListResponse>(`/api/v1/games?${params}`, { signal })
@@ -40,6 +42,11 @@ export const gamesApi = {
     request<Game>(`/api/v1/games/${gameId}/analysis`, {
       method: 'PUT',
       body: JSON.stringify({ ...analysis, analyzed_at: analysis.analyzed_at }),
+    }),
+  setReviewed: (gameId: number, reviewed: boolean) =>
+    request<Game>(`/api/v1/games/${gameId}/reviewed`, {
+      method: 'PUT',
+      body: JSON.stringify({ reviewed }),
     }),
   analyze: (gameId: number, depth = 18) =>
     request<{ detail: string }>(`/api/v1/games/${gameId}/analyze?depth=${depth}`, { method: 'POST' }),
