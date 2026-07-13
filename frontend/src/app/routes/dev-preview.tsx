@@ -54,7 +54,7 @@ function DevPreview() {
           isSelected={id => id === selected}
           analyzeStatus={selected === 2 ? 'running' : 'idle'}
           analyzeProgress={{ current: 1, total: 3 }}
-          onSelect={setSelected}
+          onSelect={game => setSelected(game.id)}
           onAnalyze={() => alert('analyze clicked')}
           onToggleReviewed={(id, reviewed) => alert(`toggle reviewed ${id} -> ${reviewed}`)}
         />

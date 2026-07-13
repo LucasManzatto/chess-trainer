@@ -24,7 +24,7 @@ type GamesListSheetProps = {
   actions: {
     onOpenChange: (open: boolean) => void
     onFiltersChange: (patch: Partial<GamesFilters>) => void
-    onSelect: (gameId: number) => void
+    onSelect: (game: Game) => void
     onAnalyze: () => void
     onToggleReviewed: (gameId: number, reviewed: boolean) => void
     onSync: () => void

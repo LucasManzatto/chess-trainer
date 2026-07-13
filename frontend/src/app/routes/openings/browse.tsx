@@ -17,17 +17,18 @@ import { PositionName } from '../../../features/openings/components/PositionName
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { GradeButtons } from '../../../features/train/components/MoveReveal'
-import { useCommitMove, useCoverage, useDeleteCard, useDueCards } from '../../../data/hooks/useTrain'
+import { useCommitMove, useCoverage, useDeleteCard } from '../../../data/hooks/useTrain'
 import { useBrowseDrillCard } from './hooks'
 import { GamesListSheet } from '../../../features/games/components/GamesList/GamesListSheet'
 import { AnalysisSheet } from '../../../features/games/components/GamesTab/AnalysisSheet'
 import { PanelToggleButtons } from '../../../features/games/components/PanelToggleButtons'
 import { TrainSheet } from '../../../features/train/components/TrainSheet'
-import type { TrainMode, TrainPhase, RepertoireCard } from '../../../features/train/types'
-import { toast } from 'sonner'
+import { useDrill, type PageMode } from '../../../features/train/hooks/useDrill'
+import type { TrainMode } from '../../../features/train/types'
 import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync, useSetGameReviewed } from '../../../data/hooks/useGames'
-import type { GamesFilters } from '../../../features/games/types'
+import type { GamesFilters, Game } from '../../../features/games/types'
 import type { BoardAnnotationArrow } from '../../../features/board/types'
+import type { ActiveMove } from '../../../lib/chess/types'
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -38,10 +39,26 @@ export const Route = createFileRoute('/openings/browse')({
 const PANEL_CLASS = 'flex flex-col min-h-0 overflow-hidden'
 const DIVIDER_CLASS = 'border-l border-white/[0.07]'
 
-type PageMode =
-  | { type: 'default' }
-  | { type: 'game_review'; gameId: number }
-  | { type: 'drill'; trainMode: TrainMode; phase: TrainPhase }
+function moveIndexFromMove(moveNumber: number, color: 'white' | 'black'): number {
+  return (moveNumber - 1) * 2 + (color === 'black' ? 1 : 0)
+}
+
+function getBestMoveArrow(
+  activeMove: ActiveMove | undefined,
+  selectedGame: Game | null,
+  showBestMove: boolean,
+  draftArrows: BoardAnnotationArrow[],
+): BoardAnnotationArrow[] {
+  if (!showBestMove) return []
+  const activeMoveIndex = activeMove ? moveIndexFromMove(activeMove.moveNumber, activeMove.color) : -1
+  const bestMove = selectedGame?.analysis?.moves[activeMoveIndex + 1]?.best_move
+  if (!bestMove) return []
+  const bestMoveFromTo = { from_square: bestMove.slice(0, 2), to_square: bestMove.slice(2, 4) }
+  const hasMatchingDraftArrow = draftArrows.some(
+    a => a.from_square === bestMoveFromTo.from_square && a.to_square === bestMoveFromTo.to_square,
+  )
+  return hasMatchingDraftArrow ? [] : [{ ...bestMoveFromTo, color: 'B', comment: null }]
+}
 
 // ─── Root (providers only) ────────────────────────────────────────────────────
 
@@ -105,13 +122,6 @@ function BrowsePageInner() {
   const [drillDialogOpen, setDrillDialogOpen] = useState(false)
   const [pageMode, setPageMode] = useState<PageMode>({ type: 'default' })
   const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null })
-  const [trainCard, setTrainCard] = useState<RepertoireCard | null>(null)
-
-  const activeTrainMode = pageMode.type === 'drill' ? pageMode.trainMode : null
-  const selectedGameId = pageMode.type === 'game_review' ? pageMode.gameId : null
-  const trainPhase: TrainPhase = pageMode.type === 'drill' ? pageMode.phase : { type: 'idle' }
-  const setTrainPhase = (phase: TrainPhase) =>
-    setPageMode(prev => (prev.type === 'drill' ? { ...prev, phase } : prev))
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -126,112 +136,47 @@ function BrowsePageInner() {
   const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
   const { data: coverage } = useCoverage()
 
-  const { data: dueCards = [], refetch: refetchDueCards } = useDueCards()
-
   // ─── API data: games ─────────────────────────────────────────────────────
   const { data: gamesData, status: gamesStatus } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move)
   const { syncStatus, status: syncStatusPhase, triggerSync } = useGamesSync()
   const { analyzeAll, status: analyzeAllStatus, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
   const { mutate: setGameReviewed } = useSetGameReviewed()
 
+  const {
+    dueCards,
+    trainPhase,
+    trainCard,
+    trainRevealed,
+    trainHideOverlay,
+    startTrainSession: startDrillSession,
+    setPageModeDrill,
+    setPageModeDefault,
+  } = useDrill(boardState, pageMode, setPageMode)
+
   // ─── Derived state ─────────────────────────────────────────────────────────
-  const trainRevealed = activeTrainMode !== null && trainPhase.type === 'revealed'
-  const trainHideOverlay = activeTrainMode !== null && !trainRevealed
-  const selectedGame = gamesData?.items.find(g => g.id === selectedGameId) ?? null
+  const selectedGameId = pageMode.type === 'game_review' ? pageMode.gameId : null
+  const selectedGame = pageMode.type === 'game_review' ? gamesData?.items.find(g => g.id === selectedGameId) ?? null : null
   const criticalMoveIndices = selectedGame?.critical_moves ?? []
-
-  const activeMoveIndex = boardState.activeMove
-    ? (boardState.activeMove.moveNumber - 1) * 2 + (boardState.activeMove.color === 'black' ? 1 : 0)
-    : -1
-  const bestMove = config.showBestMove ? selectedGame?.analysis?.moves[activeMoveIndex + 1]?.best_move : undefined
-  const bestMoveFromTo = bestMove ? { from_square: bestMove.slice(0, 2), to_square: bestMove.slice(2, 4) } : null
-  const hasMatchingDraftArrow = bestMoveFromTo
-    ? annotations.draftArrows.some(a => a.from_square === bestMoveFromTo.from_square && a.to_square === bestMoveFromTo.to_square)
-    : false
-  const bestMoveArrow: BoardAnnotationArrow[] = bestMoveFromTo && !hasMatchingDraftArrow
-    ? [{ ...bestMoveFromTo, color: 'B', comment: null }]
-    : []
-
-  // Derived transition: history is the source of truth for "did the user answer yet".
-  // Computed during render (not an effect) since it only sets this hook's own state —
-  // setInteractive is an external store setter, so that part still needs an effect
-  // (calling it during render updates a different component mid-render).
-  if (
-    trainPhase.type === 'awaiting_move' &&
-    trainCard &&
-    boardState.history.length === trainCard.line.length + 1
-  ) {
-    const last = boardState.history[boardState.history.length - 1]
-    const answerUci = trainCard.answer.slice(0, 4)
-    if (last.from + last.to === answerUci) toast.success('Correct!', { position: 'top-center' })
-    else toast.error('Incorrect', { position: 'top-center' })
-    setTrainPhase({ type: 'revealed' })
-  }
-
-  // Loads the next due card. Called directly from the Start button and after
-  // grading, rather than reactively from a phase-watching effect. Returns
-  // whether a card was found — the caller decides what to do if not.
-  const startSession = async () => {
-    const { data } = await refetchDueCards()
-    const card = data?.[0] ?? null
-    if (!card) {
-      boardState.reset()
-      setTrainCard(null)
-      setTrainPhase({ type: 'idle' })
-      boardState.setInteractive(true)
-      return false
-    }
-    boardState.loadMoves(card.line)
-    boardState.setOrientation(card.side)
-    boardState.setInteractive(true)
-    setTrainCard(card)
-    setTrainPhase({ type: 'awaiting_move' })
-    return true
-  }
-
-  const runSession = async () => {
-    const found = await startSession()
-    if (!found) exitTrainingSession()
-  }
+  const bestMoveArrow = getBestMoveArrow(boardState.activeMove, selectedGame, config.showBestMove, annotations.draftArrows)
+  const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
 
   const startTrainSession = (mode: TrainMode) => {
-    setPageMode({ type: 'drill', trainMode: mode, phase: { type: 'idle' } })
+    startDrillSession(mode)
     setDrillDialogOpen(false)
-    void runSession()
   }
 
-  const exitTrainingSession = () => {
-    setPageMode({ type: 'default' })
-    boardState.setInteractive(true)
-    boardState.reset()
-  }
-
-  const onSelectGame = (id: number) => {
-    exitTrainingSession()
-    setPageMode({ type: 'game_review', gameId: id })
+  const setPageModeGameReview = (game: Game) => {
+    setPageMode({ type: 'game_review', gameId: game.id })
     setGamesOpen(false)
-
-    const game = gamesData?.items.find(g => g.id === id)
-    if (game) {
-      boardState.loadMoves(game.moves)
-      boardState.setOrientation(game.user_color)
-    }
+    boardState.reset()
+    boardState.loadMoves(game.moves)
+    boardState.setOrientation(game.user_color)
   }
-
-  // useGameAnalyze depends on the derived `selectedGame` above.
-  const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
 
   // ─── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
     annotations.syncAnnotations(arrows, circles)
   }, [arrows, circles, annotations.syncAnnotations])
-
-  
-  useEffect(() => {
-    if (trainPhase.type !== 'revealed') return
-    boardState.setInteractive(false)
-  }, [trainPhase, boardState.setInteractive])
-
 
   return (
     <>
@@ -254,7 +199,7 @@ function BrowsePageInner() {
           activeMove={boardState.activeMove}
           criticalMoveIndices={criticalMoveIndices}
           onMoveClick={(moveNumber, color) =>
-            boardState.navigateToIndex((moveNumber - 1) * 2 + (color === 'black' ? 1 : 0))
+            boardState.navigateToIndex(moveIndexFromMove(moveNumber, color))
           }
         />
       </section>
@@ -302,7 +247,7 @@ function BrowsePageInner() {
               className="flex items-center rounded p-1 w-5"
               style={{ height: config.boardSize }}
             >
-              {activeTrainMode !== null && trainPhase.type === 'awaiting_move' ? null : (
+              {pageMode.type === 'drill' && trainPhase.type === 'awaiting_move' ? null : (
                 <EvaluationBar score={evalScore} isLoading={evalLoading} />
               )}
             </div>
@@ -325,17 +270,17 @@ function BrowsePageInner() {
                   fen={boardState.fen}
                   onConfigChange={updater => setConfig(updater(config))}
                   onFlipOrientation={boardState.flipOrientation}
-                  onReset={() => { setPageMode({ type: 'default' }); boardState.reset() }}
+                  onReset={setPageModeDefault}
                 />
               </div>
               <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
-                <GradeButtons card={trainCard} onGrade={() => void runSession()} />
+                <GradeButtons card={trainCard} onGrade={() => setPageModeDrill({ type: 'loading' })} />
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={exitTrainingSession}
-                className={`mt-2 text-white/40 hover:text-white/70${activeTrainMode !== null ? '' : ' invisible'}`}
+                onClick={setPageModeDefault}
+                className={`mt-2 text-white/40 hover:text-white/70${pageMode.type === 'drill' ? '' : ' invisible'}`}
               >
                 Exit session
               </Button>
@@ -346,7 +291,7 @@ function BrowsePageInner() {
 
       {/* Notes per position — fills remaining right-side space */}
       <section className={`${PANEL_CLASS} ${DIVIDER_CLASS} w-full`}>
-        {activeTrainMode !== null && trainPhase.type === 'awaiting_move' ? null : positionLoading ? (
+        {pageMode.type === 'drill' && trainPhase.type === 'awaiting_move' ? null : positionLoading ? (
           <p className="text-sm text-white/25 p-4">Loading…</p>
         ) : (
           <Notes
@@ -408,7 +353,7 @@ function BrowsePageInner() {
       actions={{
         onOpenChange: setGamesOpen,
         onFiltersChange: patch => setGamesFilters(prev => ({ ...prev, ...patch })),
-        onSelect: onSelectGame,
+        onSelect: setPageModeGameReview,
         onAnalyze: analyze,
         onToggleReviewed: setGameReviewed,
         onSync: triggerSync,

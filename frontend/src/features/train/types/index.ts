@@ -56,6 +56,6 @@ export type TrainMode = 'drill' | 'spar'
 export type TrainPhase =
   | { type: 'idle' }
   | { type: 'loading' }
-  | { type: 'awaiting_move' }
-  | { type: 'revealed' }
+  | { type: 'awaiting_move'; card: RepertoireCard }
+  | { type: 'revealed'; card: RepertoireCard }
   | { type: 'done' }

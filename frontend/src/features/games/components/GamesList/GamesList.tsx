@@ -218,7 +218,7 @@ export type GameListProps = {
   isSelected: (gameId: number) => boolean
   analyzeStatus: AnalyzeStatus
   analyzeProgress: { current: number; total: number }
-  onSelect: (gameId: number) => void
+  onSelect: (game: Game) => void
   onAnalyze: () => void
   onToggleReviewed: (gameId: number, reviewed: boolean) => void
 }
@@ -257,9 +257,9 @@ export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, on
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => onSelect(g.id)}
+                onClick={() => onSelect(g)}
                 className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onSelect(g.id) }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onSelect(g) }}
               >
                 <ResultBadge result={g.result} />
                 <div className="min-w-0 flex-1">
