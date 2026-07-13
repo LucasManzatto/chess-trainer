@@ -250,10 +250,12 @@ function BrowsePageInner() {
         <div className="flex flex-1 min-h-0 items-center justify-center pl-5 pr-12">
           <div className="flex flex-row gap-2">
             <div
-              className="flex items-center rounded p-1"
+              className="flex items-center rounded p-1 w-5"
               style={{ height: config.boardSize }}
             >
-              <EvaluationBar score={evalScore} isLoading={evalLoading} />
+              {activeTrainMode !== null && trainPhase.type === 'awaiting_move' ? null : (
+                <EvaluationBar score={evalScore} isLoading={evalLoading} />
+              )}
             </div>
             <div className="flex flex-col items-center">
               <div className="relative">
@@ -280,16 +282,14 @@ function BrowsePageInner() {
               <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
                 <GradeButtons card={trainCard} onGrade={() => void runSession()} />
               </div>
-              {activeTrainMode !== null && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={exitTrainingSession}
-                  className="mt-2 text-white/40 hover:text-white/70"
-                >
-                  Exit session
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={exitTrainingSession}
+                className={`mt-2 text-white/40 hover:text-white/70${activeTrainMode !== null ? '' : ' invisible'}`}
+              >
+                Exit session
+              </Button>
             </div>
           </div>
         </div>

@@ -160,6 +160,18 @@ function useChessground(config: Config) {
     apiRef.current?.set(config)
   }, [config])
 
+  // Chessground caches its bounding rect and only invalidates it on its own
+  // ResizeObserver (size change), window resize, or scroll — none of which
+  // fire when a sibling panel's width transitions and shifts the board
+  // sideways without resizing it. Recompute bounds once that transition ends.
+  useEffect(() => {
+    function onTransitionEnd(e: TransitionEvent) {
+      if (e.propertyName === 'width') apiRef.current?.redrawAll()
+    }
+    window.addEventListener('transitionend', onTransitionEnd)
+    return () => window.removeEventListener('transitionend', onTransitionEnd)
+  }, [])
+
   return elRef
 }
 

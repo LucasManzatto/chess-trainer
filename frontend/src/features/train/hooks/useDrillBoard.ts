@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import type { HistoryEntry } from '../../../lib/chess/types'
 import type { TrainPhase, TrainMode, RepertoireCard } from '../types'
 import { useDueCards } from '../../../data/hooks/useTrain'
@@ -22,12 +23,14 @@ export function useDrillBoard(
   // grading, rather than reactively from a phase-watching effect. Returns
   // whether a card was found — the caller decides what to do if not.
   const startSession = async () => {
-    reset()
     const { data } = await refetchDueCards()
     const card = data?.[0] ?? null
     if (!card) {
+      reset()
       setCurrentCard(null)
       setIsCorrect(null)
+      setPhase({ type: 'idle' })
+      setInteractive(true)
       return false
     }
     loadMoves(card.line)
@@ -50,6 +53,8 @@ export function useDrillBoard(
     const last = history[history.length - 1]
     const answerUci = currentCard.answer.slice(0, 4)
     setIsCorrect(last.from + last.to === answerUci)
+    if (last.from + last.to === answerUci) toast.success('Correct!', { position: 'top-center' })
+    else toast.error('Incorrect', { position: 'top-center' })
     setPhase({ type: 'revealed' })
   }
 

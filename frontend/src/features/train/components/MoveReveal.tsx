@@ -19,7 +19,7 @@ interface GradeButtonsProps {
 }
 
 export function GradeButtons({ card, onGrade }: GradeButtonsProps) {
-  const { mutate: reviewCard } = useReviewCard()
+  const { mutate: reviewCard, isPending } = useReviewCard()
 
   return (
     <div className="grid grid-cols-4 gap-2 select-none">
@@ -27,6 +27,7 @@ export function GradeButtons({ card, onGrade }: GradeButtonsProps) {
         <Button
           key={label}
           variant="outline"
+          disabled={isPending}
           onClick={() => {
             if (card) {
               reviewCard({ position_id: card.position_id, grade }, { onSuccess: onGrade })
