@@ -18,7 +18,7 @@ export function createChessBoardStore(config: ChessBoardStoreConfig = {}) {
 
     reset: () => set({
       ...getInitialGameState(),
-      ...getInitialDisplayState({ orientation: get().orientation, interactive: get().interactive }),
+      ...getInitialDisplayState(),
       ...getInitialAnnotationsState(),
     }),
   }))

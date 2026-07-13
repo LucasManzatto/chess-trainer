@@ -22,18 +22,20 @@ export type DisplaySliceConfig = {
   interactive?: boolean
 }
 
-export function getInitialDisplayState(config: DisplaySliceConfig = {}): Pick<DisplaySlice,
+export function getInitialDisplayState(): Pick<DisplaySlice,
   'orientation' | 'interactive'
 > {
   return {
-    orientation: config.orientation ?? 'white',
-    interactive: config.interactive ?? true,
+    orientation: 'white',
+    interactive: true,
   }
 }
 
 export function createDisplaySlice(config: DisplaySliceConfig = {}): StateCreator<ChessBoardStoreType, [], [], DisplaySlice> {
   return (set) => ({
-    ...getInitialDisplayState(config),
+    ...getInitialDisplayState(),
+    orientation: config.orientation ?? 'white',
+    interactive: config.interactive ?? true,
 
     setOrientation: (orientation) => set({ orientation }),
     flipOrientation: () => set(s => ({ orientation: s.orientation === 'white' ? 'black' : 'white' })),

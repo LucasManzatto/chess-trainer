@@ -17,14 +17,14 @@ import { PositionName } from '../../../features/openings/components/PositionName
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
 import { GradeButtons } from '../../../features/train/components/MoveReveal'
-import { useCommitMove, useCoverage, useDeleteCard } from '../../../data/hooks/useTrain'
-import { useDrillBoard } from '../../../features/train/hooks/useDrillBoard'
+import { useCommitMove, useCoverage, useDeleteCard, useDueCards } from '../../../data/hooks/useTrain'
 import { useBrowseDrillCard } from './hooks'
 import { GamesListSheet } from '../../../features/games/components/GamesList/GamesListSheet'
 import { AnalysisSheet } from '../../../features/games/components/GamesTab/AnalysisSheet'
 import { PanelToggleButtons } from '../../../features/games/components/PanelToggleButtons'
 import { TrainSheet } from '../../../features/train/components/TrainSheet'
-import type { TrainMode } from '../../../features/train/types'
+import type { TrainMode, TrainPhase, RepertoireCard } from '../../../features/train/types'
+import { toast } from 'sonner'
 import { useAnalyzeAllGames, useGameAnalyze, useGames, useGamesSync, useSetGameReviewed } from '../../../data/hooks/useGames'
 import type { GamesFilters } from '../../../features/games/types'
 import type { BoardAnnotationArrow } from '../../../features/board/types'
@@ -37,6 +37,11 @@ export const Route = createFileRoute('/openings/browse')({
 
 const PANEL_CLASS = 'flex flex-col min-h-0 overflow-hidden'
 const DIVIDER_CLASS = 'border-l border-white/[0.07]'
+
+type PageMode =
+  | { type: 'default' }
+  | { type: 'game_review'; gameId: number }
+  | { type: 'drill'; trainMode: TrainMode; phase: TrainPhase }
 
 // ─── Root (providers only) ────────────────────────────────────────────────────
 
@@ -98,9 +103,15 @@ function BrowsePageInner() {
   const [gamesOpen, setGamesOpen] = useState(false)
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [drillDialogOpen, setDrillDialogOpen] = useState(false)
-  const [activeTrainMode, setActiveTrainMode] = useState<TrainMode | null>(null)
-  const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
+  const [pageMode, setPageMode] = useState<PageMode>({ type: 'default' })
   const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null })
+  const [trainCard, setTrainCard] = useState<RepertoireCard | null>(null)
+
+  const activeTrainMode = pageMode.type === 'drill' ? pageMode.trainMode : null
+  const selectedGameId = pageMode.type === 'game_review' ? pageMode.gameId : null
+  const trainPhase: TrainPhase = pageMode.type === 'drill' ? pageMode.phase : { type: 'idle' }
+  const setTrainPhase = (phase: TrainPhase) =>
+    setPageMode(prev => (prev.type === 'drill' ? { ...prev, phase } : prev))
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -115,13 +126,7 @@ function BrowsePageInner() {
   const { mutate: deleteCard, isPending: deletePending } = useDeleteCard()
   const { data: coverage } = useCoverage()
 
-  const { phase: trainPhase, currentCard: trainCard, dueCards, startSession } = useDrillBoard(
-    boardState.history,
-    boardState.loadMoves,
-    boardState.setOrientation,
-    boardState.setInteractive,
-    boardState.reset,
-  )
+  const { data: dueCards = [], refetch: refetchDueCards } = useDueCards()
 
   // ─── API data: games ─────────────────────────────────────────────────────
   const { data: gamesData, status: gamesStatus } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move)
@@ -147,26 +152,63 @@ function BrowsePageInner() {
     ? [{ ...bestMoveFromTo, color: 'B', comment: null }]
     : []
 
+  // Derived transition: history is the source of truth for "did the user answer yet".
+  // Computed during render (not an effect) since it only sets this hook's own state —
+  // setInteractive is an external store setter, so that part still needs an effect
+  // (calling it during render updates a different component mid-render).
+  if (
+    trainPhase.type === 'awaiting_move' &&
+    trainCard &&
+    boardState.history.length === trainCard.line.length + 1
+  ) {
+    const last = boardState.history[boardState.history.length - 1]
+    const answerUci = trainCard.answer.slice(0, 4)
+    if (last.from + last.to === answerUci) toast.success('Correct!', { position: 'top-center' })
+    else toast.error('Incorrect', { position: 'top-center' })
+    setTrainPhase({ type: 'revealed' })
+  }
+
+  // Loads the next due card. Called directly from the Start button and after
+  // grading, rather than reactively from a phase-watching effect. Returns
+  // whether a card was found — the caller decides what to do if not.
+  const startSession = async () => {
+    const { data } = await refetchDueCards()
+    const card = data?.[0] ?? null
+    if (!card) {
+      boardState.reset()
+      setTrainCard(null)
+      setTrainPhase({ type: 'idle' })
+      boardState.setInteractive(true)
+      return false
+    }
+    boardState.loadMoves(card.line)
+    boardState.setOrientation(card.side)
+    boardState.setInteractive(true)
+    setTrainCard(card)
+    setTrainPhase({ type: 'awaiting_move' })
+    return true
+  }
+
   const runSession = async () => {
     const found = await startSession()
     if (!found) exitTrainingSession()
   }
 
   const startTrainSession = (mode: TrainMode) => {
-    setActiveTrainMode(mode)
+    setPageMode({ type: 'drill', trainMode: mode, phase: { type: 'idle' } })
     setDrillDialogOpen(false)
     void runSession()
   }
 
   const exitTrainingSession = () => {
-    setActiveTrainMode(null)
+    setPageMode({ type: 'default' })
     boardState.setInteractive(true)
     boardState.reset()
   }
 
   const onSelectGame = (id: number) => {
     exitTrainingSession()
-    setSelectedGameId(id)
+    setPageMode({ type: 'game_review', gameId: id })
     setGamesOpen(false)
 
     const game = gamesData?.items.find(g => g.id === id)
@@ -183,6 +225,13 @@ function BrowsePageInner() {
   useEffect(() => {
     annotations.syncAnnotations(arrows, circles)
   }, [arrows, circles, annotations.syncAnnotations])
+
+  
+  useEffect(() => {
+    if (trainPhase.type !== 'revealed') return
+    boardState.setInteractive(false)
+  }, [trainPhase, boardState.setInteractive])
+
 
   return (
     <>
@@ -276,7 +325,7 @@ function BrowsePageInner() {
                   fen={boardState.fen}
                   onConfigChange={updater => setConfig(updater(config))}
                   onFlipOrientation={boardState.flipOrientation}
-                  onReset={boardState.reset}
+                  onReset={() => { setPageMode({ type: 'default' }); boardState.reset() }}
                 />
               </div>
               <div className={`w-full px-5 pt-3 pb-3${trainRevealed ? '' : ' invisible'}`}>
