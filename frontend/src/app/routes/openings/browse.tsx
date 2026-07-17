@@ -142,6 +142,11 @@ function BrowsePageInner() {
   const { analyzeAll, status: analyzeAllStatus, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
   const { mutate: setGameReviewed } = useSetGameReviewed()
 
+  const setPageModeDefault = () => {
+    setPageMode({ type: 'default' })
+    boardState.reset()
+  }
+
   const {
     dueCards,
     trainPhase,
@@ -150,8 +155,7 @@ function BrowsePageInner() {
     trainHideOverlay,
     startTrainSession: startDrillSession,
     setPageModeDrill,
-    setPageModeDefault,
-  } = useDrill(boardState, pageMode, setPageMode)
+  } = useDrill(boardState, pageMode, setPageMode, setPageModeDefault)
 
   // ─── Derived state ─────────────────────────────────────────────────────────
   const selectedGameId = pageMode.type === 'game_review' ? pageMode.gameId : null

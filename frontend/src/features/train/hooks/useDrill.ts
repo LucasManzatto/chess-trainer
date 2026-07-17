@@ -22,6 +22,7 @@ export function useDrill(
   boardState: DrillBoardState,
   pageMode: PageMode,
   setPageMode: Dispatch<SetStateAction<PageMode>>,
+  setPageModeDefault: () => void,
 ) {
   const { data: dueCards = [], refetch: refetchDueCards } = useDueCards()
 
@@ -30,11 +31,6 @@ export function useDrill(
     trainPhase.type === 'awaiting_move' || trainPhase.type === 'revealed' ? trainPhase.card : null
   const trainRevealed = pageMode.type === 'drill' && trainPhase.type === 'revealed'
   const trainHideOverlay = pageMode.type === 'drill' && !trainRevealed
-
-  const setPageModeDefault = () => {
-    setPageMode({ type: 'default' })
-    boardState.reset()
-  }
 
   // Refetch due cards; land on awaiting_move with the card if one is found, done otherwise.
   const loadNextCard = () => {
@@ -104,6 +100,5 @@ export function useDrill(
     trainHideOverlay,
     startTrainSession,
     setPageModeDrill,
-    setPageModeDefault,
   }
 }
