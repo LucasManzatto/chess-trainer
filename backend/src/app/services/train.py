@@ -9,6 +9,7 @@ from ..exceptions import NotFoundError
 from ..models.openings import Position
 from ..models.repertoires import RepertoireCard
 from ..schemas.train import CardCreate, CardResponse, CoverageResponse, StatsResponse
+from ..utils.chess import position_key
 from .drill import DrillFields, compute_drill_fields, compute_sm2
 
 _GRADE_INTERVAL: dict[int, timedelta] = {
@@ -56,9 +57,9 @@ def _card_response(card: RepertoireCard, position: Position) -> CardResponse:
 async def _upsert_position(session: AsyncSession, fen: str, moves: list[str], name: str | None) -> Position:
     stmt = (
         pg_insert(Position)
-        .values(fen=fen, name=name, moves=moves)
+        .values(fen=fen, position_key=position_key(fen), name=name, moves=moves)
         .on_conflict_do_update(
-            index_elements=["fen"],
+            index_elements=["position_key"],
             set_={"moves": moves, "name": func.coalesce(name, Position.name)},
         )
         .returning(Position)

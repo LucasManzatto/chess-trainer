@@ -1,5 +1,4 @@
-from sqlalchemy import delete, func, literal, select
-from sqlalchemy.dialects.postgresql import aggregate_order_by
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,102 +21,70 @@ from ..schemas.openings import (
     PositionDetailResponse,
     PositionResponse,
 )
+from ..utils.chess import position_key
+
+
+async def _get_position_by_fen(session: AsyncSession, fen: str) -> Position | None:
+    result = await session.execute(select(Position).where(Position.position_key == position_key(fen)))
+    return result.scalar_one_or_none()
+
+
+async def _upsert_position_for_fen(session: AsyncSession, fen: str) -> Position:
+    stmt = (
+        pg_insert(Position)
+        .values(fen=fen, position_key=position_key(fen), name=None, moves=[])
+        .on_conflict_do_nothing(index_elements=["position_key"])
+    )
+    await session.execute(stmt)
+    pos = await _get_position_by_fen(session, fen)
+    assert pos is not None
+    return pos
 
 
 async def get_position(session: AsyncSession, fen: str) -> PositionResponse:
-    result = await session.execute(select(Position).where(Position.fen == fen))
-    pos = result.scalar_one_or_none()
+    pos = await _get_position_by_fen(session, fen)
     if pos is None:
         raise NotFoundError("Position not found")
     return PositionResponse.model_validate(pos)
 
 
 async def get_position_detail(session: AsyncSession, fen: str) -> PositionDetailResponse:
-    fen_row = select(literal(fen, type_=Position.fen.type).label("fen")).subquery("f")
+    pos = await _get_position_by_fen(session, fen)
 
-    comments_json = (
-        select(
-            func.json_agg(
-                aggregate_order_by(
-                    func.json_build_object(
-                        "id", PositionAnnotationComment.id,
-                        "fen", PositionAnnotationComment.fen,
-                        "content", PositionAnnotationComment.content,
-                        "created_at", PositionAnnotationComment.created_at,
-                    ),
-                    PositionAnnotationComment.created_at,
-                )
-            )
-        )
-        .where(PositionAnnotationComment.fen == fen_row.c.fen)
-        .correlate(fen_row)
-        .scalar_subquery()
+    if pos is None:
+        return PositionDetailResponse(position=None, comments=[], arrows=[], circles=[])
+
+    comments_result = await session.execute(
+        select(PositionAnnotationComment)
+        .where(PositionAnnotationComment.position_id == pos.id)
+        .order_by(PositionAnnotationComment.created_at)
     )
-
-    arrows_json = (
-        select(
-            func.json_agg(
-                func.json_build_object(
-                    "id", PositionAnnotationArrow.id,
-                    "fen", PositionAnnotationArrow.fen,
-                    "from_square", PositionAnnotationArrow.from_square,
-                    "to_square", PositionAnnotationArrow.to_square,
-                    "color", PositionAnnotationArrow.color,
-                    "comment", PositionAnnotationArrow.comment,
-                )
-            )
-        )
-        .where(PositionAnnotationArrow.fen == fen_row.c.fen)
-        .correlate(fen_row)
-        .scalar_subquery()
+    arrows_result = await session.execute(
+        select(PositionAnnotationArrow).where(PositionAnnotationArrow.position_id == pos.id)
     )
-
-    circles_json = (
-        select(
-            func.json_agg(
-                func.json_build_object(
-                    "id", PositionAnnotationCircle.id,
-                    "fen", PositionAnnotationCircle.fen,
-                    "square", PositionAnnotationCircle.square,
-                    "color", PositionAnnotationCircle.color,
-                    "comment", PositionAnnotationCircle.comment,
-                )
-            )
-        )
-        .where(PositionAnnotationCircle.fen == fen_row.c.fen)
-        .correlate(fen_row)
-        .scalar_subquery()
-    )
-
-    stmt = (
-        select(
-            Position.id, Position.fen, Position.name, Position.moves, Position.created_at,
-            comments_json, arrows_json, circles_json,
-        )
-        .select_from(fen_row.outerjoin(Position, Position.fen == fen_row.c.fen))
-    )
-    row = (await session.execute(stmt)).one()
-
-    position = (
-        PositionResponse(id=row[0], fen=row[1], name=row[2], moves=row[3], created_at=row[4])
-        if row[0] is not None
-        else None
+    circles_result = await session.execute(
+        select(PositionAnnotationCircle).where(PositionAnnotationCircle.position_id == pos.id)
     )
 
     return PositionDetailResponse(
-        position=position,
-        comments=[PositionAnnotationCommentResponse(**c) for c in (row[5] or [])],
-        arrows=[PositionAnnotationArrowResponse(**a) for a in (row[6] or [])],
-        circles=[PositionAnnotationCircleResponse(**c) for c in (row[7] or [])],
+        position=PositionResponse.model_validate(pos),
+        comments=[
+            PositionAnnotationCommentResponse.model_validate(c) for c in comments_result.scalars()
+        ],
+        arrows=[PositionAnnotationArrowResponse.model_validate(a) for a in arrows_result.scalars()],
+        circles=[
+            PositionAnnotationCircleResponse.model_validate(c) for c in circles_result.scalars()
+        ],
     )
 
 
 async def upsert_position(session: AsyncSession, body: PositionCreate) -> PositionResponse:
+    key = position_key(body.fen)
     stmt = (
         pg_insert(Position)
-        .values(fen=body.fen, name=body.name, moves=body.moves)
+        .values(fen=body.fen, position_key=key, name=body.name, moves=body.moves)
         .on_conflict_do_update(
-            index_elements=["fen"],
+            index_elements=["position_key"],
             set_={"name": func.coalesce(body.name, Position.name), "moves": body.moves},
         )
         .returning(Position)
@@ -128,8 +95,7 @@ async def upsert_position(session: AsyncSession, body: PositionCreate) -> Positi
 
 
 async def delete_position(session: AsyncSession, fen: str) -> None:
-    pos_result = await session.execute(select(Position).where(Position.fen == fen))
-    pos = pos_result.scalar_one_or_none()
+    pos = await _get_position_by_fen(session, fen)
     if pos is None:
         raise NotFoundError("Position not found")
     card_count = await session.scalar(
@@ -144,9 +110,12 @@ async def delete_position(session: AsyncSession, fen: str) -> None:
 async def list_position_comments(
     session: AsyncSession, fen: str
 ) -> list[PositionAnnotationCommentResponse]:
+    pos = await _get_position_by_fen(session, fen)
+    if pos is None:
+        return []
     result = await session.execute(
         select(PositionAnnotationComment)
-        .where(PositionAnnotationComment.fen == fen)
+        .where(PositionAnnotationComment.position_id == pos.id)
         .order_by(PositionAnnotationComment.created_at)
     )
     return [PositionAnnotationCommentResponse.model_validate(c) for c in result.scalars()]
@@ -155,12 +124,8 @@ async def list_position_comments(
 async def create_position_comment(
     session: AsyncSession, fen: str, body: PositionAnnotationCommentCreate
 ) -> PositionAnnotationCommentResponse:
-    await session.execute(
-        pg_insert(Position)
-        .values(fen=fen, name=None, moves=[])
-        .on_conflict_do_update(index_elements=["fen"], set_={"fen": fen})
-    )
-    comment = PositionAnnotationComment(fen=fen, content=body.content)
+    pos = await _upsert_position_for_fen(session, fen)
+    comment = PositionAnnotationComment(position_id=pos.id, content=body.content)
     session.add(comment)
     await session.commit()
     return PositionAnnotationCommentResponse.model_validate(comment)
@@ -194,21 +159,18 @@ async def delete_position_comment(session: AsyncSession, comment_id: int) -> Non
 async def replace_position_annotations(
     session: AsyncSession, fen: str, body: PositionAnnotationsReplace
 ) -> PositionAnnotationsResponse:
+    pos = await _upsert_position_for_fen(session, fen)
+
     await session.execute(
-        pg_insert(Position)
-        .values(fen=fen, name=None, moves=[])
-        .on_conflict_do_update(index_elements=["fen"], set_={"fen": fen})
+        delete(PositionAnnotationArrow).where(PositionAnnotationArrow.position_id == pos.id)
     )
     await session.execute(
-        delete(PositionAnnotationArrow).where(PositionAnnotationArrow.fen == fen)
-    )
-    await session.execute(
-        delete(PositionAnnotationCircle).where(PositionAnnotationCircle.fen == fen)
+        delete(PositionAnnotationCircle).where(PositionAnnotationCircle.position_id == pos.id)
     )
 
     arrows = [
         PositionAnnotationArrow(
-            fen=fen,
+            position_id=pos.id,
             from_square=a.from_square,
             to_square=a.to_square,
             color=a.color,
@@ -217,7 +179,7 @@ async def replace_position_annotations(
         for a in body.arrows
     ]
     circles = [
-        PositionAnnotationCircle(fen=fen, square=c.square, color=c.color, comment=c.comment)
+        PositionAnnotationCircle(position_id=pos.id, square=c.square, color=c.color, comment=c.comment)
         for c in body.circles
     ]
     session.add_all(arrows)

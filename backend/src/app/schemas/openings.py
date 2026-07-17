@@ -31,7 +31,7 @@ class PositionAnnotationCommentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    fen: str
+    position_id: str
     content: str
     created_at: datetime
 
@@ -47,7 +47,7 @@ class PositionAnnotationArrowResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    fen: str
+    position_id: str
     from_square: str
     to_square: str
     color: str
@@ -64,7 +64,7 @@ class PositionAnnotationCircleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    fen: str
+    position_id: str
     square: str
     color: str
     comment: str | None

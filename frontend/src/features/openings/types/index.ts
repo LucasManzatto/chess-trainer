@@ -10,14 +10,14 @@ export type Position = {
 
 export type PositionComment = {
   id: number
-  fen: string
+  position_id: string
   content: string
   created_at: string
 }
 
-export type PositionAnnotationArrow = BoardAnnotationArrow & { id: number; fen: string }
+export type PositionAnnotationArrow = BoardAnnotationArrow & { id: number; position_id: string }
 
-export type PositionAnnotationCircle = BoardAnnotationCircle & { id: number; fen: string }
+export type PositionAnnotationCircle = BoardAnnotationCircle & { id: number; position_id: string }
 
 export type PositionDetail = {
   position: Position | null
