@@ -52,6 +52,7 @@ export type Game = {
   analysis: GameAnalysis | null
   reviewed: boolean
   critical_moves: number[] | null
+  left_repertoire_ply: number | null
 }
 
 export type GamesListResponse = {
@@ -65,4 +66,5 @@ export type GamesFilters = {
   has_critical_moves: boolean | null
   reviewed: boolean | null
   first_critical_move: number | null
+  left_repertoire: boolean | null
 }

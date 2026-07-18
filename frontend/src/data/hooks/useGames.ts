@@ -10,8 +10,9 @@ export function useGames(
   has_critical_moves: boolean | null = null,
   reviewed: boolean | null = null,
   first_critical_move: number | null = null,
+  left_repertoire: boolean | null = null,
 ) {
-  const filters = { result, color, has_critical_moves, reviewed, first_critical_move }
+  const filters = { result, color, has_critical_moves, reviewed, first_critical_move, left_repertoire }
   const qc = useQueryClient()
   const query = useQuery<GamesListResponse>({
     queryKey: gamesKeys.list(filters),
@@ -20,7 +21,7 @@ export function useGames(
 
   const invalidate = useCallback(
     () => qc.invalidateQueries({ queryKey: gamesKeys.list(filters) }),
-    [qc, result, color, has_critical_moves, reviewed, first_critical_move],
+    [qc, result, color, has_critical_moves, reviewed, first_critical_move, left_repertoire],
   )
 
   return { ...query, invalidate }

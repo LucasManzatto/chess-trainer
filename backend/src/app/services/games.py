@@ -1,6 +1,6 @@
 import httpx
 from fastapi import BackgroundTasks
-from sqlalchemy import func, select
+from sqlalchemy import Integer, func, select, text, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..exceptions import BadRequestError, ConflictError, NotFoundError
@@ -16,6 +16,28 @@ from ..schemas.games import (
 from .games_analysis import find_critical_moves, run_analysis
 from .games_sync import run_sync
 from .profile import get_or_create_profile
+
+# Ply (1-indexed into games.moves) where the game's move first diverges from a
+# repertoire card's line, or NULL if the game never reached a tracked branch
+# or always matched it. Computed live (not stored) since repertoire cards
+# change independently of games and this is cheap array comparison, no engine.
+_LEFT_REPERTOIRE_PLY = text("""
+    (
+      SELECT c.n
+      FROM (
+        SELECT rc.side, p.moves AS line, array_length(p.moves, 1) AS n
+        FROM repertoire_cards rc
+        JOIN positions p ON p.id = rc.position_id
+        WHERE rc.user_id = :left_rep_user_id
+      ) c
+      WHERE c.side = games.user_color
+        AND array_length(games.moves, 1) >= c.n
+        AND games.moves[1:c.n - 1] = c.line[1:c.n - 1]
+        AND games.moves[c.n] IS DISTINCT FROM c.line[c.n]
+      ORDER BY c.n ASC
+      LIMIT 1
+    )
+""")
 
 
 async def trigger_sync(
@@ -57,10 +79,14 @@ async def list_games(
     has_critical_moves: bool | None,
     reviewed: bool | None,
     first_critical_move: int | None,
+    left_repertoire: bool | None,
     limit: int,
     offset: int,
 ) -> GamesListResponse:
-    q = select(Game).where(Game.user_id == user_id)
+    left_repertoire_ply = type_coerce(
+        _LEFT_REPERTOIRE_PLY.bindparams(left_rep_user_id=user_id), Integer
+    ).label("left_repertoire_ply")
+    q = select(Game, left_repertoire_ply).where(Game.user_id == user_id)
 
     if result:
         q = q.where(Game.result == result)
@@ -80,16 +106,23 @@ async def list_games(
         q = q.where(func.cardinality(Game.critical_moves) > 0)
         q = q.where(Game.critical_moves[1].between(ply_low, ply_high))
 
+    inner = q.subquery()
+    q = select(inner)
+    if left_repertoire is True:
+        q = q.where(inner.c.left_repertoire_ply.isnot(None))
+    elif left_repertoire is False:
+        q = q.where(inner.c.left_repertoire_ply.is_(None))
+
     count_q = select(func.count()).select_from(q.subquery())
     total_result = await session.execute(count_q)
     total = total_result.scalar_one()
 
-    q = q.order_by(Game.played_at.desc()).limit(limit).offset(offset)
+    q = q.order_by(inner.c.played_at.desc()).limit(limit).offset(offset)
     games_result = await session.execute(q)
-    games = list(games_result.scalars().all())
+    rows = games_result.all()
 
     return GamesListResponse(
-        items=[GameResponse.model_validate(g) for g in games],
+        items=[GameResponse.model_validate(dict(row._mapping)) for row in rows],
         total=total,
     )
 

@@ -63,6 +63,7 @@ class GameResponse(BaseModel):
     analysis: dict | None = None
     reviewed: bool
     critical_moves: list[int] | None = None
+    left_repertoire_ply: int | None = None
 
 
 class GamesListResponse(BaseModel):

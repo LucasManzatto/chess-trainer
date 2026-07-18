@@ -121,7 +121,7 @@ function BrowsePageInner() {
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [drillDialogOpen, setDrillDialogOpen] = useState(false)
   const [pageMode, setPageMode] = useState<PageMode>({ type: 'default' })
-  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null })
+  const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null, left_repertoire: null })
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -137,7 +137,7 @@ function BrowsePageInner() {
   const { data: coverage } = useCoverage()
 
   // ─── API data: games ─────────────────────────────────────────────────────
-  const { data: gamesData, status: gamesStatus } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move)
+  const { data: gamesData, status: gamesStatus } = useGames(gamesFilters.result, gamesFilters.color, gamesFilters.has_critical_moves, gamesFilters.reviewed, gamesFilters.first_critical_move, gamesFilters.left_repertoire)
   const { syncStatus, status: syncStatusPhase, triggerSync } = useGamesSync()
   const { analyzeAll, status: analyzeAllStatus, progress: analyzeAllProgress, pendingCount } = useAnalyzeAllGames(gamesData?.items)
   const { mutate: setGameReviewed } = useSetGameReviewed()

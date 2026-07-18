@@ -48,12 +48,13 @@ async def list_games(
     has_critical_moves: bool | None = Query(default=None),
     reviewed: bool | None = Query(default=None),
     first_critical_move: int | None = Query(default=None, ge=1),
+    left_repertoire: bool | None = Query(default=None),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> GamesListResponse:
     return await games_service.list_games(
         session, user_id, result, color, eco,
-        has_critical_moves, reviewed, first_critical_move, limit, offset,
+        has_critical_moves, reviewed, first_critical_move, left_repertoire, limit, offset,
     )
 
 

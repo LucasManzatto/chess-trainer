@@ -34,6 +34,7 @@ export const gamesApi = {
     if (filters.has_critical_moves) params.set('has_critical_moves', 'true')
     if (filters.reviewed !== null && filters.reviewed !== undefined) params.set('reviewed', String(filters.reviewed))
     if (filters.first_critical_move) params.set('first_critical_move', String(filters.first_critical_move))
+    if (filters.left_repertoire !== null && filters.left_repertoire !== undefined) params.set('left_repertoire', String(filters.left_repertoire))
     params.set('limit', String(limit))
     params.set('offset', String(offset))
     return request<GamesListResponse>(`/api/v1/games?${params}`, { signal })

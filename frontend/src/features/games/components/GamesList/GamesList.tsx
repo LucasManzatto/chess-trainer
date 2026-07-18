@@ -134,6 +134,14 @@ function GamesFilters({ filters, onFiltersChange }: GamesFiltersProps) {
         value={filters.first_critical_move}
         onChange={v => onFiltersChange({ first_critical_move: v })}
       />
+      <ToggleGroup
+        value={filters.left_repertoire ? ['left_repertoire'] : []}
+        onValueChange={(v: string[]) => onFiltersChange({ left_repertoire: v.length > 0 ? true : null })}
+        variant="outline"
+        size="sm"
+      >
+        <ToggleGroupItem value="left_repertoire">Left prep</ToggleGroupItem>
+      </ToggleGroup>
     </div>
   )
 }
@@ -245,6 +253,7 @@ export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, on
           const hasAnalysis = isAnalysed || (selected && analyzeStatus === 'done')
           const criticalCount = g.critical_moves?.length ?? 0
           const firstCriticalMoveNumber = criticalCount > 0 ? Math.floor(g.critical_moves![0] / 2) + 1 : null
+          const leftRepertoireMoveNumber = g.left_repertoire_ply !== null ? Math.ceil(g.left_repertoire_ply / 2) : null
 
           return (
             <div
@@ -278,6 +287,11 @@ export function GameList({ games, isSelected, analyzeStatus, analyzeProgress, on
                     {criticalCount > 0 && (
                       <span className="shrink-0 text-xs text-muted-foreground">
                         · {criticalCount} critical{firstCriticalMoveNumber !== null && ` (1st @ move ${firstCriticalMoveNumber})`}
+                      </span>
+                    )}
+                    {leftRepertoireMoveNumber !== null && (
+                      <span className="shrink-0 text-xs text-amber-600 dark:text-amber-500">
+                        · left prep @ move {leftRepertoireMoveNumber}
                       </span>
                     )}
                   </div>
