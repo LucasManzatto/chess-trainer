@@ -87,11 +87,6 @@ export function useDrill(
     setPageModeDrill({ type: 'revealed', card: trainCard })
   }
 
-  useEffect(() => {
-    if (trainPhase.type !== 'revealed') return
-    boardState.setInteractive(false)
-  }, [trainPhase, boardState.setInteractive])
-
   return {
     dueCards,
     trainPhase,
