@@ -20,6 +20,15 @@ class OpeningResponse(BaseModel):
     epd: str
 
 
+class OpeningLookupRequest(BaseModel):
+    fens: list[str]
+
+
+class OpeningLookupResponse(BaseModel):
+    opening: OpeningResponse
+    is_exact: bool
+
+
 class PositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

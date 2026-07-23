@@ -54,6 +54,15 @@ export function useOpening(fen: string) {
   })
 }
 
+/** Opening for the nearest fen in `fens` (current position, then its ancestors) that has one. */
+export function useNearestOpening(fens: string[]) {
+  return useQuery({
+    queryKey: openingsKeys.nearest(fens),
+    queryFn: ({ signal }) => openingsApi.getNearest(fens, signal),
+    enabled: fens.length > 0,
+  })
+}
+
 export function usePositionComments(fen: string) {
   const qc = useQueryClient()
   const key = positionsKeys.detail(fen)

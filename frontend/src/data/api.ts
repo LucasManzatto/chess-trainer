@@ -2,6 +2,7 @@ import { request } from '../lib/api'
 import type { AnalyzeStatusResponse, Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../features/games/types'
 import type {
   Opening,
+  OpeningLookupResult,
   Position,
   PositionAnnotationArrow,
   PositionAnnotationCircle,
@@ -80,6 +81,19 @@ export const openingsApi = {
   getByFen: async (fen: string, signal?: AbortSignal): Promise<Opening | null> => {
     try {
       return await request<Opening>(`/api/v1/openings/${encodeURIComponent(fen)}`, { signal })
+    } catch (err) {
+      if ((err as { status?: number }).status === 404) return null
+      throw err
+    }
+  },
+  /** First opening found among `fens`, checked nearest-ancestor-first. */
+  getNearest: async (fens: string[], signal?: AbortSignal): Promise<OpeningLookupResult | null> => {
+    try {
+      return await request<OpeningLookupResult>('/api/v1/openings/lookup', {
+        method: 'POST',
+        body: JSON.stringify({ fens }),
+        signal,
+      })
     } catch (err) {
       if ((err as { status?: number }).status === 404) return null
       throw err

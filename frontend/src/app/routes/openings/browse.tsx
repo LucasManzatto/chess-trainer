@@ -5,14 +5,14 @@ import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessB
 import { ChessBoardSettings } from '../../../features/board/components/ChessBoard/ChessBoardSettings'
 import { EvaluationBar } from '../../../features/board/components/ChessBoard/ChessBoardEvalBar'
 import { useChessBoardStore } from '../../../stores/board/chessBoardStore'
-import { getCurrentFen, getCurrentLan, getParentFen } from '../../../stores/board/slices/gameSelectors'
+import { getAncestorFens, getCurrentFen, getCurrentLan, getParentFen } from '../../../stores/board/slices/gameSelectors'
 import { usePositionEvaluation } from '../../../features/board/hooks/usePositionEvaluation'
 import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
 import { Button } from '@/components/ui/button'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
-import { useOpening, usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
+import { useNearestOpening, usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
@@ -78,6 +78,7 @@ function BrowsePageInner() {
     useShallow((s) => ({
       fen: getCurrentFen(s),
       parentFen: getParentFen(s),
+      ancestorFens: getAncestorFens(s),
       sanMoves: getSanMoves(s),
       moves: getMoves(s),
       activeMove: getActiveMove(s),
@@ -125,11 +126,13 @@ function BrowsePageInner() {
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
-  const { data: positionDetail, isLoading: positionLoading, upsert } = usePosition(boardState.fen)
+  const { data: positionDetail, isLoading: positionLoading } = usePosition(boardState.fen)
   const { comments, arrows, circles } = positionDetail
   const { add, update: updateComment } = usePositionComments(boardState.fen)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
-  const { data: opening } = useOpening(boardState.fen)
+  const { data: openingLookup } = useNearestOpening(boardState.ancestorFens)
+  const openingName = openingLookup?.opening.name ?? null
+  const openingIsExact = openingLookup?.is_exact ?? false
 
   // ─── API data: drill / train ─────────────────────────────────────────────
   const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves, boardState.lastMove)
@@ -212,19 +215,11 @@ function BrowsePageInner() {
       {/* Board + opening name + drill button */}
       <section className={`${PANEL_CLASS} ${DIVIDER_CLASS}`}>
         <div className="flex h-11 w-full items-center justify-between gap-3 px-4 border-white/[0.08] flex-shrink-0">
-          {positionLoading ? (
-            <span className="text-sm font-semibold tracking-tight text-white/20 italic select-none">
-              Loading...
-            </span>
-          ) : (
-            <PositionName
-              name={positionDetail.position?.name ?? null}
-              openingName={opening?.name ?? null}
-              isSaving={upsert.isPending}
-              onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
-              className="text-sm font-semibold tracking-tight text-white/90 cursor-text select-none truncate min-w-0"
-            />
-          )}
+          <PositionName
+            openingName={openingName}
+            isExact={openingIsExact}
+            className="text-sm font-semibold tracking-tight text-white/90 select-none truncate min-w-0"
+          />
           <div className="flex items-center gap-2 flex-shrink-0">
             {annotations.annotationsDirty && (
               <SaveAnnotationsButton

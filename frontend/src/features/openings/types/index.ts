@@ -9,6 +9,11 @@ export type Opening = {
   epd: string
 }
 
+export type OpeningLookupResult = {
+  opening: Opening
+  is_exact: boolean
+}
+
 export type Position = {
   id: string
   fen: string

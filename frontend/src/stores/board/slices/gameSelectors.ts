@@ -62,3 +62,11 @@ export const getMoves = memoizeByHistoryIndex((state): MovePair[] => {
   }
   return pairs
 })
+
+/** Current fen followed by every ancestor back to the start, nearest first. */
+export const getAncestorFens = memoizeByHistoryIndex((state): string[] => {
+  const fens: string[] = []
+  for (let i = state.currentMoveIndex; i >= 0; i--) fens.push(state.history[i].fen)
+  fens.push(INITIAL_FEN)
+  return fens
+})
