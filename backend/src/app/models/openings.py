@@ -10,6 +10,17 @@ class Base(DeclarativeBase):
     pass
 
 
+class Opening(Base):
+    __tablename__ = "openings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    eco: Mapped[str] = mapped_column(Text, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    pgn: Mapped[str] = mapped_column(Text, nullable=False)
+    uci: Mapped[str] = mapped_column(Text, nullable=False)
+    epd: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+
+
 class Position(Base):
     __tablename__ = "positions"
 

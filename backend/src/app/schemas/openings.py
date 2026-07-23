@@ -9,6 +9,17 @@ class PositionCreate(BaseModel):
     moves: list[str] = []
 
 
+class OpeningResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    eco: str
+    name: str
+    pgn: str
+    uci: str
+    epd: str
+
+
 class PositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

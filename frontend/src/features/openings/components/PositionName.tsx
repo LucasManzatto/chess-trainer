@@ -3,13 +3,21 @@ import { Input } from '@/components/ui/input'
 
 type Props = {
   name: string | null
+  openingName?: string | null
   isSaving: boolean
   onSave: (name: string | null) => void
   placeholder?: string
   className?: string
 }
 
-export function PositionName({ name, isSaving, onSave, placeholder = 'Unnamed position', className }: Props) {
+export function PositionName({
+  name,
+  openingName,
+  isSaving,
+  onSave,
+  placeholder = 'Unnamed position',
+  className,
+}: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -49,15 +57,20 @@ export function PositionName({ name, isSaving, onSave, placeholder = 'Unnamed po
   }
 
   return (
-    <span
-      role="button"
-      tabIndex={0}
-      onClick={startEdit}
-      onKeyDown={e => e.key === 'Enter' && startEdit()}
-      className={className ?? `text-lg font-medium tracking-wide cursor-text select-none ${name ? 'text-white/60' : 'text-white/20 italic'}`}
-    >
-      {name ?? placeholder}
-      {isSaving && <span className="ml-2 text-xs text-muted-foreground">saving…</span>}
+    <span className="flex items-baseline gap-2 min-w-0">
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={startEdit}
+        onKeyDown={e => e.key === 'Enter' && startEdit()}
+        className={className ?? `text-lg font-medium tracking-wide cursor-text select-none ${name ? 'text-white/60' : 'text-white/20 italic'}`}
+      >
+        {name ?? placeholder}
+      </span>
+      {openingName && (
+        <span className="text-xs text-white/40 truncate select-none">{openingName}</span>
+      )}
+      {isSaving && <span className="text-xs text-muted-foreground">saving…</span>}
     </span>
   )
 }

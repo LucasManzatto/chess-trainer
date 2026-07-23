@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Seed positions from lichess-org/chess-openings dataset.
+Seed the `openings` table from lichess-org/chess-openings dataset (dist method).
+
+Clones the repo, builds dist/all.tsv via its own `bin/gen.py` (the same
+build lichess CI publishes — validated, transposition-deduped, adds
+`uci`/`epd` columns), then upserts into `openings` keyed on `epd`.
+
+`openings.epd` joins loosely to `positions.position_key` (no FK: not every
+opening has been reached in a tracked game/repertoire, and vice versa).
 
 Usage:
     DATABASE_URL=postgresql://... python backend/scripts/seed_openings.py
-
-Outputs:
-    - Upserts all openings into the `positions` table
-    - Writes frontend/public/positions.json
 """
 
 import asyncio
@@ -15,16 +18,17 @@ import csv
 import io
 import json
 import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import asyncpg
 import chess
 import chess.pgn
-import httpx
 
-TSV_BASE = "https://raw.githubusercontent.com/lichess-org/chess-openings/master"
-ECO_FILES = ["a", "b", "c", "d", "e"]
+REPO_URL = "https://github.com/lichess-org/chess-openings"
+SOURCE_FILES = ["a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv"]
 
 FRONTEND_PUBLIC = Path(__file__).parent.parent.parent / "frontend" / "public"
 
@@ -45,12 +49,28 @@ def pgn_to_fen_and_moves(pgn_str: str) -> tuple[str, list[str]] | None:
         return None
 
 
-async def fetch_tsv(client: httpx.AsyncClient, letter: str) -> list[dict]:
-    url = f"{TSV_BASE}/{letter}.tsv"
-    resp = await client.get(url, timeout=30.0)
-    resp.raise_for_status()
-    reader = csv.DictReader(io.StringIO(resp.text), delimiter="\t")
-    return list(reader)
+def build_dist(repo_dir: Path) -> Path:
+    """Clone chess-openings and build dist/all.tsv via its own gen.py."""
+    print(f"Cloning {REPO_URL}...")
+    subprocess.run(
+        ["git", "clone", "--depth", "1", REPO_URL, str(repo_dir)],
+        check=True,
+        capture_output=True,
+    )
+
+    dist_dir = repo_dir / "dist"
+    dist_dir.mkdir(exist_ok=True)
+    all_tsv = dist_dir / "all.tsv"
+
+    print("Building dist/all.tsv via bin/gen.py...")
+    with all_tsv.open("w") as out:
+        subprocess.run(
+            [sys.executable, "bin/gen.py", *SOURCE_FILES],
+            cwd=repo_dir,
+            check=True,
+            stdout=out,
+        )
+    return all_tsv
 
 
 async def main() -> None:
@@ -59,48 +79,50 @@ async def main() -> None:
         print("ERROR: DATABASE_URL environment variable not set", file=sys.stderr)
         sys.exit(1)
 
-    print("Fetching TSV files from lichess-org/chess-openings...")
-    async with httpx.AsyncClient() as client:
-        all_rows: list[dict] = []
-        for letter in ECO_FILES:
-            rows = await fetch_tsv(client, letter)
-            all_rows.extend(rows)
-            print(f"  {letter}.tsv: {len(rows)} openings")
+    with tempfile.TemporaryDirectory() as tmp:
+        all_tsv = build_dist(Path(tmp) / "chess-openings")
 
-    print(f"Total: {len(all_rows)} openings. Computing FENs...")
+        print(f"Reading {all_tsv}...")
+        rows = list(csv.DictReader(all_tsv.open(), delimiter="\t"))
+        print(f"Total: {len(rows)} openings.")
 
-    positions: list[dict] = []
-    skipped = 0
-    for row in all_rows:
-        eco = row.get("eco", "").strip()
-        name = row.get("name", "").strip()
-        pgn = row.get("pgn", "").strip()
-        if not (eco and name and pgn):
-            skipped += 1
-            continue
-        result = pgn_to_fen_and_moves(pgn)
-        if result is None:
-            print(f"  WARN: could not parse PGN for '{name}' ({pgn})", file=sys.stderr)
-            skipped += 1
-            continue
-        fen, moves = result
-        positions.append({"fen": fen, "position_key": chess.Board(fen).epd(), "name": name, "moves": moves})
+        openings: list[dict] = []
+        positions: list[dict] = []
+        skipped = 0
+        for row in rows:
+            eco = row.get("eco", "").strip()
+            name = row.get("name", "").strip()
+            pgn = row.get("pgn", "").strip()
+            uci = row.get("uci", "").strip()
+            epd = row.get("epd", "").strip()
+            if not (eco and name and pgn and epd):
+                skipped += 1
+                continue
+            openings.append({"eco": eco, "name": name, "pgn": pgn, "uci": uci, "epd": epd})
 
-    print(f"Parsed {len(positions)} positions ({skipped} skipped).")
+            result = pgn_to_fen_and_moves(pgn)
+            if result is None:
+                print(f"  WARN: could not parse PGN for '{name}' ({pgn})", file=sys.stderr)
+                continue
+            fen, moves = result
+            positions.append({"fen": fen, "position_key": epd, "name": name, "moves": moves})
+
+    print(f"Parsed {len(openings)} openings ({skipped} skipped).")
 
     print("Connecting to database...")
     conn = await asyncpg.connect(database_url)
     try:
-        print("Upserting positions...")
+        print("Upserting openings...")
         await conn.executemany(
             """
-            INSERT INTO positions (fen, position_key, name, moves)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (position_key) DO UPDATE SET name = EXCLUDED.name, moves = EXCLUDED.moves
+            INSERT INTO openings (eco, name, pgn, uci, epd)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (epd) DO UPDATE SET eco = EXCLUDED.eco, name = EXCLUDED.name,
+                pgn = EXCLUDED.pgn, uci = EXCLUDED.uci
             """,
-            [(p["fen"], p["position_key"], p["name"], p["moves"]) for p in positions],
+            [(o["eco"], o["name"], o["pgn"], o["uci"], o["epd"]) for o in openings],
         )
-        print(f"Upserted {len(positions)} rows.")
+        print(f"Upserted {len(openings)} rows.")
     finally:
         await conn.close()
 

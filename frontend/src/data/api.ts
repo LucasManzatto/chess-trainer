@@ -1,6 +1,7 @@
 import { request } from '../lib/api'
 import type { AnalyzeStatusResponse, Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../features/games/types'
 import type {
+  Opening,
   Position,
   PositionAnnotationArrow,
   PositionAnnotationCircle,
@@ -73,6 +74,17 @@ export const positionsApi = {
     request<void>(`/api/v1/positions/${encodeURIComponent(fen)}`, { method: 'DELETE' }),
   getDetail: (fen: string, signal?: AbortSignal) =>
     request<PositionDetail>(`/api/v1/positions/${encodeURIComponent(fen)}/detail`, { signal }),
+}
+
+export const openingsApi = {
+  getByFen: async (fen: string, signal?: AbortSignal): Promise<Opening | null> => {
+    try {
+      return await request<Opening>(`/api/v1/openings/${encodeURIComponent(fen)}`, { signal })
+    } catch (err) {
+      if ((err as { status?: number }).status === 404) return null
+      throw err
+    }
+  },
 }
 
 export const positionCommentsApi = {

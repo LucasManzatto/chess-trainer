@@ -1,5 +1,14 @@
 import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 
+export type Opening = {
+  id: number
+  eco: string
+  name: string
+  pgn: string
+  uci: string
+  epd: string
+}
+
 export type Position = {
   id: string
   fen: string

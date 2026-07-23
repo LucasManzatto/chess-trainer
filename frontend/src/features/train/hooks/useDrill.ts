@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { toast } from 'sonner'
 import { useDueCards } from '../../../data/hooks/useTrain'

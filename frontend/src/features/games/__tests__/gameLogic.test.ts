@@ -3,7 +3,13 @@ import { computeOpeningMoveCount } from '../utils/gameLogic'
 import type { Position } from '../../openings/types'
 
 function opening(moves: string[]): Position {
-  return { id: '1', fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', name: 'Test', moves, created_at: '' }
+  return {
+    id: '1',
+    fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    name: 'Test',
+    moves,
+    created_at: '',
+  }
 }
 
 describe('computeOpeningMoveCount', () => {

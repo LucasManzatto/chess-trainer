@@ -12,7 +12,7 @@ import { useShallow } from 'zustand/shallow'
 import { Button } from '@/components/ui/button'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
-import { usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
+import { useOpening, usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
@@ -129,6 +129,7 @@ function BrowsePageInner() {
   const { comments, arrows, circles } = positionDetail
   const { add, update: updateComment } = usePositionComments(boardState.fen)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
+  const { data: opening } = useOpening(boardState.fen)
 
   // ─── API data: drill / train ─────────────────────────────────────────────
   const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves, boardState.lastMove)
@@ -218,6 +219,7 @@ function BrowsePageInner() {
           ) : (
             <PositionName
               name={positionDetail.position?.name ?? null}
+              openingName={opening?.name ?? null}
               isSaving={upsert.isPending}
               onSave={(name) => upsert.mutate({ name, moves: boardState.sanMoves })}
               className="text-sm font-semibold tracking-tight text-white/90 cursor-text select-none truncate min-w-0"

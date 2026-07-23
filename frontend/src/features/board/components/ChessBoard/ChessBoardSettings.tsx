@@ -60,7 +60,7 @@ export function ChessBoardSettings({
             <input
               type="range"
               min={240}
-              max={800}
+              max={1200}
               step={8}
               value={config.boardSize}
               onChange={e => update('boardSize', Number(e.target.value))}

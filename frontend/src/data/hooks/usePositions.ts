@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   fetchPositions,
+  openingsApi,
   positionAnnotationsApi,
   positionCommentsApi,
   positionsApi,
 } from '../api'
-import { positionsKeys } from '../queryKeys'
+import { openingsKeys, positionsKeys } from '../queryKeys'
 import type { Position, PositionAnnotationArrow, PositionAnnotationCircle, PositionDetail } from '../../features/openings/types'
 
 export function usePositions() {
@@ -43,6 +44,14 @@ export function usePosition(fen: string) {
   })
 
   return { data: data ?? emptyDetail, isLoading, upsert, remove }
+}
+
+export function useOpening(fen: string) {
+  return useQuery({
+    queryKey: openingsKeys.byFen(fen),
+    queryFn: ({ signal }) => openingsApi.getByFen(fen, signal),
+    enabled: !!fen,
+  })
 }
 
 export function usePositionComments(fen: string) {

@@ -11,6 +11,10 @@ export const positionsKeys = {
   detail: (fen: string) => ['position-detail', fen] as const,
 }
 
+export const openingsKeys = {
+  byFen: (fen: string) => ['opening', fen] as const,
+}
+
 export const trainKeys = {
   cards:    (side?: 'white' | 'black') => ['train', 'cards', side ?? 'all'] as const,
   due:      ()                          => ['train', 'due'] as const,
