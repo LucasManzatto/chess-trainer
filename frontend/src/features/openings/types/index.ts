@@ -14,6 +14,13 @@ export type OpeningLookupResult = {
   is_exact: boolean
 }
 
+export type OpeningBranch = {
+  eco: string
+  name: string
+  first_move: string
+  continuation: string
+}
+
 export type Position = {
   id: string
   fen: string

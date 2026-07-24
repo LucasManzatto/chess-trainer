@@ -51,6 +51,10 @@ export const getSanMoves = memoizeByHistoryIndex((state): string[] =>
   state.history.slice(0, state.currentMoveIndex + 1).map(e => e.san),
 )
 
+export const getUciMoves = memoizeByHistoryIndex((state): string[] =>
+  state.history.slice(0, state.currentMoveIndex + 1).map(e => e.lan),
+)
+
 export const getMoves = memoizeByHistoryIndex((state): MovePair[] => {
   const pairs: MovePair[] = []
   for (let i = 0; i < state.history.length; i += 2) {

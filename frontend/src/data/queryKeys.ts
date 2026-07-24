@@ -14,6 +14,7 @@ export const positionsKeys = {
 export const openingsKeys = {
   byFen: (fen: string) => ['opening', fen] as const,
   nearest: (fens: string[]) => ['opening-nearest', ...fens] as const,
+  branches: (uciMoves: string[]) => ['opening-branches', ...uciMoves] as const,
 }
 
 export const trainKeys = {

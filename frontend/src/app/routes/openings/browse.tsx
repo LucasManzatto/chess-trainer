@@ -5,14 +5,14 @@ import { ChessBoard } from '../../../features/board/components/ChessBoard/ChessB
 import { ChessBoardSettings } from '../../../features/board/components/ChessBoard/ChessBoardSettings'
 import { EvaluationBar } from '../../../features/board/components/ChessBoard/ChessBoardEvalBar'
 import { useChessBoardStore } from '../../../stores/board/chessBoardStore'
-import { getAncestorFens, getCurrentFen, getCurrentLan, getParentFen } from '../../../stores/board/slices/gameSelectors'
+import { getAncestorFens, getCurrentFen, getCurrentLan, getParentFen, getUciMoves } from '../../../stores/board/slices/gameSelectors'
 import { usePositionEvaluation } from '../../../features/board/hooks/usePositionEvaluation'
 import { useBoardSettings } from '../../../stores/board/boardSettingsStore'
 import { useShallow } from 'zustand/shallow'
 import { Button } from '@/components/ui/button'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
-import { useNearestOpening, usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
+import { useNearestOpening, useOpeningBranches, usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
@@ -80,6 +80,7 @@ function BrowsePageInner() {
       parentFen: getParentFen(s),
       ancestorFens: getAncestorFens(s),
       sanMoves: getSanMoves(s),
+      uciMoves: getUciMoves(s),
       moves: getMoves(s),
       activeMove: getActiveMove(s),
       orientation: s.orientation,
@@ -133,6 +134,7 @@ function BrowsePageInner() {
   const { data: openingLookup } = useNearestOpening(boardState.ancestorFens)
   const openingName = openingLookup?.opening.name ?? null
   const openingIsExact = openingLookup?.is_exact ?? false
+  const { data: openingBranches } = useOpeningBranches(boardState.uciMoves)
 
   // ─── API data: drill / train ─────────────────────────────────────────────
   const { drillCard } = useBrowseDrillCard(boardState.fen, boardState.parentFen, boardState.sanMoves, boardState.lastMove)
@@ -218,6 +220,7 @@ function BrowsePageInner() {
           <PositionName
             openingName={openingName}
             isExact={openingIsExact}
+            branches={openingBranches}
             className="text-sm font-semibold tracking-tight text-white/90 select-none truncate min-w-0"
           />
           <div className="flex items-center gap-2 flex-shrink-0">

@@ -63,6 +63,15 @@ export function useNearestOpening(fens: string[]) {
   })
 }
 
+/** Named openings that branch off later than the current move prefix. */
+export function useOpeningBranches(uciMoves: string[]) {
+  return useQuery({
+    queryKey: openingsKeys.branches(uciMoves),
+    queryFn: ({ signal }) => openingsApi.getBranches(uciMoves, signal),
+    enabled: uciMoves.length > 0,
+  })
+}
+
 export function usePositionComments(fen: string) {
   const qc = useQueryClient()
   const key = positionsKeys.detail(fen)

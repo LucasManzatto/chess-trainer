@@ -29,6 +29,17 @@ class OpeningLookupResponse(BaseModel):
     is_exact: bool
 
 
+class OpeningBranchesRequest(BaseModel):
+    uci_moves: list[str] = []
+
+
+class OpeningBranchResponse(BaseModel):
+    eco: str
+    name: str
+    first_move: str
+    continuation: str
+
+
 class PositionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

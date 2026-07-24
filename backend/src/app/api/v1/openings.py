@@ -5,7 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...auth import get_current_user_id
 from ...db import get_session
-from ...schemas.openings import OpeningLookupRequest, OpeningLookupResponse, OpeningResponse
+from ...schemas.openings import (
+    OpeningBranchesRequest,
+    OpeningBranchResponse,
+    OpeningLookupRequest,
+    OpeningLookupResponse,
+    OpeningResponse,
+)
 from ...services import openings as openings_service
 
 router = APIRouter(prefix="/openings", tags=["openings"])
@@ -19,6 +25,13 @@ async def lookup_nearest_opening(
     body: OpeningLookupRequest, session: Session, user_id: UserId
 ) -> OpeningLookupResponse:
     return await openings_service.get_nearest_opening(session, body.fens)
+
+
+@router.post("/branches", response_model=list[OpeningBranchResponse])
+async def get_opening_branches(
+    body: OpeningBranchesRequest, session: Session, user_id: UserId
+) -> list[OpeningBranchResponse]:
+    return await openings_service.get_opening_branches(session, body.uci_moves)
 
 
 @router.get("/{fen:path}", response_model=OpeningResponse)

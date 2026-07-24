@@ -2,6 +2,7 @@ import { request } from '../lib/api'
 import type { AnalyzeStatusResponse, Game, GameAnalysis, GamesFilters, GamesListResponse, SyncStatus, UserProfile } from '../features/games/types'
 import type {
   Opening,
+  OpeningBranch,
   OpeningLookupResult,
   Position,
   PositionAnnotationArrow,
@@ -99,6 +100,13 @@ export const openingsApi = {
       throw err
     }
   },
+  /** Named openings that diverge from the given move prefix on a later move. */
+  getBranches: (uciMoves: string[], signal?: AbortSignal) =>
+    request<OpeningBranch[]>('/api/v1/openings/branches', {
+      method: 'POST',
+      body: JSON.stringify({ uci_moves: uciMoves }),
+      signal,
+    }),
 }
 
 export const positionCommentsApi = {
