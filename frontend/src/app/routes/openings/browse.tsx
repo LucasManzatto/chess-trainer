@@ -129,6 +129,8 @@ function BrowsePageInner() {
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
   const { data: positionDetail, isLoading: positionLoading } = usePosition(boardState.fen)
   const { comments, arrows, circles } = positionDetail
+  // Annotations for the last played move live on the position it was played from, not the resulting one.
+  const { data: parentPositionDetail } = usePosition(boardState.parentFen)
   const { add, update: updateComment } = usePositionComments(boardState.fen)
   const { replace: replaceAnnotations } = usePositionAnnotations(boardState.fen)
   const { data: openingLookup } = useNearestOpening(boardState.ancestorFens)
@@ -168,6 +170,17 @@ function BrowsePageInner() {
   const selectedGame = pageMode.type === 'game_review' ? gamesData?.items.find(g => g.id === selectedGameId) ?? null : null
   const criticalMoveIndices = selectedGame?.critical_moves ?? []
   const bestMoveArrow = getBestMoveArrow(boardState.activeMove, selectedGame, config.showBestMove, annotations.draftArrows)
+  const lastMove = boardState.lastMove
+    ? (() => {
+        const from = boardState.lastMove.slice(0, 2)
+        const to = boardState.lastMove.slice(2, 4)
+        const comment =
+          parentPositionDetail.arrows.find(a => a.from_square === from && a.to_square === to)?.comment
+          ?? parentPositionDetail.circles.find(c => c.square === to)?.comment
+          ?? null
+        return { label: boardState.sanMoves.at(-1) ?? boardState.lastMove, comment }
+      })()
+    : null
   const { analyze, analyzeStatus, analyzeProgress } = useGameAnalyze(selectedGame?.id ?? null)
 
   const startTrainSession = (mode: TrainMode) => {
@@ -305,6 +318,8 @@ function BrowsePageInner() {
             onUpdate={(id, content) => updateComment.mutate({ commentId: id, content })}
             arrows={annotations.draftArrows}
             circles={annotations.draftCircles}
+            lastMove={lastMove}
+            lastNotes={parentPositionDetail.comments}
             onArrowColorChange={(index, color) =>
               annotations.setDraftAnnotations(
                 annotations.draftArrows.map((a, i) => (i === index ? { ...a, color } : a)),

@@ -7,6 +7,34 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
 
+.cg-wrap coords coord {
+  font-weight: 700;
+  font-size: 15px;
+  opacity: 1;
+}
+
+.cg-wrap coords.ranks {
+  left: auto;
+  right: 3px;
+  top: 0;
+  height: 100%;
+}
+
+.cg-wrap coords.ranks coord {
+  transform: none;
+  text-align: right;
+}
+
+.cg-wrap coords.files {
+  bottom: 2px;
+  left: 4px;
+}
+
+.cg-wrap coords.files coord {
+  font-size: 11px;
+  text-align: left;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

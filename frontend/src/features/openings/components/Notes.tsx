@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 
+export type LastMove = { label: string; comment: string | null }
+
 export type NotesProps = {
   fen: string
   comments: { id: number; content: string }[]
@@ -15,6 +17,8 @@ export type NotesProps = {
   onUpdate: (id: number, content: string) => void
   arrows: BoardAnnotationArrow[]
   circles: BoardAnnotationCircle[]
+  lastMove: LastMove | null
+  lastNotes: { id: number; content: string }[]
   onArrowColorChange: (index: number, color: string) => void
   onCircleColorChange: (index: number, color: string) => void
   onArrowCommentChange: (index: number, comment: string | null) => void
@@ -28,6 +32,8 @@ export function Notes({
   onUpdate,
   arrows,
   circles,
+  lastMove,
+  lastNotes,
   onArrowColorChange,
   onCircleColorChange,
   onArrowCommentChange,
@@ -38,6 +44,10 @@ export function Notes({
       <NotesHeader />
       <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-4 p-3">
         <NotesSection comments={comments} onAdd={onAdd} onUpdate={onUpdate} />
+        {lastNotes.length > 0 && <LastNotes comments={lastNotes} />}
+        {lastMove && (
+            <LastMoveAnnotations label={lastMove.label} comment={lastMove.comment} />
+        )}
         <AnnotationsList
           fen={fen}
           arrows={arrows}
@@ -48,6 +58,33 @@ export function Notes({
           onCircleCommentChange={onCircleCommentChange}
         />
       </div>
+    </div>
+  )
+}
+
+function LastMoveAnnotations({ label, comment }: { label: string; comment: string | null }) {
+  return (
+    <div className="flex flex-col gap-1 px-3 py-2 rounded-lg bg-muted/50 text-xs">
+      <div className="flex items-center gap-1.5 font-mono font-medium text-white/70">
+        <span className="uppercase tracking-wide text-[10px] text-muted-foreground">Last move</span>
+        {highlightMoves(label)}
+      </div>
+      {comment && (
+        <div className="text-foreground/80 whitespace-pre-wrap">{highlightMoves(comment)}</div>
+      )}
+    </div>
+  )
+}
+
+function LastNotes({ comments }: { comments: { id: number; content: string }[] }) {
+  return (
+    <div className="flex flex-col gap-1 px-3 py-2 rounded-lg bg-muted/50 text-xs">
+      <span className="uppercase tracking-wide text-[10px] text-muted-foreground">Previous notes</span>
+      {comments.map(c => (
+        <div key={c.id} className="text-foreground/80 whitespace-pre-wrap">
+          {highlightMoves(c.content)}
+        </div>
+      ))}
     </div>
   )
 }

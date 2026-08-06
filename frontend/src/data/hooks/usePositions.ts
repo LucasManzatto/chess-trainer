@@ -7,7 +7,12 @@ import {
   positionsApi,
 } from '../api'
 import { openingsKeys, positionsKeys } from '../queryKeys'
-import type { Position, PositionAnnotationArrow, PositionAnnotationCircle, PositionDetail } from '../../features/openings/types'
+import type {
+  Position,
+  PositionAnnotationArrow,
+  PositionAnnotationCircle,
+  PositionDetail,
+} from '../../features/openings/types'
 
 export function usePositions() {
   return useQuery<Position[]>({
