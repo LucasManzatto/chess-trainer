@@ -1,6 +1,9 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
+
+AnnotationCategory = Literal["best_move", "attacker", "defender", "target", "threat", "idea"]
 
 
 class PositionCreate(BaseModel):
@@ -71,6 +74,7 @@ class PositionAnnotationArrowInput(BaseModel):
     from_square: str
     to_square: str
     color: str
+    category: AnnotationCategory | None = None
     comment: str | None = None
 
 
@@ -82,12 +86,14 @@ class PositionAnnotationArrowResponse(BaseModel):
     from_square: str
     to_square: str
     color: str
+    category: AnnotationCategory | None
     comment: str | None
 
 
 class PositionAnnotationCircleInput(BaseModel):
     square: str
     color: str
+    category: AnnotationCategory | None = None
     comment: str | None = None
 
 
@@ -98,6 +104,7 @@ class PositionAnnotationCircleResponse(BaseModel):
     position_id: str
     square: str
     color: str
+    category: AnnotationCategory | None
     comment: str | None
 
 

@@ -174,12 +174,19 @@ async def replace_position_annotations(
             from_square=a.from_square,
             to_square=a.to_square,
             color=a.color,
+            category=a.category,
             comment=a.comment,
         )
         for a in body.arrows
     ]
     circles = [
-        PositionAnnotationCircle(position_id=pos.id, square=c.square, color=c.color, comment=c.comment)
+        PositionAnnotationCircle(
+            position_id=pos.id,
+            square=c.square,
+            color=c.color,
+            category=c.category,
+            comment=c.comment,
+        )
         for c in body.circles
     ]
     session.add_all(arrows)

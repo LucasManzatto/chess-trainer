@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronRightIcon } from 'lucide-react'
 import { highlightMoves } from '../../../lib/chess'
-import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+import type { AnnotationCategory, BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 import { AnnotationsList } from './AnnotationsList'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,6 +21,8 @@ export type NotesProps = {
   lastNotes: { id: number; content: string }[]
   onArrowColorChange: (index: number, color: string) => void
   onCircleColorChange: (index: number, color: string) => void
+  onArrowCategoryChange: (index: number, category: AnnotationCategory | null) => void
+  onCircleCategoryChange: (index: number, category: AnnotationCategory | null) => void
   onArrowCommentChange: (index: number, comment: string | null) => void
   onCircleCommentChange: (index: number, comment: string | null) => void
 }
@@ -36,6 +38,8 @@ export function Notes({
   lastNotes,
   onArrowColorChange,
   onCircleColorChange,
+  onArrowCategoryChange,
+  onCircleCategoryChange,
   onArrowCommentChange,
   onCircleCommentChange,
 }: NotesProps) {
@@ -54,6 +58,8 @@ export function Notes({
           circles={circles}
           onArrowColorChange={onArrowColorChange}
           onCircleColorChange={onCircleColorChange}
+          onArrowCategoryChange={onArrowCategoryChange}
+          onCircleCategoryChange={onCircleCategoryChange}
           onArrowCommentChange={onArrowCommentChange}
           onCircleCommentChange={onCircleCommentChange}
         />

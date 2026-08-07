@@ -53,6 +53,7 @@ class PositionAnnotationArrow(Base):
     from_square: Mapped[str] = mapped_column("from", Text)
     to_square: Mapped[str] = mapped_column("to", Text)
     color: Mapped[str] = mapped_column(Text)
+    category: Mapped[str | None] = mapped_column(Text, nullable=True)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
@@ -65,4 +66,5 @@ class PositionAnnotationCircle(Base):
     )
     square: Mapped[str] = mapped_column(Text)
     color: Mapped[str] = mapped_column(Text)
+    category: Mapped[str | None] = mapped_column(Text, nullable=True)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { Square } from 'chess.js'
 import { ChevronRightIcon } from 'lucide-react'
 import { arrowMoveLabel, highlightMoves } from '../../../lib/chess'
-import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+import { ANNOTATION_CATEGORIES, ANNOTATION_CATEGORY_BY_VALUE, type AnnotationCategory, type BoardAnnotationArrow, type BoardAnnotationCircle } from '../../board/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -21,6 +21,8 @@ type Props = {
   circles: BoardAnnotationCircle[]
   onArrowColorChange: (index: number, color: string) => void
   onCircleColorChange: (index: number, color: string) => void
+  onArrowCategoryChange: (index: number, category: AnnotationCategory | null) => void
+  onCircleCategoryChange: (index: number, category: AnnotationCategory | null) => void
   onArrowCommentChange: (index: number, comment: string | null) => void
   onCircleCommentChange: (index: number, comment: string | null) => void
 }
@@ -31,6 +33,8 @@ export function AnnotationsList({
   circles,
   onArrowColorChange,
   onCircleColorChange,
+  onArrowCategoryChange,
+  onCircleCategoryChange,
   onArrowCommentChange,
   onCircleCommentChange,
 }: Props) {
@@ -60,8 +64,10 @@ export function AnnotationsList({
               icon={<ArrowIcon color={arrow.color} />}
               label={arrowMoveLabel(fen, arrow.from_square as Square, arrow.to_square as Square)}
               color={arrow.color}
+              category={arrow.category}
               comment={arrow.comment}
               onPickColor={(color) => onArrowColorChange(i, color)}
+              onPickCategory={(category) => onArrowCategoryChange(i, category)}
               onCommentChange={(comment) => onArrowCommentChange(i, comment)}
             />
           ))}
@@ -71,8 +77,10 @@ export function AnnotationsList({
               icon={<CircleIcon color={circle.color} />}
               label={circle.square}
               color={circle.color}
+              category={circle.category}
               comment={circle.comment}
               onPickColor={(color) => onCircleColorChange(i, color)}
+              onPickCategory={(category) => onCircleCategoryChange(i, category)}
               onCommentChange={(comment) => onCircleCommentChange(i, comment)}
             />
           ))}
@@ -86,12 +94,23 @@ type AnnotationRowProps = {
   icon: ReactNode
   label: string
   color: string
+  category: AnnotationCategory | null
   comment: string | null
   onPickColor: (color: string) => void
+  onPickCategory: (category: AnnotationCategory | null) => void
   onCommentChange: (comment: string | null) => void
 }
 
-function AnnotationRow({ icon, label, color, comment, onPickColor, onCommentChange }: AnnotationRowProps) {
+function AnnotationRow({
+  icon,
+  label,
+  color,
+  category,
+  comment,
+  onPickColor,
+  onPickCategory,
+  onCommentChange,
+}: AnnotationRowProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [expanded, setExpanded] = useState(!!comment)
   const [editing, setEditing] = useState(!comment)
@@ -114,32 +133,35 @@ function AnnotationRow({ icon, label, color, comment, onPickColor, onCommentChan
   return (
     <li className="flex flex-col gap-2 bg-muted/50 rounded-lg p-3">
       <div className="flex items-center justify-between">
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="sm"
-                className="font-mono text-xs font-medium"
-                style={{ backgroundColor: `${TEXT_COLOR_HEX[color] ?? color}1a`, color: TEXT_COLOR_HEX[color] ?? color }}
-              />
-            }
-          >
-            {icon}
-            {label}
-          </PopoverTrigger>
-          <PopoverContent className="w-auto flex-row gap-1.5 p-1.5">
-            {COLOR_ORDER.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => { onPickColor(c); setPickerOpen(false) }}
-                className="w-4 h-4 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLOR_HEX[c] }}
-              />
-            ))}
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-1">
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="font-mono text-xs font-medium"
+                  style={{ backgroundColor: `${TEXT_COLOR_HEX[color] ?? color}1a`, color: TEXT_COLOR_HEX[color] ?? color }}
+                />
+              }
+            >
+              {icon}
+              {label}
+            </PopoverTrigger>
+            <PopoverContent className="w-auto flex-row gap-1.5 p-1.5">
+              {COLOR_ORDER.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => { onPickColor(c); setPickerOpen(false) }}
+                  className="w-4 h-4 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform"
+                  style={{ backgroundColor: COLOR_HEX[c] }}
+                />
+              ))}
+            </PopoverContent>
+          </Popover>
+          <CategoryBadge category={category} onPickCategory={onPickCategory} />
+        </div>
         <Button
           type="button"
           variant="ghost"
@@ -172,6 +194,61 @@ function AnnotationRow({ icon, label, color, comment, onPickColor, onCommentChan
         )
       )}
     </li>
+  )
+}
+
+function CategoryBadge({
+  category,
+  onPickCategory,
+}: {
+  category: AnnotationCategory | null
+  onPickCategory: (category: AnnotationCategory | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const meta = category ? ANNOTATION_CATEGORY_BY_VALUE[category] : null
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-xs"
+            aria-label={meta ? `Category: ${meta.label}` : 'Set category'}
+            style={meta ? { backgroundColor: `${meta.fill}1a`, color: meta.fill } : undefined}
+          />
+        }
+      >
+        {meta ? meta.glyph : <span className="text-muted-foreground">+</span>}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto flex-col gap-0.5 p-1">
+        {ANNOTATION_CATEGORIES.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            onClick={() => { onPickCategory(c.value); setOpen(false) }}
+            className={cn(
+              'flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer hover:bg-muted transition-colors',
+              category === c.value && 'bg-muted',
+            )}
+          >
+            <span className="w-4 text-center" style={{ color: c.fill }}>{c.glyph}</span>
+            {c.label}
+          </button>
+        ))}
+        {category && (
+          <button
+            type="button"
+            onClick={() => { onPickCategory(null); setOpen(false) }}
+            className="flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer hover:bg-muted transition-colors text-muted-foreground"
+          >
+            <span className="w-4 text-center">–</span>
+            None
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 

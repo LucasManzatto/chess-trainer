@@ -110,8 +110,8 @@ export function usePositionAnnotations(fen: string) {
       arrows,
       circles,
     }: {
-      arrows: Pick<PositionAnnotationArrow, 'from_square' | 'to_square' | 'color' | 'comment'>[]
-      circles: Pick<PositionAnnotationCircle, 'square' | 'color' | 'comment'>[]
+      arrows: Pick<PositionAnnotationArrow, 'from_square' | 'to_square' | 'color' | 'category' | 'comment'>[]
+      circles: Pick<PositionAnnotationCircle, 'square' | 'color' | 'category' | 'comment'>[]
     }) => positionAnnotationsApi.replace(fen, arrows, circles),
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
   })

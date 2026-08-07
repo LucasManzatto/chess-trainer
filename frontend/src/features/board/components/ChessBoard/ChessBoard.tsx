@@ -3,21 +3,32 @@ import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key } from '@lichess-org/chessground/types'
-import type { DrawShape } from '@lichess-org/chessground/draw'
+import type { DrawBrushes, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { getDests } from '../../../../lib/chess/position'
-import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../types'
+import { ANNOTATION_CATEGORIES, ANNOTATION_CATEGORY_BY_VALUE, type BoardAnnotationArrow, type BoardAnnotationCircle } from '../../types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const BRUSHES = {
+const BASE_BRUSHES = {
   green:  { key: 'green',  color: '#15781B', opacity: 0.9, lineWidth: 10 },
   red:    { key: 'red',    color: '#882020', opacity: 0.9, lineWidth: 10 },
   blue:   { key: 'blue',   color: '#003088', opacity: 0.9, lineWidth: 10 },
   yellow: { key: 'yellow', color: '#e68f00', opacity: 0.9, lineWidth: 10 },
   hint:   { key: 'hint',   color: '#15781B', opacity: 0.9, lineWidth: 10 },
 } as const
+
+// One brush per category, keyed by category value, so a categorized arrow/circle is
+// color-coded by category instead of the plain G/R/B/Y draw color.
+const CATEGORY_BRUSHES = Object.fromEntries(
+  ANNOTATION_CATEGORIES.map(c => [c.value, { key: c.value, color: c.fill, opacity: 0.9, lineWidth: 10 }]),
+)
+
+const SOLID_BRUSHES: Record<string, { key: string; color: string; opacity: number; lineWidth: number }> = {
+  ...BASE_BRUSHES,
+  ...CATEGORY_BRUSHES,
+}
 
 const noop = () => {}
 
@@ -66,10 +77,37 @@ function isArrowShape(shape: DrawShape): boolean {
   return !!shape.dest && shape.dest !== shape.orig
 }
 
+function baseBrushKey(color: string, category: BoardAnnotationArrow['category']): string {
+  return category ?? COLOR_TO_BRUSH[color] ?? color
+}
+
+// Glyph drawn as plain outlined text directly at the arrowhead/circle-center point (no
+// separate badge circle) so it reads as printed on the shape itself, not overlaid on top of it.
+const categoryGlyphSvg = (glyph: string, fill: string) =>
+  `<text x="50" y="58" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff" stroke="${fill}" stroke-width="6" paint-order="stroke" stroke-linejoin="round">${glyph}</text>`
+
+function shapeCustomSvg(
+  category: BoardAnnotationArrow['category'],
+  center: 'label' | 'orig',
+): DrawShape['customSvg'] | undefined {
+  const glyph = category ? ANNOTATION_CATEGORY_BY_VALUE[category] : null
+  if (!glyph) return undefined
+  return { center, html: categoryGlyphSvg(glyph.glyph, glyph.fill) }
+}
+
 function toDrawShapes(arrows: BoardAnnotationArrow[], circles: BoardAnnotationCircle[]): DrawShape[] {
   return [
-    ...arrows.map(a => ({ orig: a.from_square as Key, dest: a.to_square as Key, brush: COLOR_TO_BRUSH[a.color] ?? a.color })),
-    ...circles.map(c => ({ orig: c.square as Key, brush: COLOR_TO_BRUSH[c.color] ?? c.color })),
+    ...arrows.map(a => ({
+      orig: a.from_square as Key,
+      dest: a.to_square as Key,
+      brush: baseBrushKey(a.color, a.category),
+      customSvg: shapeCustomSvg(a.category, 'label'),
+    })),
+    ...circles.map(c => ({
+      orig: c.square as Key,
+      brush: baseBrushKey(c.color, c.category),
+      customSvg: shapeCustomSvg(c.category, 'orig'),
+    })),
   ]
 }
 
@@ -83,12 +121,25 @@ function fromDrawShapes(
       const from_square = s.orig as string
       const to_square = s.dest as string
       const prev = prevArrows.find(a => a.from_square === from_square && a.to_square === to_square)
-      return { from_square, to_square, color: brushToColor(s.brush), comment: prev?.comment ?? null }
+      // A brush is either a base G/R/B/Y draw color, or a per-category brush we render existing
+      // shapes with — only the former is a real color change made by the user just now.
+      return {
+        from_square,
+        to_square,
+        color: prev?.category ? prev.color : brushToColor(s.brush),
+        category: prev?.category ?? null,
+        comment: prev?.comment ?? null,
+      }
     }),
     circles: shapes.filter(s => !isArrowShape(s)).map(s => {
       const square = s.orig as string
       const prev = prevCircles.find(c => c.square === square)
-      return { square, color: brushToColor(s.brush), comment: prev?.comment ?? null }
+      return {
+        square,
+        color: prev?.category ? prev.color : brushToColor(s.brush),
+        category: prev?.category ?? null,
+        comment: prev?.comment ?? null,
+      }
     }),
   }
 }
@@ -111,6 +162,7 @@ function useBoardConfig(
   const dests = interactive ? getDests(chess.moves({ verbose: true })) : new Map()
 
   const shapes = toDrawShapes(arrows, circles)
+  const brushes = SOLID_BRUSHES as unknown as DrawBrushes
 
   function onDrawableChange(next: DrawShape[]) {
     const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next, arrows, circles)
@@ -133,7 +185,7 @@ function useBoardConfig(
     },
     drawable: {
       shapes,
-      brushes: BRUSHES,
+      brushes,
       onChange: onDrawableChange,
     },
     animation: { enabled: true, duration: 300 },

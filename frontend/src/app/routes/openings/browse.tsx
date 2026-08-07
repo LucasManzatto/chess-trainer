@@ -57,7 +57,7 @@ function getBestMoveArrow(
   const hasMatchingDraftArrow = draftArrows.some(
     a => a.from_square === bestMoveFromTo.from_square && a.to_square === bestMoveFromTo.to_square,
   )
-  return hasMatchingDraftArrow ? [] : [{ ...bestMoveFromTo, color: 'B', comment: null }]
+  return hasMatchingDraftArrow ? [] : [{ ...bestMoveFromTo, color: 'B', category: 'best_move', comment: null }]
 }
 
 // ─── Root (providers only) ────────────────────────────────────────────────────
@@ -330,6 +330,18 @@ function BrowsePageInner() {
               annotations.setDraftAnnotations(
                 annotations.draftArrows,
                 annotations.draftCircles.map((c, i) => (i === index ? { ...c, color } : c)),
+              )
+            }
+            onArrowCategoryChange={(index, category) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows.map((a, i) => (i === index ? { ...a, category } : a)),
+                annotations.draftCircles,
+              )
+            }
+            onCircleCategoryChange={(index, category) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows,
+                annotations.draftCircles.map((c, i) => (i === index ? { ...c, category } : c)),
               )
             }
             onArrowCommentChange={(index, comment) =>
