@@ -1,17 +1,28 @@
 export type AnnotationCategory = 'best_move' | 'attacker' | 'defender' | 'target' | 'threat' | 'idea'
 
+// solid = concrete move, dashed = idea/plan, dotted = opponent threat — visual language on
+// top of color/category, chosen independently of either.
+export type AnnotationLineStyle = 'solid' | 'dashed' | 'dotted'
+
 export type BoardAnnotationArrow = {
   from_square: string
   to_square: string
   color: string
   category: AnnotationCategory | null
   comment: string | null
+  line_style: AnnotationLineStyle
+  // Step number in a multi-move plan (arrows 1, 2, 3 depicting a sequence). Null = unordered.
+  order: number | null
 }
 export type BoardAnnotationCircle = {
   square: string
   color: string
   category: AnnotationCategory | null
   comment: string | null
+  line_style: AnnotationLineStyle
+  // Filled square wash instead of a ring — marks a concept (weak square, outpost) on the
+  // square itself rather than a move-related idea.
+  fill: boolean
 }
 
 export type AnnotationCategoryMeta = { value: AnnotationCategory; label: string; glyph: string; fill: string }

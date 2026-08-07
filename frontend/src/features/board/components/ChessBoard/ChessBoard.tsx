@@ -7,7 +7,13 @@ import type { DrawBrushes, DrawShape } from '@lichess-org/chessground/draw'
 import { Chess } from 'chess.js'
 import type { Square } from 'chess.js'
 import { getDests } from '../../../../lib/chess/position'
-import { ANNOTATION_CATEGORIES, ANNOTATION_CATEGORY_BY_VALUE, type BoardAnnotationArrow, type BoardAnnotationCircle } from '../../types'
+import {
+  ANNOTATION_CATEGORIES,
+  ANNOTATION_CATEGORY_BY_VALUE,
+  type AnnotationLineStyle,
+  type BoardAnnotationArrow,
+  type BoardAnnotationCircle,
+} from '../../types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -25,9 +31,15 @@ const CATEGORY_BRUSHES = Object.fromEntries(
   ANNOTATION_CATEGORIES.map(c => [c.value, { key: c.value, color: c.fill, opacity: 0.9, lineWidth: 10 }]),
 )
 
+// chessground's own brushes have no dash/fill support, so any shape that isn't a plain solid
+// line/ring is drawn entirely by us via customSvg instead — this brush just keeps that shape's
+// native rendering fully invisible.
+const GHOST_BRUSH_KEY = 'annotation-custom'
+
 const SOLID_BRUSHES: Record<string, { key: string; color: string; opacity: number; lineWidth: number }> = {
   ...BASE_BRUSHES,
   ...CATEGORY_BRUSHES,
+  [GHOST_BRUSH_KEY]: { key: GHOST_BRUSH_KEY, color: 'transparent', opacity: 0, lineWidth: 1 },
 }
 
 const noop = () => {}
@@ -81,33 +93,146 @@ function baseBrushKey(color: string, category: BoardAnnotationArrow['category'])
   return category ?? COLOR_TO_BRUSH[color] ?? color
 }
 
-// Glyph drawn as plain outlined text directly at the arrowhead/circle-center point (no
-// separate badge circle) so it reads as printed on the shape itself, not overlaid on top of it.
-const categoryGlyphSvg = (glyph: string, fill: string) =>
-  `<text x="50" y="58" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff" stroke="${fill}" stroke-width="6" paint-order="stroke" stroke-linejoin="round">${glyph}</text>`
-
-function shapeCustomSvg(
-  category: BoardAnnotationArrow['category'],
-  center: 'label' | 'orig',
-): DrawShape['customSvg'] | undefined {
-  const glyph = category ? ANNOTATION_CATEGORY_BY_VALUE[category] : null
-  if (!glyph) return undefined
-  return { center, html: categoryGlyphSvg(glyph.glyph, glyph.fill) }
+// A solid-styled shape (the vast majority) is drawn natively by chessground — cheapest path,
+// zero custom geometry. Anything dashed/dotted, or a filled square, has no chessground brush
+// equivalent, so it's drawn entirely by us via customSvg instead, with the native shape hidden.
+function arrowBrushKey(color: string, category: BoardAnnotationArrow['category'], lineStyle: AnnotationLineStyle): string {
+  return lineStyle === 'solid' ? baseBrushKey(color, category) : GHOST_BRUSH_KEY
+}
+function circleBrushKey(
+  color: string,
+  category: BoardAnnotationCircle['category'],
+  lineStyle: AnnotationLineStyle,
+  fill: boolean,
+): string {
+  return lineStyle === 'solid' && !fill ? baseBrushKey(color, category) : GHOST_BRUSH_KEY
 }
 
-function toDrawShapes(arrows: BoardAnnotationArrow[], circles: BoardAnnotationCircle[]): DrawShape[] {
+// Glyph drawn as plain outlined text directly on the shape (no separate badge circle) so it
+// reads as printed on the shape itself, not overlaid on top of it.
+const categoryGlyphSvg = (glyph: string, fill: string, x = 50, y = 58) =>
+  `<text x="${x}" y="${y}" font-size="30" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff" stroke="${fill}" stroke-width="6" paint-order="stroke" stroke-linejoin="round">${glyph}</text>`
+
+// Small numbered badge — depicts an arrow's step in a multi-move plan (1, 2, 3, …).
+const orderBadgeSvg = (order: number, fill: string, x: number, y: number) => `
+  <circle cx="${x}" cy="${y}" r="13" fill="${fill}" stroke="#fff" stroke-width="2" />
+  <text x="${x}" y="${y + 5}" font-size="15" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff">${order}</text>
+`
+
+const DASH_PATTERN: Record<'dashed' | 'dotted', string> = { dashed: '16 12', dotted: '2 12' }
+
+// customSvg's 1×1 embedded box (viewBox 0 0 100 100) covers exactly one board square, so
+// 100 local units == 1 square, regardless of which point (orig/dest/label) it's anchored to.
+const SQUARE_UNITS = 100
+
+function squareFileRank(square: string): [number, number] {
+  return [square.charCodeAt(0) - 97, Number(square[1]) - 1]
+}
+
+/** Angle + length (in squares) of an arrow, in the same screen-space direction chessground
+ *  itself renders it in — i.e. accounting for board orientation. */
+function arrowGeometry(from: string, to: string, orientation: 'white' | 'black'): { angle: number; lengthSquares: number } {
+  const [ff, fr] = squareFileRank(from)
+  const [tf, tr] = squareFileRank(to)
+  const dFile = tf - ff
+  const dRank = tr - fr
+  let vx = dFile
+  let vy = -dRank // svg y grows downward; a higher rank sits higher on screen
+  if (orientation === 'black') { vx = -vx; vy = -vy }
+  return { angle: Math.atan2(vy, vx), lengthSquares: Math.hypot(dFile, dRank) }
+}
+
+// Full hand-drawn shaft + arrowhead, since chessground brushes can't dash a line.
+function dashedArrowShaftSvg(hex: string, angle: number, lengthLocal: number, lineStyle: 'dashed' | 'dotted'): string {
+  const headLen = 22
+  const shaftLen = Math.max(0, lengthLocal - headLen)
+  const shaftX = 50 + Math.cos(angle) * shaftLen
+  const shaftY = 50 + Math.sin(angle) * shaftLen
+  const tipX = 50 + Math.cos(angle) * lengthLocal
+  const tipY = 50 + Math.sin(angle) * lengthLocal
+  const perp = angle + Math.PI / 2
+  const wingX = Math.cos(perp) * 10
+  const wingY = Math.sin(perp) * 10
+  return `
+    <line x1="50" y1="50" x2="${shaftX}" y2="${shaftY}" stroke="${hex}" stroke-width="10"
+      stroke-linecap="round" stroke-dasharray="${DASH_PATTERN[lineStyle]}" opacity="0.9" />
+    <polygon points="${tipX},${tipY} ${shaftX + wingX},${shaftY + wingY} ${shaftX - wingX},${shaftY - wingY}" fill="${hex}" opacity="0.9" />
+  `
+}
+
+function arrowCustomSvg(
+  hex: string,
+  category: BoardAnnotationArrow['category'],
+  order: number | null,
+  lineStyle: AnnotationLineStyle,
+  angle: number,
+  lengthSquares: number,
+): DrawShape['customSvg'] | undefined {
+  const glyph = category ? ANNOTATION_CATEGORY_BY_VALUE[category] : null
+
+  if (lineStyle === 'solid') {
+    if (!glyph && order == null) return undefined
+    let html = glyph ? categoryGlyphSvg(glyph.glyph, glyph.fill) : ''
+    if (order != null) html += orderBadgeSvg(order, hex, 20, 20)
+    return { center: 'label', html }
+  }
+
+  const lengthLocal = lengthSquares * SQUARE_UNITS
+  let html = dashedArrowShaftSvg(hex, angle, lengthLocal, lineStyle)
+  if (glyph) {
+    html += categoryGlyphSvg(glyph.glyph, glyph.fill, 50 + Math.cos(angle) * lengthLocal * 0.68, 50 + Math.sin(angle) * lengthLocal * 0.68)
+  }
+  if (order != null) {
+    html += orderBadgeSvg(order, hex, 50 + Math.cos(angle) * lengthLocal * 0.18, 50 + Math.sin(angle) * lengthLocal * 0.18)
+  }
+  return { center: 'orig', html }
+}
+
+function circleCustomSvg(
+  hex: string,
+  category: BoardAnnotationCircle['category'],
+  lineStyle: AnnotationLineStyle,
+  fill: boolean,
+): DrawShape['customSvg'] | undefined {
+  const glyph = category ? ANNOTATION_CATEGORY_BY_VALUE[category] : null
+  const needsCustomDraw = fill || lineStyle !== 'solid'
+
+  if (!needsCustomDraw) {
+    if (!glyph) return undefined
+    return { center: 'orig', html: categoryGlyphSvg(glyph.glyph, glyph.fill) }
+  }
+
+  const shapeSvg = fill
+    ? `<rect x="4" y="4" width="92" height="92" rx="10" fill="${hex}" opacity="0.35" />`
+    : `<circle cx="50" cy="50" r="42" fill="none" stroke="${hex}" stroke-width="8" ${lineStyle === 'dashed' || lineStyle === 'dotted' ? `stroke-dasharray="${DASH_PATTERN[lineStyle]}"` : ''} opacity="0.9" />`
+  const html = shapeSvg + (glyph ? categoryGlyphSvg(glyph.glyph, glyph.fill) : '')
+  return { center: 'orig', html }
+}
+
+function toDrawShapes(
+  arrows: BoardAnnotationArrow[],
+  circles: BoardAnnotationCircle[],
+  orientation: 'white' | 'black',
+): DrawShape[] {
   return [
-    ...arrows.map(a => ({
-      orig: a.from_square as Key,
-      dest: a.to_square as Key,
-      brush: baseBrushKey(a.color, a.category),
-      customSvg: shapeCustomSvg(a.category, 'label'),
-    })),
-    ...circles.map(c => ({
-      orig: c.square as Key,
-      brush: baseBrushKey(c.color, c.category),
-      customSvg: shapeCustomSvg(c.category, 'orig'),
-    })),
+    ...arrows.map(a => {
+      const hex = SOLID_BRUSHES[baseBrushKey(a.color, a.category)]?.color ?? a.color
+      const { angle, lengthSquares } = arrowGeometry(a.from_square, a.to_square, orientation)
+      return {
+        orig: a.from_square as Key,
+        dest: a.to_square as Key,
+        brush: arrowBrushKey(a.color, a.category, a.line_style),
+        customSvg: arrowCustomSvg(hex, a.category, a.order, a.line_style, angle, lengthSquares),
+      }
+    }),
+    ...circles.map(c => {
+      const hex = SOLID_BRUSHES[baseBrushKey(c.color, c.category)]?.color ?? c.color
+      return {
+        orig: c.square as Key,
+        brush: circleBrushKey(c.color, c.category, c.line_style, c.fill),
+        customSvg: circleCustomSvg(hex, c.category, c.line_style, c.fill),
+      }
+    }),
   ]
 }
 
@@ -121,14 +246,16 @@ function fromDrawShapes(
       const from_square = s.orig as string
       const to_square = s.dest as string
       const prev = prevArrows.find(a => a.from_square === from_square && a.to_square === to_square)
-      // A brush is either a base G/R/B/Y draw color, or a per-category brush we render existing
-      // shapes with — only the former is a real color change made by the user just now.
+      // A brush is either a base G/R/B/Y draw color, or a per-category/custom brush we render
+      // existing shapes with — only the former is a real color change made by the user just now.
       return {
         from_square,
         to_square,
         color: prev?.category ? prev.color : brushToColor(s.brush),
         category: prev?.category ?? null,
         comment: prev?.comment ?? null,
+        line_style: prev?.line_style ?? 'solid',
+        order: prev?.order ?? null,
       }
     }),
     circles: shapes.filter(s => !isArrowShape(s)).map(s => {
@@ -139,6 +266,8 @@ function fromDrawShapes(
         color: prev?.category ? prev.color : brushToColor(s.brush),
         category: prev?.category ?? null,
         comment: prev?.comment ?? null,
+        line_style: prev?.line_style ?? 'solid',
+        fill: prev?.fill ?? false,
       }
     }),
   }
@@ -161,7 +290,7 @@ function useBoardConfig(
 
   const dests = interactive ? getDests(chess.moves({ verbose: true })) : new Map()
 
-  const shapes = toDrawShapes(arrows, circles)
+  const shapes = toDrawShapes(arrows, circles, orientation)
   const brushes = SOLID_BRUSHES as unknown as DrawBrushes
 
   function onDrawableChange(next: DrawShape[]) {

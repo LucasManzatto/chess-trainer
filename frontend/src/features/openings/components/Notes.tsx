@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronRightIcon } from 'lucide-react'
 import { highlightMoves } from '../../../lib/chess'
-import type { AnnotationCategory, BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+import type { AnnotationCategory, AnnotationLineStyle, BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 import { AnnotationsList } from './AnnotationsList'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +25,12 @@ export type NotesProps = {
   onCircleCategoryChange: (index: number, category: AnnotationCategory | null) => void
   onArrowCommentChange: (index: number, comment: string | null) => void
   onCircleCommentChange: (index: number, comment: string | null) => void
+  onArrowLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
+  onCircleLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
+  onArrowOrderChange: (index: number, order: number | null) => void
+  onCircleFillChange: (index: number, fill: boolean) => void
+  onArrowDelete: (index: number) => void
+  onCircleDelete: (index: number) => void
 }
 
 export function Notes({
@@ -42,6 +48,12 @@ export function Notes({
   onCircleCategoryChange,
   onArrowCommentChange,
   onCircleCommentChange,
+  onArrowLineStyleChange,
+  onCircleLineStyleChange,
+  onArrowOrderChange,
+  onCircleFillChange,
+  onArrowDelete,
+  onCircleDelete,
 }: NotesProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden font-sans">
@@ -62,6 +74,12 @@ export function Notes({
           onCircleCategoryChange={onCircleCategoryChange}
           onArrowCommentChange={onArrowCommentChange}
           onCircleCommentChange={onCircleCommentChange}
+          onArrowLineStyleChange={onArrowLineStyleChange}
+          onCircleLineStyleChange={onCircleLineStyleChange}
+          onArrowOrderChange={onArrowOrderChange}
+          onCircleFillChange={onCircleFillChange}
+          onArrowDelete={onArrowDelete}
+          onCircleDelete={onCircleDelete}
         />
       </div>
     </div>

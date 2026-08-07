@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -55,6 +55,10 @@ class PositionAnnotationArrow(Base):
     color: Mapped[str] = mapped_column(Text)
     category: Mapped[str | None] = mapped_column(Text, nullable=True)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    line_style: Mapped[str] = mapped_column(Text, server_default="solid")
+    # Step number in a multi-move plan (e.g. arrows 1, 2, 3 depicting a sequence) — null
+    # means unordered.
+    order: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class PositionAnnotationCircle(Base):
@@ -68,3 +72,7 @@ class PositionAnnotationCircle(Base):
     color: Mapped[str] = mapped_column(Text)
     category: Mapped[str | None] = mapped_column(Text, nullable=True)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    line_style: Mapped[str] = mapped_column(Text, server_default="solid")
+    # Filled square wash instead of a ring — marks a concept (weak square, outpost) on
+    # the square itself.
+    fill: Mapped[bool] = mapped_column(Boolean, server_default="false")

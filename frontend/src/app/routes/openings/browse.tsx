@@ -57,7 +57,9 @@ function getBestMoveArrow(
   const hasMatchingDraftArrow = draftArrows.some(
     a => a.from_square === bestMoveFromTo.from_square && a.to_square === bestMoveFromTo.to_square,
   )
-  return hasMatchingDraftArrow ? [] : [{ ...bestMoveFromTo, color: 'B', category: 'best_move', comment: null }]
+  return hasMatchingDraftArrow
+    ? []
+    : [{ ...bestMoveFromTo, color: 'B', category: 'best_move', comment: null, line_style: 'solid', order: null }]
 }
 
 // ─── Root (providers only) ────────────────────────────────────────────────────
@@ -354,6 +356,42 @@ function BrowsePageInner() {
               annotations.setDraftAnnotations(
                 annotations.draftArrows,
                 annotations.draftCircles.map((c, i) => (i === index ? { ...c, comment } : c)),
+              )
+            }
+            onArrowLineStyleChange={(index, line_style) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows.map((a, i) => (i === index ? { ...a, line_style } : a)),
+                annotations.draftCircles,
+              )
+            }
+            onCircleLineStyleChange={(index, line_style) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows,
+                annotations.draftCircles.map((c, i) => (i === index ? { ...c, line_style } : c)),
+              )
+            }
+            onArrowOrderChange={(index, order) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows.map((a, i) => (i === index ? { ...a, order } : a)),
+                annotations.draftCircles,
+              )
+            }
+            onCircleFillChange={(index, fill) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows,
+                annotations.draftCircles.map((c, i) => (i === index ? { ...c, fill } : c)),
+              )
+            }
+            onArrowDelete={(index) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows.filter((_, i) => i !== index),
+                annotations.draftCircles,
+              )
+            }
+            onCircleDelete={(index) =>
+              annotations.setDraftAnnotations(
+                annotations.draftArrows,
+                annotations.draftCircles.filter((_, i) => i !== index),
               )
             }
           />

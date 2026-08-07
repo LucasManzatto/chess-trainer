@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 AnnotationCategory = Literal["best_move", "attacker", "defender", "target", "threat", "idea"]
+AnnotationLineStyle = Literal["solid", "dashed", "dotted"]
 
 
 class PositionCreate(BaseModel):
@@ -76,6 +77,8 @@ class PositionAnnotationArrowInput(BaseModel):
     color: str
     category: AnnotationCategory | None = None
     comment: str | None = None
+    line_style: AnnotationLineStyle = "solid"
+    order: int | None = None
 
 
 class PositionAnnotationArrowResponse(BaseModel):
@@ -88,6 +91,8 @@ class PositionAnnotationArrowResponse(BaseModel):
     color: str
     category: AnnotationCategory | None
     comment: str | None
+    line_style: AnnotationLineStyle
+    order: int | None
 
 
 class PositionAnnotationCircleInput(BaseModel):
@@ -95,6 +100,8 @@ class PositionAnnotationCircleInput(BaseModel):
     color: str
     category: AnnotationCategory | None = None
     comment: str | None = None
+    line_style: AnnotationLineStyle = "solid"
+    fill: bool = False
 
 
 class PositionAnnotationCircleResponse(BaseModel):
@@ -106,6 +113,8 @@ class PositionAnnotationCircleResponse(BaseModel):
     color: str
     category: AnnotationCategory | None
     comment: str | None
+    line_style: AnnotationLineStyle
+    fill: bool
 
 
 class PositionAnnotationsReplace(BaseModel):

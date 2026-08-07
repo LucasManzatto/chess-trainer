@@ -1,8 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Square } from 'chess.js'
-import { ChevronRightIcon } from 'lucide-react'
+import { ChevronRightIcon, Trash2Icon } from 'lucide-react'
 import { arrowMoveLabel, highlightMoves } from '../../../lib/chess'
-import { ANNOTATION_CATEGORIES, ANNOTATION_CATEGORY_BY_VALUE, type AnnotationCategory, type BoardAnnotationArrow, type BoardAnnotationCircle } from '../../board/types'
+import {
+  ANNOTATION_CATEGORIES,
+  ANNOTATION_CATEGORY_BY_VALUE,
+  type AnnotationCategory,
+  type AnnotationLineStyle,
+  type BoardAnnotationArrow,
+  type BoardAnnotationCircle,
+} from '../../board/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -15,6 +22,13 @@ const COLOR_HEX: Record<string, string> = { G: '#15781B', R: '#882020', B: '#003
 const TEXT_COLOR_HEX: Record<string, string> = { G: '#34d399', R: '#fda4af', B: '#60a5fa', Y: '#fbbf24' }
 const COLOR_ORDER = ['G', 'R', 'B', 'Y'] as const
 
+// solid = concrete move, dashed = idea/plan, dotted = opponent threat.
+const LINE_STYLES: { value: AnnotationLineStyle; label: string; dash: string }[] = [
+  { value: 'solid', label: 'Solid — concrete move', dash: '' },
+  { value: 'dashed', label: 'Dashed — idea / plan', dash: '4 2' },
+  { value: 'dotted', label: 'Dotted — opponent threat', dash: '1 2' },
+]
+
 type Props = {
   fen: string
   arrows: BoardAnnotationArrow[]
@@ -25,6 +39,12 @@ type Props = {
   onCircleCategoryChange: (index: number, category: AnnotationCategory | null) => void
   onArrowCommentChange: (index: number, comment: string | null) => void
   onCircleCommentChange: (index: number, comment: string | null) => void
+  onArrowLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
+  onCircleLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
+  onArrowOrderChange: (index: number, order: number | null) => void
+  onCircleFillChange: (index: number, fill: boolean) => void
+  onArrowDelete: (index: number) => void
+  onCircleDelete: (index: number) => void
 }
 
 export function AnnotationsList({
@@ -37,6 +57,12 @@ export function AnnotationsList({
   onCircleCategoryChange,
   onArrowCommentChange,
   onCircleCommentChange,
+  onArrowLineStyleChange,
+  onCircleLineStyleChange,
+  onArrowOrderChange,
+  onCircleFillChange,
+  onArrowDelete,
+  onCircleDelete,
 }: Props) {
   const [open, setOpen] = useState(true)
 
@@ -66,9 +92,14 @@ export function AnnotationsList({
               color={arrow.color}
               category={arrow.category}
               comment={arrow.comment}
+              lineStyle={arrow.line_style}
+              order={arrow.order}
               onPickColor={(color) => onArrowColorChange(i, color)}
               onPickCategory={(category) => onArrowCategoryChange(i, category)}
               onCommentChange={(comment) => onArrowCommentChange(i, comment)}
+              onPickLineStyle={(lineStyle) => onArrowLineStyleChange(i, lineStyle)}
+              onOrderChange={(order) => onArrowOrderChange(i, order)}
+              onDelete={() => onArrowDelete(i)}
             />
           ))}
           {circles.map((circle, i) => (
@@ -79,9 +110,14 @@ export function AnnotationsList({
               color={circle.color}
               category={circle.category}
               comment={circle.comment}
+              lineStyle={circle.line_style}
+              fill={circle.fill}
               onPickColor={(color) => onCircleColorChange(i, color)}
               onPickCategory={(category) => onCircleCategoryChange(i, category)}
               onCommentChange={(comment) => onCircleCommentChange(i, comment)}
+              onPickLineStyle={(lineStyle) => onCircleLineStyleChange(i, lineStyle)}
+              onFillChange={(fill) => onCircleFillChange(i, fill)}
+              onDelete={() => onCircleDelete(i)}
             />
           ))}
         </ul>
@@ -96,9 +132,18 @@ type AnnotationRowProps = {
   color: string
   category: AnnotationCategory | null
   comment: string | null
+  lineStyle: AnnotationLineStyle
   onPickColor: (color: string) => void
   onPickCategory: (category: AnnotationCategory | null) => void
   onCommentChange: (comment: string | null) => void
+  onPickLineStyle: (lineStyle: AnnotationLineStyle) => void
+  // Arrow-only: step number in a multi-move plan.
+  order?: number | null
+  onOrderChange?: (order: number | null) => void
+  // Circle-only: filled square wash instead of a ring.
+  fill?: boolean
+  onFillChange?: (fill: boolean) => void
+  onDelete: () => void
 }
 
 function AnnotationRow({
@@ -107,9 +152,16 @@ function AnnotationRow({
   color,
   category,
   comment,
+  lineStyle,
   onPickColor,
   onPickCategory,
   onCommentChange,
+  onPickLineStyle,
+  order,
+  onOrderChange,
+  fill,
+  onFillChange,
+  onDelete,
 }: AnnotationRowProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [expanded, setExpanded] = useState(!!comment)
@@ -161,17 +213,44 @@ function AnnotationRow({
             </PopoverContent>
           </Popover>
           <CategoryBadge category={category} onPickCategory={onPickCategory} />
+          <LineStyleBadge lineStyle={lineStyle} onPickLineStyle={onPickLineStyle} />
+          {onOrderChange && <OrderStepper order={order ?? null} onOrderChange={onOrderChange} />}
+          {onFillChange && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className={cn('text-xs', fill && 'bg-muted')}
+              aria-label={fill ? 'Filled square' : 'Ring (click to fill square)'}
+              aria-pressed={!!fill}
+              onClick={() => onFillChange(!fill)}
+            >
+              <FillSquareIcon filled={!!fill} color={TEXT_COLOR_HEX[color] ?? color} />
+            </Button>
+          )}
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setExpanded(e => !e)}
-          aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
-          aria-expanded={expanded}
-        >
-          <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onDelete}
+            aria-label="Delete annotation"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2Icon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setExpanded(e => !e)}
+            aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
+            aria-expanded={expanded}
+          >
+            <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
+          </Button>
+        </div>
       </div>
       {expanded && (
         editing ? (
@@ -249,6 +328,86 @@ function CategoryBadge({
         )}
       </PopoverContent>
     </Popover>
+  )
+}
+
+function LineStyleBadge({
+  lineStyle,
+  onPickLineStyle,
+}: {
+  lineStyle: AnnotationLineStyle
+  onPickLineStyle: (lineStyle: AnnotationLineStyle) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={<Button variant="ghost" size="icon-sm" aria-label={`Line style: ${lineStyle}`} />}
+      >
+        <LineStyleIcon dash={LINE_STYLES.find(s => s.value === lineStyle)?.dash ?? ''} />
+      </PopoverTrigger>
+      <PopoverContent className="w-auto flex-col gap-0.5 p-1">
+        {LINE_STYLES.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => { onPickLineStyle(s.value); setOpen(false) }}
+            className={cn(
+              'flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer hover:bg-muted transition-colors',
+              lineStyle === s.value && 'bg-muted',
+            )}
+          >
+            <LineStyleIcon dash={s.dash} />
+            {s.label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function LineStyleIcon({ dash }: { dash: string }) {
+  return (
+    <svg width="16" height="10" viewBox="0 0 16 10" className="flex-shrink-0">
+      <line x1="1" y1="5" x2="15" y2="5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray={dash || undefined} />
+    </svg>
+  )
+}
+
+function OrderStepper({
+  order,
+  onOrderChange,
+}: {
+  order: number | null
+  onOrderChange: (order: number | null) => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className="text-xs font-mono"
+      aria-label={order != null ? `Plan step ${order} (click to clear)` : 'Set plan step number'}
+      onClick={() => onOrderChange(order != null ? null : 1)}
+      onContextMenu={(e) => {
+        // Right-click bumps the step number instead of clearing it, so a multi-arrow plan can
+        // be numbered without reopening this control for every arrow.
+        if (order == null) return
+        e.preventDefault()
+        onOrderChange(order + 1)
+      }}
+    >
+      {order != null ? `#${order}` : <span className="text-muted-foreground">#</span>}
+    </Button>
+  )
+}
+
+function FillSquareIcon({ filled, color }: { filled: boolean; color: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" className="flex-shrink-0">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill={filled ? color : 'none'} fillOpacity={0.5} stroke={color} strokeWidth="2" />
+    </svg>
   )
 }
 

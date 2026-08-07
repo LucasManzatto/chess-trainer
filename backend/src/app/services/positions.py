@@ -176,6 +176,8 @@ async def replace_position_annotations(
             color=a.color,
             category=a.category,
             comment=a.comment,
+            line_style=a.line_style,
+            order=a.order,
         )
         for a in body.arrows
     ]
@@ -186,6 +188,8 @@ async def replace_position_annotations(
             color=c.color,
             category=c.category,
             comment=c.comment,
+            line_style=c.line_style,
+            fill=c.fill,
         )
         for c in body.circles
     ]
