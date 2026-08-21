@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { ChevronRightIcon } from 'lucide-react'
 import { highlightMoves } from '../../../lib/chess'
-import type { AnnotationLinePatch, BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
-import { AnnotationsList } from './AnnotationsList'
+import type { BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+import { AnnotationsList, type AnnotationActions } from './AnnotationsList'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -19,15 +19,7 @@ export type NotesProps = {
   circles: BoardAnnotationCircle[]
   lastMove: LastMove | null
   lastNotes: { id: number; content: string }[]
-  onArrowChange: (index: number, patch: Partial<BoardAnnotationArrow>) => void
-  onCircleChange: (index: number, patch: Partial<BoardAnnotationCircle>) => void
-  onArrowDelete: (index: number) => void
-  onCircleDelete: (index: number) => void
-  onArrowLink: (indexA: number, indexB: number) => void
-  onArrowUnlink: (index: number) => void
-  onLineChange: (lineId: string, patch: AnnotationLinePatch) => void
-  onLineReorderMove: (lineId: string, index: number, direction: 'up' | 'down') => void
-  onLineDelete: (lineId: string) => void
+  annotationActions: AnnotationActions
 }
 
 export function Notes({
@@ -39,15 +31,7 @@ export function Notes({
   circles,
   lastMove,
   lastNotes,
-  onArrowChange,
-  onCircleChange,
-  onArrowDelete,
-  onCircleDelete,
-  onArrowLink,
-  onArrowUnlink,
-  onLineChange,
-  onLineReorderMove,
-  onLineDelete,
+  annotationActions,
 }: NotesProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden font-sans">
@@ -58,20 +42,7 @@ export function Notes({
         {lastMove && (
             <LastMoveAnnotations label={lastMove.label} comment={lastMove.comment} />
         )}
-        <AnnotationsList
-          fen={fen}
-          arrows={arrows}
-          circles={circles}
-          onArrowChange={onArrowChange}
-          onCircleChange={onCircleChange}
-          onArrowDelete={onArrowDelete}
-          onCircleDelete={onCircleDelete}
-          onArrowLink={onArrowLink}
-          onArrowUnlink={onArrowUnlink}
-          onLineChange={onLineChange}
-          onLineReorderMove={onLineReorderMove}
-          onLineDelete={onLineDelete}
-        />
+        <AnnotationsList fen={fen} arrows={arrows} circles={circles} actions={annotationActions} />
       </div>
     </div>
   )

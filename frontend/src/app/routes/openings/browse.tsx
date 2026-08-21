@@ -353,15 +353,7 @@ function BrowsePageInner() {
             circles={annotations.draftCircles}
             lastMove={lastMove}
             lastNotes={parentPositionDetail.comments}
-            onArrowChange={annotations.updateArrow}
-            onCircleChange={annotations.updateCircle}
-            onArrowDelete={annotations.deleteArrow}
-            onCircleDelete={annotations.deleteCircle}
-            onArrowLink={annotations.linkArrows}
-            onArrowUnlink={annotations.unlinkArrow}
-            onLineChange={annotations.updateLine}
-            onLineReorderMove={annotations.reorderLine}
-            onLineDelete={annotations.deleteLine}
+            annotationActions={annotations}
           />
         )}
       </section>
