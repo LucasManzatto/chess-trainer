@@ -280,7 +280,11 @@ function toDrawShapes(
     // has no customSvg to pick up the opacity change either, so the brush key itself must carry
     // the hover state, or hovering would silently no-op on every solid arrow.
     const brushKey = `arrow-${i}-${opacity}-${lineWidth}`
-    brushes[brushKey] = { key: brushKey, color: hex, opacity: isGhost ? 0 : opacity, lineWidth }
+    // Ghost shapes must stay 'transparent', not just opacity: 0 — chessground's own opacity()
+    // helper does `brush.opacity || 1`, so a literal 0 falls back to full opacity 1. Without a
+    // transparent color that fallback would render the hidden native line at full strength,
+    // permanently masking this shape's actual (correctly dimming) customSvg opacity.
+    brushes[brushKey] = { key: brushKey, color: isGhost ? 'transparent' : hex, opacity: isGhost ? 0 : opacity, lineWidth }
     const rawCustomSvg = arrowCustomSvg(hex, a.category, a.order, a.line_style, angle, lengthSquares)
     return {
       orig: a.from_square as Key,
@@ -294,7 +298,7 @@ function toDrawShapes(
     const isGhost = circleBrushKey(c.color, c.category, c.line_style, c.fill) === GHOST_BRUSH_KEY
     const { opacity, lineWidth } = shapeHoverState(c.square, hoveredKey)
     const brushKey = `circle-${i}-${opacity}-${lineWidth}`
-    brushes[brushKey] = { key: brushKey, color: hex, opacity: isGhost ? 0 : opacity, lineWidth }
+    brushes[brushKey] = { key: brushKey, color: isGhost ? 'transparent' : hex, opacity: isGhost ? 0 : opacity, lineWidth }
     const rawCustomSvg = circleCustomSvg(hex, c.category, c.line_style, c.fill)
     return {
       orig: c.square as Key,
