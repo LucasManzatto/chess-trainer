@@ -155,6 +155,15 @@ function shapeHoverState(key: string, hoveredKey: string | null | undefined): { 
     : { opacity: BASE_SHAPE_OPACITY * DIMMED_OPACITY, lineWidth: BASE_LINE_WIDTH }
 }
 
+// A native arrow's head is an SVG <marker> referenced via marker-end — markers don't inherit
+// the referencing line's `opacity` attribute (an SVG quirk), only their own fill. Baking the
+// opacity into the color itself (as an 8-digit hex alpha channel) dims the shaft and the
+// arrowhead together, instead of leaving the arrowhead permanently at full strength.
+function hexWithOpacity(hex: string, opacity: number): string {
+  const alpha = Math.round(Math.min(1, Math.max(0, opacity)) * 255).toString(16).padStart(2, '0')
+  return `${hex}${alpha}`
+}
+
 // customSvg's 1×1 embedded box (viewBox 0 0 100 100) covers exactly one board square, so
 // 100 local units == 1 square, regardless of which point (orig/dest/label) it's anchored to.
 const SQUARE_UNITS = 100
@@ -283,8 +292,10 @@ function toDrawShapes(
     // Ghost shapes must stay 'transparent', not just opacity: 0 — chessground's own opacity()
     // helper does `brush.opacity || 1`, so a literal 0 falls back to full opacity 1. Without a
     // transparent color that fallback would render the hidden native line at full strength,
-    // permanently masking this shape's actual (correctly dimming) customSvg opacity.
-    brushes[brushKey] = { key: brushKey, color: isGhost ? 'transparent' : hex, opacity: isGhost ? 0 : opacity, lineWidth }
+    // permanently masking this shape's actual (correctly dimming) customSvg opacity. Non-ghost
+    // shapes bake opacity into the color itself (see hexWithOpacity) rather than the brush's own
+    // opacity field, since that field only dims the shaft — the arrowhead marker ignores it.
+    brushes[brushKey] = { key: brushKey, color: isGhost ? 'transparent' : hexWithOpacity(hex, opacity), opacity: 1, lineWidth }
     const rawCustomSvg = arrowCustomSvg(hex, a.category, a.order, a.line_style, angle, lengthSquares)
     return {
       orig: a.from_square as Key,
@@ -298,7 +309,7 @@ function toDrawShapes(
     const isGhost = circleBrushKey(c.color, c.category, c.line_style, c.fill) === GHOST_BRUSH_KEY
     const { opacity, lineWidth } = shapeHoverState(c.square, hoveredKey)
     const brushKey = `circle-${i}-${opacity}-${lineWidth}`
-    brushes[brushKey] = { key: brushKey, color: isGhost ? 'transparent' : hex, opacity: isGhost ? 0 : opacity, lineWidth }
+    brushes[brushKey] = { key: brushKey, color: isGhost ? 'transparent' : hexWithOpacity(hex, opacity), opacity: 1, lineWidth }
     const rawCustomSvg = circleCustomSvg(hex, c.category, c.line_style, c.fill)
     return {
       orig: c.square as Key,
