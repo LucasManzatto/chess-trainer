@@ -123,8 +123,10 @@ function BrowsePageInner() {
       linkArrows: s.linkArrows,
       unlinkArrow: s.unlinkArrow,
       updateLine: s.updateLine,
-      reorderLine: s.reorderLine,
+      reorderLineMembers: s.reorderLineMembers,
       deleteLine: s.deleteLine,
+      reorderArrowEntries: s.reorderArrowEntries,
+      reorderCircles: s.reorderCircles,
     })),
   )
 

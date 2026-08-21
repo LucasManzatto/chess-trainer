@@ -1,6 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import type { Square } from 'chess.js'
-import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, Link2Icon, Trash2Icon, XIcon } from 'lucide-react'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { horizontalListSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { ChevronRightIcon, GripVerticalIcon, Link2Icon, Trash2Icon, XIcon } from 'lucide-react'
 import { arrowMoveLabel, highlightMoves } from '../../../lib/chess'
 import {
   type AnnotationCategory,
@@ -11,6 +14,7 @@ import {
 } from '../../board/types'
 import type { AnnotationsActions } from '../../../stores/board/slices/annotationsSlice'
 import { useCommentEditor } from '../hooks/useCommentEditor'
+import { arrowEntryKey, groupArrowEntries, type ArrowMember } from '../lib/annotationEntries'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -32,8 +36,10 @@ export type AnnotationActions = Pick<
   | 'linkArrows'
   | 'unlinkArrow'
   | 'updateLine'
-  | 'reorderLine'
+  | 'reorderLineMembers'
   | 'deleteLine'
+  | 'reorderArrowEntries'
+  | 'reorderCircles'
 >
 
 type Props = {
@@ -43,41 +49,26 @@ type Props = {
   actions: AnnotationActions
 }
 
-type ArrowMember = { arrow: BoardAnnotationArrow; index: number }
-type ArrowEntry =
-  | { kind: 'solo'; arrow: BoardAnnotationArrow; index: number }
-  | { kind: 'line'; lineId: string; members: ArrowMember[] }
-
-// Groups arrows sharing a line_id into one entry (members ordered by `order`), preserving the
-// position of each entry's first occurrence in the original list.
-function groupArrowEntries(arrows: BoardAnnotationArrow[]): ArrowEntry[] {
-  const entries: ArrowEntry[] = []
-  const seenLines = new Set<string>()
-  arrows.forEach((arrow, index) => {
-    if (!arrow.line_id) {
-      entries.push({ kind: 'solo', arrow, index })
-      return
-    }
-    if (seenLines.has(arrow.line_id)) return
-    seenLines.add(arrow.line_id)
-    const members = arrows
-      .map((a, i) => ({ arrow: a, index: i }))
-      .filter((m) => m.arrow.line_id === arrow.line_id)
-      .sort((a, b) => (a.arrow.order ?? 0) - (b.arrow.order ?? 0))
-    entries.push({ kind: 'line', lineId: arrow.line_id, members })
-  })
-  return entries
-}
+// Sortable id for a line-member chip — prefixed so it can't collide with a row's arrowEntryKey
+// (square notation / "line-<uuid>") inside the shared DndContext.
+const memberId = (index: number) => `member-${index}`
+const memberIndexFromId = (id: string) => Number(id.slice('member-'.length))
 
 export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
   const [open, setOpen] = useState(true)
   // Index of the arrow (solo or a line's last member) currently armed to be chained to the
   // next arrow clicked. Null = no link in progress.
   const [linkFrom, setLinkFrom] = useState<number | null>(null)
+  // Pointer sensor only (no keyboard sensor) — reordering also isn't exposed via keyboard yet;
+  // a small distance threshold keeps a plain click on the row (color picker, comment, etc.)
+  // from being swallowed as a drag.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   if (arrows.length === 0 && circles.length === 0) return null
 
   const arrowEntries = groupArrowEntries(arrows)
+  const arrowEntryKeys = arrowEntries.map(arrowEntryKey)
+  const circleKeys = circles.map((c) => c.square)
 
   function handleToggleLink(index: number, memberIndices: number[] = [index]) {
     if (linkFrom !== null && memberIndices.includes(linkFrom)) {
@@ -90,6 +81,28 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
     }
     actions.linkArrows(linkFrom, index)
     setLinkFrom(null)
+  }
+
+  // Single DndContext for the whole arrows/lines block: a LineRow's member chips get their own
+  // nested SortableContext (supported), but nesting a second DndContext inside this one is not
+  // — dnd-kit only reliably delivers drag events to the outermost context, so a nested
+  // DndContext's onDragEnd never fires. Row vs. member drags are told apart here via each
+  // draggable's `data.type` instead.
+  function handleArrowDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return
+    if (active.data.current?.type === 'member') {
+      const lineId = active.data.current.lineId as string
+      if (over.data.current?.type !== 'member' || over.data.current.lineId !== lineId) return
+      actions.reorderLineMembers(lineId, memberIndexFromId(String(active.id)), memberIndexFromId(String(over.id)))
+      return
+    }
+    if (over.data.current?.type !== 'row') return
+    actions.reorderArrowEntries(String(active.id), String(over.id))
+  }
+
+  function handleCircleDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return
+    actions.reorderCircles(String(active.id), String(over.id))
   }
 
   return (
@@ -108,40 +121,50 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
       </CollapsibleTrigger>
       <CollapsibleContent>
         <ul className="flex flex-col gap-2">
-          {arrowEntries.map((entry) =>
-            entry.kind === 'solo' ? (
-              <ArrowAnnotationRow
-                key={`arrow-${entry.index}`}
-                fen={fen}
-                arrow={entry.arrow}
-                onChange={(patch) => actions.updateArrow(entry.index, patch)}
-                onDelete={() => actions.deleteArrow(entry.index)}
-                linkPending={linkFrom === entry.index}
-                onToggleLink={() => handleToggleLink(entry.index)}
-              />
-            ) : (
-              <LineRow
-                key={`line-${entry.lineId}`}
-                fen={fen}
-                lineId={entry.lineId}
-                members={entry.members}
-                linkPending={linkFrom !== null && entry.members.some((m) => m.index === linkFrom)}
-                onToggleLink={() => handleToggleLink(entry.members[entry.members.length - 1].index, entry.members.map((m) => m.index))}
-                onChange={(patch) => actions.updateLine(entry.lineId, patch)}
-                onMove={(index, direction) => actions.reorderLine(entry.lineId, index, direction)}
-                onUnlink={actions.unlinkArrow}
-                onDelete={() => actions.deleteLine(entry.lineId)}
-              />
-            ),
-          )}
-          {circles.map((circle, i) => (
-            <CircleAnnotationRow
-              key={`circle-${i}`}
-              circle={circle}
-              onChange={(patch) => actions.updateCircle(i, patch)}
-              onDelete={() => actions.deleteCircle(i)}
-            />
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleArrowDragEnd}>
+            <SortableContext items={arrowEntryKeys} strategy={verticalListSortingStrategy}>
+              {arrowEntries.map((entry) =>
+                entry.kind === 'solo' ? (
+                  <ArrowAnnotationRow
+                    key={arrowEntryKey(entry)}
+                    sortableId={arrowEntryKey(entry)}
+                    fen={fen}
+                    arrow={entry.arrow}
+                    onChange={(patch) => actions.updateArrow(entry.index, patch)}
+                    onDelete={() => actions.deleteArrow(entry.index)}
+                    linkPending={linkFrom === entry.index}
+                    onToggleLink={() => handleToggleLink(entry.index)}
+                  />
+                ) : (
+                  <LineRow
+                    key={arrowEntryKey(entry)}
+                    sortableId={arrowEntryKey(entry)}
+                    fen={fen}
+                    lineId={entry.lineId}
+                    members={entry.members}
+                    linkPending={linkFrom !== null && entry.members.some((m) => m.index === linkFrom)}
+                    onToggleLink={() => handleToggleLink(entry.members[entry.members.length - 1].index, entry.members.map((m) => m.index))}
+                    onChange={(patch) => actions.updateLine(entry.lineId, patch)}
+                    onUnlink={actions.unlinkArrow}
+                    onDelete={() => actions.deleteLine(entry.lineId)}
+                  />
+                ),
+              )}
+            </SortableContext>
+          </DndContext>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCircleDragEnd}>
+            <SortableContext items={circleKeys} strategy={verticalListSortingStrategy}>
+              {circles.map((circle, i) => (
+                <CircleAnnotationRow
+                  key={circle.square}
+                  sortableId={circle.square}
+                  circle={circle}
+                  onChange={(patch) => actions.updateCircle(i, patch)}
+                  onDelete={() => actions.deleteCircle(i)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </ul>
       </CollapsibleContent>
     </Collapsible>
@@ -149,6 +172,7 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
 }
 
 function ArrowAnnotationRow({
+  sortableId,
   fen,
   arrow,
   onChange,
@@ -156,6 +180,7 @@ function ArrowAnnotationRow({
   linkPending,
   onToggleLink,
 }: {
+  sortableId: string
   fen: string
   arrow: BoardAnnotationArrow
   onChange: (patch: Partial<BoardAnnotationArrow>) => void
@@ -165,6 +190,7 @@ function ArrowAnnotationRow({
 }) {
   return (
     <AnnotationRowShell
+      sortableId={sortableId}
       icon={<ArrowIcon color={arrow.color} />}
       label={arrowMoveLabel(fen, arrow.from_square as Square, arrow.to_square as Square)}
       color={arrow.color}
@@ -181,16 +207,19 @@ function ArrowAnnotationRow({
 }
 
 function CircleAnnotationRow({
+  sortableId,
   circle,
   onChange,
   onDelete,
 }: {
+  sortableId: string
   circle: BoardAnnotationCircle
   onChange: (patch: Partial<BoardAnnotationCircle>) => void
   onDelete: () => void
 }) {
   return (
     <AnnotationRowShell
+      sortableId={sortableId}
       icon={<CircleIcon color={circle.color} />}
       label={circle.square}
       color={circle.color}
@@ -217,13 +246,13 @@ function CircleAnnotationRow({
 }
 
 type LineRowProps = {
+  sortableId: string
   fen: string
   lineId: string
   members: ArrowMember[]
   linkPending: boolean
   onToggleLink: () => void
   onChange: (patch: AnnotationLinePatch) => void
-  onMove: (index: number, direction: 'up' | 'down') => void
   onUnlink: (index: number) => void
   onDelete: () => void
 }
@@ -232,12 +261,13 @@ type LineRowProps = {
 // Color/category/comment/line-style are edited once and apply to every member; each move
 // keeps its own reorder (swap step with a neighbor) and unlink (pull it out solo) controls.
 function LineRow({
+  sortableId,
   fen,
+  lineId,
   members,
   linkPending,
   onToggleLink,
   onChange,
-  onMove,
   onUnlink,
   onDelete,
 }: LineRowProps) {
@@ -247,11 +277,28 @@ function LineRow({
     first.comment,
     (comment) => onChange({ comment }),
   )
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: sortableId,
+    data: { type: 'row' },
+  })
 
   return (
-    <li className="flex flex-col gap-2 bg-muted/50 rounded-lg p-3">
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn('flex flex-col gap-2 bg-muted/50 rounded-lg p-3', isDragging && 'opacity-50 z-10')}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1 flex-wrap">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label="Drag to reorder"
+            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVerticalIcon size={14} />
+          </button>
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Line color" />}>
               <ArrowIcon color={first.color} />
@@ -270,45 +317,21 @@ function LineRow({
           </Popover>
           <CategoryBadge category={first.category} onPickCategory={(category) => onChange({ category })} />
           <LineStyleBadge lineStyle={first.line_style} onPickLineStyle={(lineStyle) => onChange({ line_style: lineStyle })} />
-          {members.map((m, i) => (
-            <span key={m.index} className="flex items-center gap-1">
-              {i > 0 && <span className="text-muted-foreground text-xs">&rarr;</span>}
-              <span
-                className="inline-flex items-center gap-0.5 font-mono text-xs font-medium rounded px-1"
-                style={{ backgroundColor: `${TEXT_COLOR_HEX[first.color] ?? first.color}1a`, color: TEXT_COLOR_HEX[first.color] ?? first.color }}
-              >
-                {arrowMoveLabel(fen, m.arrow.from_square as Square, m.arrow.to_square as Square)}
-                <span className="flex flex-col -my-1">
-                  <button
-                    type="button"
-                    onClick={() => onMove(m.index, 'up')}
-                    disabled={i === 0}
-                    aria-label="Move step earlier"
-                    className="disabled:opacity-20 hover:text-foreground cursor-pointer disabled:cursor-default"
-                  >
-                    <ChevronUpIcon size={10} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onMove(m.index, 'down')}
-                    disabled={i === members.length - 1}
-                    aria-label="Move step later"
-                    className="disabled:opacity-20 hover:text-foreground cursor-pointer disabled:cursor-default"
-                  >
-                    <ChevronDownIcon size={10} />
-                  </button>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onUnlink(m.index)}
-                  aria-label="Unlink this move from the plan"
-                  className="hover:text-destructive cursor-pointer"
-                >
-                  <XIcon size={10} />
-                </button>
-              </span>
-            </span>
-          ))}
+          {/* Nested SortableContext, not a nested DndContext — reordering is dispatched by the
+              shared DndContext in AnnotationsList (see handleArrowDragEnd's data.type check). */}
+          <SortableContext items={members.map((m) => memberId(m.index))} strategy={horizontalListSortingStrategy}>
+            {members.map((m, i) => (
+              <LineMemberChip
+                key={m.index}
+                member={m}
+                lineId={lineId}
+                showArrowPrefix={i > 0}
+                colorHex={TEXT_COLOR_HEX[first.color] ?? first.color}
+                fen={fen}
+                onUnlink={() => onUnlink(m.index)}
+              />
+            ))}
+          </SortableContext>
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <Button
@@ -368,7 +391,60 @@ function LineRow({
   )
 }
 
+// One step's chip inside a LineRow, draggable to reorder its position among the plan's other
+// steps. Drag listeners sit on the pill itself (there's no room for a separate handle at this
+// size); the unlink button stops pointerdown propagation so a plain click still unlinks
+// instead of being swallowed as a drag start.
+function LineMemberChip({
+  member,
+  lineId,
+  showArrowPrefix,
+  colorHex,
+  fen,
+  onUnlink,
+}: {
+  member: ArrowMember
+  lineId: string
+  showArrowPrefix: boolean
+  colorHex: string
+  fen: string
+  onUnlink: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: memberId(member.index),
+    data: { type: 'member', lineId },
+  })
+
+  return (
+    <span
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn('flex items-center gap-1', isDragging && 'opacity-50 z-10')}
+    >
+      {showArrowPrefix && <span className="text-muted-foreground text-xs">&rarr;</span>}
+      <span
+        {...attributes}
+        {...listeners}
+        className="inline-flex items-center gap-0.5 font-mono text-xs font-medium rounded px-1 cursor-grab active:cursor-grabbing touch-none"
+        style={{ backgroundColor: `${colorHex}1a`, color: colorHex }}
+      >
+        {arrowMoveLabel(fen, member.arrow.from_square as Square, member.arrow.to_square as Square)}
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={onUnlink}
+          aria-label="Unlink this move from the plan"
+          className="hover:text-destructive cursor-pointer"
+        >
+          <XIcon size={10} />
+        </button>
+      </span>
+    </span>
+  )
+}
+
 type AnnotationRowShellProps = {
+  sortableId: string
   icon: ReactNode
   label: string
   color: string
@@ -385,10 +461,12 @@ type AnnotationRowShellProps = {
   onToggleLink?: () => void
 }
 
-// Shared chrome for one annotation row: color/category/line-style pickers, delete, and the
-// collapsible comment editor. Row-kind-specific bits (order stepper, fill toggle, link/chain
-// button) are passed in by the arrow/circle/line wrappers above instead of living here.
+// Shared chrome for one annotation row: drag handle, color/category/line-style pickers,
+// delete, and the collapsible comment editor. Row-kind-specific bits (order stepper, fill
+// toggle, link/chain button) are passed in by the arrow/circle/line wrappers above instead of
+// living here.
 function AnnotationRowShell({
+  sortableId,
   icon,
   label,
   color,
@@ -406,11 +484,28 @@ function AnnotationRowShell({
     comment,
     (comment) => onChange({ comment }),
   )
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: sortableId,
+    data: { type: 'row' },
+  })
 
   return (
-    <li className="flex flex-col gap-2 bg-muted/50 rounded-lg p-3">
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn('flex flex-col gap-2 bg-muted/50 rounded-lg p-3', isDragging && 'opacity-50 z-10')}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label="Drag to reorder"
+            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVerticalIcon size={14} />
+          </button>
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger
               render={
