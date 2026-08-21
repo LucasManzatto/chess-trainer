@@ -116,6 +116,15 @@ function BrowsePageInner() {
       syncAnnotations: s.syncAnnotations,
       setDraftAnnotations: s.setDraftAnnotations,
       markAnnotationsSaved: s.markAnnotationsSaved,
+      updateArrow: s.updateArrow,
+      updateCircle: s.updateCircle,
+      deleteArrow: s.deleteArrow,
+      deleteCircle: s.deleteCircle,
+      linkArrows: s.linkArrows,
+      unlinkArrow: s.unlinkArrow,
+      updateLine: s.updateLine,
+      reorderLine: s.reorderLine,
+      deleteLine: s.deleteLine,
     })),
   )
 
@@ -344,153 +353,15 @@ function BrowsePageInner() {
             circles={annotations.draftCircles}
             lastMove={lastMove}
             lastNotes={parentPositionDetail.comments}
-            onArrowColorChange={(index, color) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map((a, i) => (i === index ? { ...a, color } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onCircleColorChange={(index, color) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows,
-                annotations.draftCircles.map((c, i) => (i === index ? { ...c, color } : c)),
-              )
-            }
-            onArrowCategoryChange={(index, category) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map((a, i) => (i === index ? { ...a, category } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onCircleCategoryChange={(index, category) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows,
-                annotations.draftCircles.map((c, i) => (i === index ? { ...c, category } : c)),
-              )
-            }
-            onArrowCommentChange={(index, comment) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map((a, i) => (i === index ? { ...a, comment } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onCircleCommentChange={(index, comment) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows,
-                annotations.draftCircles.map((c, i) => (i === index ? { ...c, comment } : c)),
-              )
-            }
-            onArrowLineStyleChange={(index, line_style) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map((a, i) => (i === index ? { ...a, line_style } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onCircleLineStyleChange={(index, line_style) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows,
-                annotations.draftCircles.map((c, i) => (i === index ? { ...c, line_style } : c)),
-              )
-            }
-            onArrowOrderChange={(index, order) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map((a, i) => (i === index ? { ...a, order } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onCircleFillChange={(index, fill) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows,
-                annotations.draftCircles.map((c, i) => (i === index ? { ...c, fill } : c)),
-              )
-            }
-            onArrowDelete={(index) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.filter((_, i) => i !== index),
-                annotations.draftCircles,
-              )
-            }
-            onCircleDelete={(index) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows,
-                annotations.draftCircles.filter((_, i) => i !== index),
-              )
-            }
-            onArrowLink={(indexA, indexB) => {
-              const arrows = annotations.draftArrows
-              const lineId = arrows[indexA].line_id ?? crypto.randomUUID()
-              const memberOrders = arrows.filter(a => a.line_id === lineId).map(a => a.order ?? 0)
-              const nextOrder = (memberOrders.length ? Math.max(...memberOrders) : 0) + 1
-              annotations.setDraftAnnotations(
-                arrows.map((a, i) => {
-                  if (i === indexB) return { ...a, line_id: lineId, order: nextOrder }
-                  if (i === indexA && a.line_id == null) return { ...a, line_id: lineId, order: 1 }
-                  return a
-                }),
-                annotations.draftCircles,
-              )
-            }}
-            onArrowUnlink={(index) => {
-              const arrows = annotations.draftArrows
-              const lineId = arrows[index].line_id
-              const pulled = arrows.map((a, i) => (i === index ? { ...a, line_id: null, order: null } : a))
-              // Dissolve the line entirely if only one member is left — nothing to chain anymore.
-              const remaining = pulled.filter(a => a.line_id === lineId)
-              const result = remaining.length === 1
-                ? pulled.map(a => (a.line_id === lineId ? { ...a, line_id: null, order: null } : a))
-                : pulled
-              annotations.setDraftAnnotations(result, annotations.draftCircles)
-            }}
-            onLineColorChange={(lineId, color) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map(a => (a.line_id === lineId ? { ...a, color } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onLineCategoryChange={(lineId, category) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map(a => (a.line_id === lineId ? { ...a, category } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onLineCommentChange={(lineId, comment) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map(a => (a.line_id === lineId ? { ...a, comment } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onLineStyleChange={(lineId, line_style) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.map(a => (a.line_id === lineId ? { ...a, line_style } : a)),
-                annotations.draftCircles,
-              )
-            }
-            onLineReorderMove={(lineId, index, direction) => {
-              const arrows = annotations.draftArrows
-              const members = arrows
-                .map((a, i) => ({ a, i }))
-                .filter(m => m.a.line_id === lineId)
-                .sort((x, y) => (x.a.order ?? 0) - (y.a.order ?? 0))
-              const pos = members.findIndex(m => m.i === index)
-              const swapPos = direction === 'up' ? pos - 1 : pos + 1
-              if (pos === -1 || swapPos < 0 || swapPos >= members.length) return
-              const a = members[pos]
-              const b = members[swapPos]
-              annotations.setDraftAnnotations(
-                arrows.map((arrow, i) => {
-                  if (i === a.i) return { ...arrow, order: b.a.order }
-                  if (i === b.i) return { ...arrow, order: a.a.order }
-                  return arrow
-                }),
-                annotations.draftCircles,
-              )
-            }}
-            onLineDelete={(lineId) =>
-              annotations.setDraftAnnotations(
-                annotations.draftArrows.filter(a => a.line_id !== lineId),
-                annotations.draftCircles,
-              )
-            }
+            onArrowChange={annotations.updateArrow}
+            onCircleChange={annotations.updateCircle}
+            onArrowDelete={annotations.deleteArrow}
+            onCircleDelete={annotations.deleteCircle}
+            onArrowLink={annotations.linkArrows}
+            onArrowUnlink={annotations.unlinkArrow}
+            onLineChange={annotations.updateLine}
+            onLineReorderMove={annotations.reorderLine}
+            onLineDelete={annotations.deleteLine}
           />
         )}
       </section>

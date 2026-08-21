@@ -29,6 +29,9 @@ export type BoardAnnotationCircle = {
   fill: boolean
 }
 
+// Fields shared by arrows and lines (a line applies these to every member arrow at once).
+export type AnnotationLinePatch = Partial<Pick<BoardAnnotationArrow, 'color' | 'category' | 'comment' | 'line_style'>>
+
 export type AnnotationCategoryMeta = { value: AnnotationCategory; label: string; glyph: string; fill: string }
 
 // Glyph + fill drawn onto the arrow/circle itself via a chessground customSvg shape

@@ -6,6 +6,7 @@ import {
   ANNOTATION_CATEGORIES,
   ANNOTATION_CATEGORY_BY_VALUE,
   type AnnotationCategory,
+  type AnnotationLinePatch,
   type AnnotationLineStyle,
   type BoardAnnotationArrow,
   type BoardAnnotationCircle,
@@ -33,16 +34,8 @@ type Props = {
   fen: string
   arrows: BoardAnnotationArrow[]
   circles: BoardAnnotationCircle[]
-  onArrowColorChange: (index: number, color: string) => void
-  onCircleColorChange: (index: number, color: string) => void
-  onArrowCategoryChange: (index: number, category: AnnotationCategory | null) => void
-  onCircleCategoryChange: (index: number, category: AnnotationCategory | null) => void
-  onArrowCommentChange: (index: number, comment: string | null) => void
-  onCircleCommentChange: (index: number, comment: string | null) => void
-  onArrowLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
-  onCircleLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
-  onArrowOrderChange: (index: number, order: number | null) => void
-  onCircleFillChange: (index: number, fill: boolean) => void
+  onArrowChange: (index: number, patch: Partial<BoardAnnotationArrow>) => void
+  onCircleChange: (index: number, patch: Partial<BoardAnnotationCircle>) => void
   onArrowDelete: (index: number) => void
   onCircleDelete: (index: number) => void
   // Chained plans (Nf6 -> Bg4 -> e3 -> Nc6): arrows sharing a line_id collapse into one row,
@@ -50,10 +43,7 @@ type Props = {
   // of this file); bulk edits address a whole line by its line_id.
   onArrowLink: (indexA: number, indexB: number) => void
   onArrowUnlink: (index: number) => void
-  onLineColorChange: (lineId: string, color: string) => void
-  onLineCategoryChange: (lineId: string, category: AnnotationCategory | null) => void
-  onLineCommentChange: (lineId: string, comment: string | null) => void
-  onLineStyleChange: (lineId: string, lineStyle: AnnotationLineStyle) => void
+  onLineChange: (lineId: string, patch: AnnotationLinePatch) => void
   onLineReorderMove: (lineId: string, index: number, direction: 'up' | 'down') => void
   onLineDelete: (lineId: string) => void
 }
@@ -88,24 +78,13 @@ export function AnnotationsList({
   fen,
   arrows,
   circles,
-  onArrowColorChange,
-  onCircleColorChange,
-  onArrowCategoryChange,
-  onCircleCategoryChange,
-  onArrowCommentChange,
-  onCircleCommentChange,
-  onArrowLineStyleChange,
-  onCircleLineStyleChange,
-  onArrowOrderChange,
-  onCircleFillChange,
+  onArrowChange,
+  onCircleChange,
   onArrowDelete,
   onCircleDelete,
   onArrowLink,
   onArrowUnlink,
-  onLineColorChange,
-  onLineCategoryChange,
-  onLineCommentChange,
-  onLineStyleChange,
+  onLineChange,
   onLineReorderMove,
   onLineDelete,
 }: Props) {
@@ -158,11 +137,11 @@ export function AnnotationsList({
                 comment={entry.arrow.comment}
                 lineStyle={entry.arrow.line_style}
                 order={entry.arrow.order}
-                onPickColor={(color) => onArrowColorChange(entry.index, color)}
-                onPickCategory={(category) => onArrowCategoryChange(entry.index, category)}
-                onCommentChange={(comment) => onArrowCommentChange(entry.index, comment)}
-                onPickLineStyle={(lineStyle) => onArrowLineStyleChange(entry.index, lineStyle)}
-                onOrderChange={(order) => onArrowOrderChange(entry.index, order)}
+                onPickColor={(color) => onArrowChange(entry.index, { color })}
+                onPickCategory={(category) => onArrowChange(entry.index, { category })}
+                onCommentChange={(comment) => onArrowChange(entry.index, { comment })}
+                onPickLineStyle={(lineStyle) => onArrowChange(entry.index, { line_style: lineStyle })}
+                onOrderChange={(order) => onArrowChange(entry.index, { order })}
                 onDelete={() => onArrowDelete(entry.index)}
                 linkPending={linkFrom === entry.index}
                 onToggleLink={() => handleToggleLink(entry.index)}
@@ -175,10 +154,10 @@ export function AnnotationsList({
                 members={entry.members}
                 linkPending={linkFrom !== null && entry.members.some((m) => m.index === linkFrom)}
                 onToggleLink={() => handleToggleLink(entry.members[entry.members.length - 1].index, entry.members.map((m) => m.index))}
-                onColorChange={(color) => onLineColorChange(entry.lineId, color)}
-                onCategoryChange={(category) => onLineCategoryChange(entry.lineId, category)}
-                onCommentChange={(comment) => onLineCommentChange(entry.lineId, comment)}
-                onLineStyleChange={(lineStyle) => onLineStyleChange(entry.lineId, lineStyle)}
+                onColorChange={(color) => onLineChange(entry.lineId, { color })}
+                onCategoryChange={(category) => onLineChange(entry.lineId, { category })}
+                onCommentChange={(comment) => onLineChange(entry.lineId, { comment })}
+                onLineStyleChange={(lineStyle) => onLineChange(entry.lineId, { line_style: lineStyle })}
                 onMoveUp={(index) => onLineReorderMove(entry.lineId, index, 'up')}
                 onMoveDown={(index) => onLineReorderMove(entry.lineId, index, 'down')}
                 onUnlink={onArrowUnlink}
@@ -196,11 +175,11 @@ export function AnnotationsList({
               comment={circle.comment}
               lineStyle={circle.line_style}
               fill={circle.fill}
-              onPickColor={(color) => onCircleColorChange(i, color)}
-              onPickCategory={(category) => onCircleCategoryChange(i, category)}
-              onCommentChange={(comment) => onCircleCommentChange(i, comment)}
-              onPickLineStyle={(lineStyle) => onCircleLineStyleChange(i, lineStyle)}
-              onFillChange={(fill) => onCircleFillChange(i, fill)}
+              onPickColor={(color) => onCircleChange(i, { color })}
+              onPickCategory={(category) => onCircleChange(i, { category })}
+              onCommentChange={(comment) => onCircleChange(i, { comment })}
+              onPickLineStyle={(lineStyle) => onCircleChange(i, { line_style: lineStyle })}
+              onFillChange={(fill) => onCircleChange(i, { fill })}
               onDelete={() => onCircleDelete(i)}
             />
           ))}

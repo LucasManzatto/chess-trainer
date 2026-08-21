@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronRightIcon } from 'lucide-react'
 import { highlightMoves } from '../../../lib/chess'
-import type { AnnotationCategory, AnnotationLineStyle, BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
+import type { AnnotationLinePatch, BoardAnnotationArrow, BoardAnnotationCircle } from '../../board/types'
 import { AnnotationsList } from './AnnotationsList'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,24 +19,13 @@ export type NotesProps = {
   circles: BoardAnnotationCircle[]
   lastMove: LastMove | null
   lastNotes: { id: number; content: string }[]
-  onArrowColorChange: (index: number, color: string) => void
-  onCircleColorChange: (index: number, color: string) => void
-  onArrowCategoryChange: (index: number, category: AnnotationCategory | null) => void
-  onCircleCategoryChange: (index: number, category: AnnotationCategory | null) => void
-  onArrowCommentChange: (index: number, comment: string | null) => void
-  onCircleCommentChange: (index: number, comment: string | null) => void
-  onArrowLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
-  onCircleLineStyleChange: (index: number, lineStyle: AnnotationLineStyle) => void
-  onArrowOrderChange: (index: number, order: number | null) => void
-  onCircleFillChange: (index: number, fill: boolean) => void
+  onArrowChange: (index: number, patch: Partial<BoardAnnotationArrow>) => void
+  onCircleChange: (index: number, patch: Partial<BoardAnnotationCircle>) => void
   onArrowDelete: (index: number) => void
   onCircleDelete: (index: number) => void
   onArrowLink: (indexA: number, indexB: number) => void
   onArrowUnlink: (index: number) => void
-  onLineColorChange: (lineId: string, color: string) => void
-  onLineCategoryChange: (lineId: string, category: AnnotationCategory | null) => void
-  onLineCommentChange: (lineId: string, comment: string | null) => void
-  onLineStyleChange: (lineId: string, lineStyle: AnnotationLineStyle) => void
+  onLineChange: (lineId: string, patch: AnnotationLinePatch) => void
   onLineReorderMove: (lineId: string, index: number, direction: 'up' | 'down') => void
   onLineDelete: (lineId: string) => void
 }
@@ -50,24 +39,13 @@ export function Notes({
   circles,
   lastMove,
   lastNotes,
-  onArrowColorChange,
-  onCircleColorChange,
-  onArrowCategoryChange,
-  onCircleCategoryChange,
-  onArrowCommentChange,
-  onCircleCommentChange,
-  onArrowLineStyleChange,
-  onCircleLineStyleChange,
-  onArrowOrderChange,
-  onCircleFillChange,
+  onArrowChange,
+  onCircleChange,
   onArrowDelete,
   onCircleDelete,
   onArrowLink,
   onArrowUnlink,
-  onLineColorChange,
-  onLineCategoryChange,
-  onLineCommentChange,
-  onLineStyleChange,
+  onLineChange,
   onLineReorderMove,
   onLineDelete,
 }: NotesProps) {
@@ -84,24 +62,13 @@ export function Notes({
           fen={fen}
           arrows={arrows}
           circles={circles}
-          onArrowColorChange={onArrowColorChange}
-          onCircleColorChange={onCircleColorChange}
-          onArrowCategoryChange={onArrowCategoryChange}
-          onCircleCategoryChange={onCircleCategoryChange}
-          onArrowCommentChange={onArrowCommentChange}
-          onCircleCommentChange={onCircleCommentChange}
-          onArrowLineStyleChange={onArrowLineStyleChange}
-          onCircleLineStyleChange={onCircleLineStyleChange}
-          onArrowOrderChange={onArrowOrderChange}
-          onCircleFillChange={onCircleFillChange}
+          onArrowChange={onArrowChange}
+          onCircleChange={onCircleChange}
           onArrowDelete={onArrowDelete}
           onCircleDelete={onCircleDelete}
           onArrowLink={onArrowLink}
           onArrowUnlink={onArrowUnlink}
-          onLineColorChange={onLineColorChange}
-          onLineCategoryChange={onLineCategoryChange}
-          onLineCommentChange={onLineCommentChange}
-          onLineStyleChange={onLineStyleChange}
+          onLineChange={onLineChange}
           onLineReorderMove={onLineReorderMove}
           onLineDelete={onLineDelete}
         />
