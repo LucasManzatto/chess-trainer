@@ -137,6 +137,9 @@ function BrowsePageInner() {
   const [drillDialogOpen, setDrillDialogOpen] = useState(false)
   const [pageMode, setPageMode] = useState<PageMode>({ type: 'default' })
   const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null, left_repertoire: null })
+  // Key of the annotation currently hovered — set from either AnnotationsList (row hover) or
+  // ChessBoard (shape hover) — so both sides highlight the same annotation and dim the rest.
+  const [hoveredAnnotationKey, setHoveredAnnotationKey] = useState<string | null>(null)
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -310,11 +313,13 @@ function BrowsePageInner() {
                   arrows={trainHideOverlay ? [] : [...annotations.draftArrows, ...bestMoveArrow]}
                   circles={trainHideOverlay ? [] : annotations.draftCircles}
                   config={{ showBestMove: trainHideOverlay ? false : config.showBestMove, boardSize: config.boardSize }}
+                  hoveredKey={hoveredAnnotationKey}
                   actions={{
                     applyMove: boardState.applyMove,
                     navigateBack: boardState.navigateBack,
                     navigateForward: boardState.navigateForward,
                     onDrawableChange: annotations.setDraftAnnotations,
+                    onHoverEntry: setHoveredAnnotationKey,
                   }}
                 />
                 <ChessBoardSettings
@@ -356,6 +361,8 @@ function BrowsePageInner() {
             lastMove={lastMove}
             lastNotes={parentPositionDetail.comments}
             annotationActions={annotations}
+            hoveredAnnotationKey={hoveredAnnotationKey}
+            onHoverAnnotation={setHoveredAnnotationKey}
           />
         )}
       </section>

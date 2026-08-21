@@ -20,6 +20,8 @@ export type NotesProps = {
   lastMove: LastMove | null
   lastNotes: { id: number; content: string }[]
   annotationActions: AnnotationActions
+  hoveredAnnotationKey?: string | null
+  onHoverAnnotation?: (key: string | null) => void
 }
 
 export function Notes({
@@ -32,6 +34,8 @@ export function Notes({
   lastMove,
   lastNotes,
   annotationActions,
+  hoveredAnnotationKey,
+  onHoverAnnotation,
 }: NotesProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden font-sans">
@@ -42,7 +46,14 @@ export function Notes({
         {lastMove && (
             <LastMoveAnnotations label={lastMove.label} comment={lastMove.comment} />
         )}
-        <AnnotationsList fen={fen} arrows={arrows} circles={circles} actions={annotationActions} />
+        <AnnotationsList
+          fen={fen}
+          arrows={arrows}
+          circles={circles}
+          actions={annotationActions}
+          hoveredKey={hoveredAnnotationKey}
+          onHoverEntry={onHoverAnnotation}
+        />
       </div>
     </div>
   )

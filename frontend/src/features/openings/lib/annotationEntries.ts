@@ -28,7 +28,9 @@ export function groupArrowEntries(arrows: BoardAnnotationArrow[]): ArrowEntry[] 
 
 // Stable drag/list identity for an arrow entry: a solo arrow is keyed by its squares (matches
 // the key dedupeArrows uses), a line by its line_id. Used by dnd-kit (sortable item ids) and by
-// the store's reorderArrowEntries to find the entry being dragged.
+// the store's reorderArrowEntries to find the entry being dragged. Agrees with arrowKey (a
+// single arrow's version of this same identity, defined in board/types since ChessBoard needs
+// it too) — a line member's arrowKey matches its entry's arrowEntryKey.
 export function arrowEntryKey(entry: ArrowEntry): string {
   return entry.kind === 'solo' ? `${entry.arrow.from_square}-${entry.arrow.to_square}` : `line-${entry.lineId}`
 }

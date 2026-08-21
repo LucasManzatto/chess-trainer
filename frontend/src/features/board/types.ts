@@ -32,6 +32,13 @@ export type BoardAnnotationCircle = {
 // Fields shared by arrows and lines (a line applies these to every member arrow at once).
 export type AnnotationLinePatch = Partial<Pick<BoardAnnotationArrow, 'color' | 'category' | 'comment' | 'line_style'>>
 
+// Identity shared with AnnotationsList's arrowEntryKey: a line member's arrowKey matches its
+// entry's arrowEntryKey, so ChessBoard (which only sees flat arrows, not grouped entries) can
+// match a hovered/highlighted list row without regrouping into entries itself.
+export function arrowKey(arrow: BoardAnnotationArrow): string {
+  return arrow.line_id ? `line-${arrow.line_id}` : `${arrow.from_square}-${arrow.to_square}`
+}
+
 export type AnnotationCategoryMeta = { value: AnnotationCategory; label: string; glyph: string; fill: string }
 
 // Glyph + fill drawn onto the arrow/circle itself via a chessground customSvg shape

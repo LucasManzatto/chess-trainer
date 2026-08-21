@@ -49,6 +49,11 @@ type Props = {
   arrows: BoardAnnotationArrow[]
   circles: BoardAnnotationCircle[]
   actions: AnnotationActions
+  // Key (arrowEntryKey / circle square) of the annotation currently hovered — either a row here
+  // or its shape on the board — so the matching row and shape can highlight together and
+  // everything else dims. See ChessBoard's hoveredKey/onHoverEntry for the board side.
+  hoveredKey?: string | null
+  onHoverEntry?: (key: string | null) => void
 }
 
 // Sortable id for a line-member chip — prefixed so it can't collide with a row's arrowEntryKey
@@ -60,7 +65,7 @@ const memberIndexFromId = (id: string) => Number(id.slice('member-'.length))
 // motion (the click-arm-then-click-target flow still works as a fallback, see handleToggleLink).
 const linkSourceId = (rowId: string) => `linksrc-${rowId}`
 
-export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
+export function AnnotationsList({ fen, arrows, circles, actions, hoveredKey, onHoverEntry }: Props) {
   const [open, setOpen] = useState(true)
   // Index of the arrow (solo or a line's last member) currently armed to be chained to the
   // next arrow clicked. Null = no link in progress.
@@ -153,6 +158,9 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
                     onDelete={() => actions.deleteArrow(entry.index)}
                     linkPending={linkFrom === entry.index}
                     onToggleLink={() => handleToggleLink(entry.index)}
+                    hovered={hoveredKey === arrowEntryKey(entry)}
+                    dimmed={hoveredKey != null && hoveredKey !== arrowEntryKey(entry)}
+                    onHoverEntry={onHoverEntry}
                   />
                 ) : (
                   <LineRow
@@ -166,6 +174,9 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
                     onChange={(patch) => actions.updateLine(entry.lineId, patch)}
                     onUnlink={actions.unlinkArrow}
                     onDelete={() => actions.deleteLine(entry.lineId)}
+                    hovered={hoveredKey === arrowEntryKey(entry)}
+                    dimmed={hoveredKey != null && hoveredKey !== arrowEntryKey(entry)}
+                    onHoverEntry={onHoverEntry}
                   />
                 ),
               )}
@@ -180,6 +191,9 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
                   circle={circle}
                   onChange={(patch) => actions.updateCircle(i, patch)}
                   onDelete={() => actions.deleteCircle(i)}
+                  hovered={hoveredKey === circle.square}
+                  dimmed={hoveredKey != null && hoveredKey !== circle.square}
+                  onHoverEntry={onHoverEntry}
                 />
               ))}
             </SortableContext>
@@ -199,6 +213,9 @@ function ArrowAnnotationRow({
   onDelete,
   linkPending,
   onToggleLink,
+  hovered,
+  dimmed,
+  onHoverEntry,
 }: {
   sortableId: string
   linkIndex: number
@@ -208,6 +225,9 @@ function ArrowAnnotationRow({
   onDelete: () => void
   linkPending: boolean
   onToggleLink: () => void
+  hovered?: boolean
+  dimmed?: boolean
+  onHoverEntry?: (key: string | null) => void
 }) {
   return (
     <AnnotationRowShell
@@ -224,6 +244,9 @@ function ArrowAnnotationRow({
       extraControls={<OrderStepper order={arrow.order ?? null} onOrderChange={(order) => onChange({ order })} />}
       linkPending={linkPending}
       onToggleLink={onToggleLink}
+      hovered={hovered}
+      dimmed={dimmed}
+      onHoverEntry={onHoverEntry}
     />
   )
 }
@@ -233,11 +256,17 @@ function CircleAnnotationRow({
   circle,
   onChange,
   onDelete,
+  hovered,
+  dimmed,
+  onHoverEntry,
 }: {
   sortableId: string
   circle: BoardAnnotationCircle
   onChange: (patch: Partial<BoardAnnotationCircle>) => void
   onDelete: () => void
+  hovered?: boolean
+  dimmed?: boolean
+  onHoverEntry?: (key: string | null) => void
 }) {
   return (
     <AnnotationRowShell
@@ -250,6 +279,9 @@ function CircleAnnotationRow({
       lineStyle={circle.line_style}
       onChange={onChange}
       onDelete={onDelete}
+      hovered={hovered}
+      dimmed={dimmed}
+      onHoverEntry={onHoverEntry}
       extraControls={
         <Tooltip>
           <TooltipTrigger
@@ -284,6 +316,9 @@ type LineRowProps = {
   onChange: (patch: AnnotationLinePatch) => void
   onUnlink: (index: number) => void
   onDelete: () => void
+  hovered?: boolean
+  dimmed?: boolean
+  onHoverEntry?: (key: string | null) => void
 }
 
 // A chained plan: a sequence of arrows (Nf6 -> Bg4 -> e3 -> Nc6) collapsed into one row.
@@ -299,6 +334,9 @@ function LineRow({
   onChange,
   onUnlink,
   onDelete,
+  hovered,
+  dimmed,
+  onHoverEntry,
 }: LineRowProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const first = members[0].arrow
@@ -321,11 +359,23 @@ function LineRow({
     transform: linkTransform,
   } = useDraggable({ id: linkSourceId(sortableId), data: { type: 'link-source', linkIndex } })
 
+  const rowColorHex = TEXT_COLOR_HEX[first.color] ?? first.color
+
   return (
     <li
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('flex flex-col gap-2 bg-muted/50 rounded-lg p-3', isDragging && 'opacity-50 z-10')}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        ...(hovered ? { boxShadow: `0 0 0 1.5px ${rowColorHex}` } : undefined),
+      }}
+      onMouseEnter={() => onHoverEntry?.(sortableId)}
+      onMouseLeave={() => onHoverEntry?.(null)}
+      className={cn(
+        'flex flex-col gap-2 bg-muted/50 rounded-lg p-3 transition-[opacity,box-shadow]',
+        isDragging && 'opacity-50 z-10',
+        dimmed && !isDragging && 'opacity-40',
+      )}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1 flex-wrap">
@@ -546,6 +596,10 @@ type AnnotationRowShellProps = {
   // Chain-into-a-plan control — arrow rows only.
   linkPending?: boolean
   onToggleLink?: () => void
+  // Hover-linkage with the matching shape on the board (see Props.hoveredKey/onHoverEntry).
+  hovered?: boolean
+  dimmed?: boolean
+  onHoverEntry?: (key: string | null) => void
 }
 
 // Shared chrome for one annotation row: drag handle, color/category/line-style pickers,
@@ -566,6 +620,9 @@ function AnnotationRowShell({
   extraControls,
   linkPending,
   onToggleLink,
+  hovered,
+  dimmed,
+  onHoverEntry,
 }: AnnotationRowShellProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const { expanded, setExpanded, editing, setEditing, draft, setDraft, commitComment, rows } = useCommentEditor(
@@ -583,11 +640,23 @@ function AnnotationRowShell({
     transform: linkTransform,
   } = useDraggable({ id: linkSourceId(sortableId), data: { type: 'link-source', linkIndex } })
 
+  const rowColorHex = TEXT_COLOR_HEX[color] ?? color
+
   return (
     <li
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('flex flex-col gap-2 bg-muted/50 rounded-lg p-3', isDragging && 'opacity-50 z-10')}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        ...(hovered ? { boxShadow: `0 0 0 1.5px ${rowColorHex}` } : undefined),
+      }}
+      onMouseEnter={() => onHoverEntry?.(sortableId)}
+      onMouseLeave={() => onHoverEntry?.(null)}
+      className={cn(
+        'flex flex-col gap-2 bg-muted/50 rounded-lg p-3 transition-[opacity,box-shadow]',
+        isDragging && 'opacity-50 z-10',
+        dimmed && !isDragging && 'opacity-40',
+      )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -615,7 +684,7 @@ function AnnotationRowShell({
                   variant="ghost"
                   size="sm"
                   className="font-mono text-xs font-medium"
-                  style={{ backgroundColor: `${TEXT_COLOR_HEX[color] ?? color}1a`, color: TEXT_COLOR_HEX[color] ?? color }}
+                  style={{ backgroundColor: `${rowColorHex}1a`, color: rowColorHex }}
                 />
               }
             >

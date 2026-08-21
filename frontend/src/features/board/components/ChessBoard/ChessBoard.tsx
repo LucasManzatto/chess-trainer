@@ -10,6 +10,7 @@ import { getDests } from '../../../../lib/chess/position'
 import {
   ANNOTATION_CATEGORIES,
   ANNOTATION_CATEGORY_BY_VALUE,
+  arrowKey,
   type AnnotationLineStyle,
   type BoardAnnotationArrow,
   type BoardAnnotationCircle,
@@ -65,11 +66,18 @@ export type ChessBoardProps = {
     showBestMove: boolean
     boardSize: number
   }
+  // Key (arrowKey / circle square) of the annotation currently hovered in AnnotationsList —
+  // that annotation is drawn at full strength, every other shape dims. Undefined/null = no dim.
+  hoveredKey?: string | null
   actions: {
     applyMove: (orig: Square, dest: Square) => void
     navigateBack: () => void
     navigateForward: () => void
     onDrawableChange?: (arrows: BoardAnnotationArrow[], circles: BoardAnnotationCircle[]) => void
+    // Fires as the pointer moves over an annotated square/arrow on the board (its arrowKey /
+    // circle square), and with null on leaving it — drives the reverse of hoveredKey, so
+    // hovering a shape on the board highlights its row in AnnotationsList.
+    onHoverEntry?: (key: string | null) => void
   }
 }
 
@@ -121,12 +129,50 @@ const orderBadgeSvg = (order: number, fill: string, x: number, y: number) => `
 
 const DASH_PATTERN: Record<'dashed' | 'dotted', string> = { dashed: '16 12', dotted: '2 12' }
 
+// Opacity a non-hovered shape falls to while another annotation is hovered (in the list or on
+// the board itself) — low enough to read as "not this one" without vanishing entirely, so the
+// board doesn't jump around as the pointer moves.
+const DIMMED_OPACITY = 0.15
+// Native brush opacity/lineWidth shapes render at outside of any hover (unchanged behavior).
+const BASE_SHAPE_OPACITY = 0.9
+const BASE_LINE_WIDTH = 10
+const HOVERED_LINE_WIDTH = 13
+
+// customSvg is drawn on top of the native brush at full alpha regardless of the brush's own
+// opacity, so dimming a custom-drawn shape (dashed/dotted arrows, filled squares, glyphs, order
+// badges) needs its own wrapper — this is that wrapper.
+function svgOpacityWrap(html: string, opacity: number): string {
+  return opacity === 1 ? html : `<g opacity="${opacity}">${html}</g>`
+}
+
+// Per-shape opacity/lineWidth given the currently hovered annotation key (from AnnotationsList
+// or from hovering the shape itself on the board) — full strength when nothing is hovered or
+// this shape is the hovered one, dimmed otherwise.
+function shapeHoverState(key: string, hoveredKey: string | null | undefined): { opacity: number; lineWidth: number } {
+  if (!hoveredKey) return { opacity: BASE_SHAPE_OPACITY, lineWidth: BASE_LINE_WIDTH }
+  return key === hoveredKey
+    ? { opacity: BASE_SHAPE_OPACITY, lineWidth: HOVERED_LINE_WIDTH }
+    : { opacity: BASE_SHAPE_OPACITY * DIMMED_OPACITY, lineWidth: BASE_LINE_WIDTH }
+}
+
 // customSvg's 1×1 embedded box (viewBox 0 0 100 100) covers exactly one board square, so
 // 100 local units == 1 square, regardless of which point (orig/dest/label) it's anchored to.
 const SQUARE_UNITS = 100
 
 function squareFileRank(square: string): [number, number] {
   return [square.charCodeAt(0) - 97, Number(square[1]) - 1]
+}
+
+// Inverse of squareFileRank's screen mapping: which square a point in the board element's own
+// pixel space (0,0 top-left) falls on, accounting for orientation. Powers hover-detection over
+// drawn shapes, which chessground's own SVG layer doesn't expose pointer events for.
+function pointToSquare(x: number, y: number, boardSize: number, orientation: 'white' | 'black'): string | null {
+  if (x < 0 || y < 0 || x >= boardSize || y >= boardSize) return null
+  const cell = boardSize / 8
+  let file = Math.floor(x / cell)
+  let rank = 7 - Math.floor(y / cell)
+  if (orientation === 'black') { file = 7 - file; rank = 7 - rank }
+  return String.fromCharCode(97 + file) + (rank + 1)
 }
 
 /** Angle + length (in squares) of an arrow, in the same screen-space direction chessground
@@ -209,31 +255,50 @@ function circleCustomSvg(
   return { center: 'orig', html }
 }
 
+// Shapes to draw plus the brushes they reference — brushes are generated per-shape (not the
+// shared SOLID_BRUSHES map) because dimming one hovered-elsewhere shape without touching every
+// other shape of the same color/category requires each shape to own its opacity/lineWidth.
 function toDrawShapes(
   arrows: BoardAnnotationArrow[],
   circles: BoardAnnotationCircle[],
   orientation: 'white' | 'black',
-): DrawShape[] {
-  return [
-    ...arrows.map(a => {
-      const hex = SOLID_BRUSHES[baseBrushKey(a.color, a.category)]?.color ?? a.color
-      const { angle, lengthSquares } = arrowGeometry(a.from_square, a.to_square, orientation)
-      return {
-        orig: a.from_square as Key,
-        dest: a.to_square as Key,
-        brush: arrowBrushKey(a.color, a.category, a.line_style),
-        customSvg: arrowCustomSvg(hex, a.category, a.order, a.line_style, angle, lengthSquares),
-      }
-    }),
-    ...circles.map(c => {
-      const hex = SOLID_BRUSHES[baseBrushKey(c.color, c.category)]?.color ?? c.color
-      return {
-        orig: c.square as Key,
-        brush: circleBrushKey(c.color, c.category, c.line_style, c.fill),
-        customSvg: circleCustomSvg(hex, c.category, c.line_style, c.fill),
-      }
-    }),
-  ]
+  hoveredKey: string | null | undefined,
+): { shapes: DrawShape[]; brushes: DrawBrushes } {
+  // Start from the base G/R/B/Y + category brushes — chessground still needs these under their
+  // plain keys to resolve the color a user picks (via modifier key) while freehand-drawing a
+  // new arrow/circle directly on the board, before it becomes one of our own annotations below.
+  const brushes: Record<string, { key: string; color: string; opacity: number; lineWidth: number }> = { ...SOLID_BRUSHES }
+
+  const arrowShapes = arrows.map((a, i) => {
+    const hex = SOLID_BRUSHES[baseBrushKey(a.color, a.category)]?.color ?? a.color
+    const { angle, lengthSquares } = arrowGeometry(a.from_square, a.to_square, orientation)
+    const isGhost = arrowBrushKey(a.color, a.category, a.line_style) === GHOST_BRUSH_KEY
+    const { opacity, lineWidth } = shapeHoverState(arrowKey(a), hoveredKey)
+    const brushKey = `arrow-${i}`
+    brushes[brushKey] = { key: brushKey, color: hex, opacity: isGhost ? 0 : opacity, lineWidth }
+    const rawCustomSvg = arrowCustomSvg(hex, a.category, a.order, a.line_style, angle, lengthSquares)
+    return {
+      orig: a.from_square as Key,
+      dest: a.to_square as Key,
+      brush: brushKey,
+      customSvg: rawCustomSvg && { ...rawCustomSvg, html: svgOpacityWrap(rawCustomSvg.html, opacity) },
+    }
+  })
+  const circleShapes = circles.map((c, i) => {
+    const hex = SOLID_BRUSHES[baseBrushKey(c.color, c.category)]?.color ?? c.color
+    const isGhost = circleBrushKey(c.color, c.category, c.line_style, c.fill) === GHOST_BRUSH_KEY
+    const { opacity, lineWidth } = shapeHoverState(c.square, hoveredKey)
+    const brushKey = `circle-${i}`
+    brushes[brushKey] = { key: brushKey, color: hex, opacity: isGhost ? 0 : opacity, lineWidth }
+    const rawCustomSvg = circleCustomSvg(hex, c.category, c.line_style, c.fill)
+    return {
+      orig: c.square as Key,
+      brush: brushKey,
+      customSvg: rawCustomSvg && { ...rawCustomSvg, html: svgOpacityWrap(rawCustomSvg.html, opacity) },
+    }
+  })
+
+  return { shapes: [...arrowShapes, ...circleShapes], brushes: brushes as unknown as DrawBrushes }
 }
 
 function fromDrawShapes(
@@ -293,10 +358,10 @@ function useDrawable(
   arrows: ChessBoardProps['arrows'],
   circles: ChessBoardProps['circles'],
   orientation: 'white' | 'black',
+  hoveredKey: string | null | undefined,
   onAnnotationsChange: NonNullable<ChessBoardProps['actions']['onDrawableChange']>,
 ): Config['drawable'] {
-  const shapes = toDrawShapes(arrows, circles, orientation)
-  const brushes = SOLID_BRUSHES as unknown as DrawBrushes
+  const { shapes, brushes } = toDrawShapes(arrows, circles, orientation, hoveredKey)
 
   function onChange(next: DrawShape[]) {
     const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next, arrows, circles)
@@ -310,13 +375,14 @@ function useBoardConfig(
   state: ChessBoardProps['state'],
   arrows: ChessBoardProps['arrows'],
   circles: ChessBoardProps['circles'],
+  hoveredKey: string | null | undefined,
   actions: ChessBoardProps['actions'],
 ): Config {
   const { fen, orientation, interactive, lastMove } = state
   const { applyMove, onDrawableChange: onAnnotationsChange = noop } = actions
 
   const { turn, check, dests } = useChessPosition(fen, interactive)
-  const drawable = useDrawable(arrows, circles, orientation, onAnnotationsChange)
+  const drawable = useDrawable(arrows, circles, orientation, hoveredKey, onAnnotationsChange)
 
   return {
     fen,
@@ -376,6 +442,45 @@ function useChessgroundResizeFix(apiRef: RefObject<Api | null>) {
   }, [apiRef])
 }
 
+// Reverse of the list→board hover link: as the pointer moves over the board, works out which
+// annotated square it's over and reports that shape's key (or null) so AnnotationsList can
+// highlight the matching row. chessground's shapes are plain SVG with no pointer events of
+// their own, so this hit-tests by geometry against the board element instead.
+function useBoardHoverEntry(
+  elRef: RefObject<HTMLDivElement | null>,
+  arrows: ChessBoardProps['arrows'],
+  circles: ChessBoardProps['circles'],
+  orientation: 'white' | 'black',
+  boardSize: number,
+  onHoverEntry: ChessBoardProps['actions']['onHoverEntry'],
+) {
+  useEffect(() => {
+    const el = elRef.current
+    if (!el || !onHoverEntry) return
+
+    function keyAtSquare(square: string): string | null {
+      const arrow = arrows.find(a => a.from_square === square || a.to_square === square)
+      if (arrow) return arrowKey(arrow)
+      return circles.find(c => c.square === square)?.square ?? null
+    }
+    function onPointerMove(e: PointerEvent) {
+      const rect = el!.getBoundingClientRect()
+      const square = pointToSquare(e.clientX - rect.left, e.clientY - rect.top, boardSize, orientation)
+      onHoverEntry!(square ? keyAtSquare(square) : null)
+    }
+    function onPointerLeave() {
+      onHoverEntry!(null)
+    }
+
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerleave', onPointerLeave)
+    return () => {
+      el.removeEventListener('pointermove', onPointerMove)
+      el.removeEventListener('pointerleave', onPointerLeave)
+    }
+  }, [elRef, arrows, circles, orientation, boardSize, onHoverEntry])
+}
+
 function useBoardKeyNav(navigateBack: () => void, navigateForward: () => void) {
   useEffect(() => {
     const keyActions: Partial<Record<string, () => void>> = {
@@ -394,10 +499,11 @@ function useBoardKeyNav(navigateBack: () => void, navigateForward: () => void) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ChessBoard(props: ChessBoardProps) {
-  const config = useBoardConfig(props.state, props.arrows, props.circles, props.actions)
+  const config = useBoardConfig(props.state, props.arrows, props.circles, props.hoveredKey, props.actions)
   const { elRef, apiRef } = useChessgroundInstance(config)
   useChessgroundResizeFix(apiRef)
   useBoardKeyNav(props.actions.navigateBack, props.actions.navigateForward)
+  useBoardHoverEntry(elRef, props.arrows, props.circles, props.state.orientation, props.config.boardSize, props.actions.onHoverEntry)
 
   return (
     <div className="relative">
