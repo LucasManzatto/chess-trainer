@@ -274,7 +274,12 @@ function toDrawShapes(
     const { angle, lengthSquares } = arrowGeometry(a.from_square, a.to_square, orientation)
     const isGhost = arrowBrushKey(a.color, a.category, a.line_style) === GHOST_BRUSH_KEY
     const { opacity, lineWidth } = shapeHoverState(arrowKey(a), hoveredKey)
-    const brushKey = `arrow-${i}`
+    // chessground skips redrawing a shape whose {orig,dest,brush,customSvg,...} hash is
+    // unchanged from last render (see its shapeHash/prevSvgHash) — it never looks at whether
+    // the *brush definition* a shape's brush key resolves to has changed. A plain solid arrow
+    // has no customSvg to pick up the opacity change either, so the brush key itself must carry
+    // the hover state, or hovering would silently no-op on every solid arrow.
+    const brushKey = `arrow-${i}-${opacity}-${lineWidth}`
     brushes[brushKey] = { key: brushKey, color: hex, opacity: isGhost ? 0 : opacity, lineWidth }
     const rawCustomSvg = arrowCustomSvg(hex, a.category, a.order, a.line_style, angle, lengthSquares)
     return {
@@ -288,7 +293,7 @@ function toDrawShapes(
     const hex = SOLID_BRUSHES[baseBrushKey(c.color, c.category)]?.color ?? c.color
     const isGhost = circleBrushKey(c.color, c.category, c.line_style, c.fill) === GHOST_BRUSH_KEY
     const { opacity, lineWidth } = shapeHoverState(c.square, hoveredKey)
-    const brushKey = `circle-${i}`
+    const brushKey = `circle-${i}-${opacity}-${lineWidth}`
     brushes[brushKey] = { key: brushKey, color: hex, opacity: isGhost ? 0 : opacity, lineWidth }
     const rawCustomSvg = circleCustomSvg(hex, c.category, c.line_style, c.fill)
     return {
