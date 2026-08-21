@@ -178,6 +178,7 @@ async def replace_position_annotations(
             comment=a.comment,
             line_style=a.line_style,
             order=a.order,
+            line_id=a.line_id,
         )
         for a in body.arrows
     ]

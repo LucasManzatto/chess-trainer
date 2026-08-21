@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Square } from 'chess.js'
-import { ChevronRightIcon, Trash2Icon } from 'lucide-react'
+import { ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, Link2Icon, Trash2Icon, XIcon } from 'lucide-react'
 import { arrowMoveLabel, highlightMoves } from '../../../lib/chess'
 import {
   ANNOTATION_CATEGORIES,
@@ -45,6 +45,43 @@ type Props = {
   onCircleFillChange: (index: number, fill: boolean) => void
   onArrowDelete: (index: number) => void
   onCircleDelete: (index: number) => void
+  // Chained plans (Nf6 -> Bg4 -> e3 -> Nc6): arrows sharing a line_id collapse into one row,
+  // ordered by the existing `order` field. Link/unlink work on raw indices (same as the rest
+  // of this file); bulk edits address a whole line by its line_id.
+  onArrowLink: (indexA: number, indexB: number) => void
+  onArrowUnlink: (index: number) => void
+  onLineColorChange: (lineId: string, color: string) => void
+  onLineCategoryChange: (lineId: string, category: AnnotationCategory | null) => void
+  onLineCommentChange: (lineId: string, comment: string | null) => void
+  onLineStyleChange: (lineId: string, lineStyle: AnnotationLineStyle) => void
+  onLineReorderMove: (lineId: string, index: number, direction: 'up' | 'down') => void
+  onLineDelete: (lineId: string) => void
+}
+
+type ArrowMember = { arrow: BoardAnnotationArrow; index: number }
+type ArrowEntry =
+  | { kind: 'solo'; arrow: BoardAnnotationArrow; index: number }
+  | { kind: 'line'; lineId: string; members: ArrowMember[] }
+
+// Groups arrows sharing a line_id into one entry (members ordered by `order`), preserving the
+// position of each entry's first occurrence in the original list.
+function groupArrowEntries(arrows: BoardAnnotationArrow[]): ArrowEntry[] {
+  const entries: ArrowEntry[] = []
+  const seenLines = new Set<string>()
+  arrows.forEach((arrow, index) => {
+    if (!arrow.line_id) {
+      entries.push({ kind: 'solo', arrow, index })
+      return
+    }
+    if (seenLines.has(arrow.line_id)) return
+    seenLines.add(arrow.line_id)
+    const members = arrows
+      .map((a, i) => ({ arrow: a, index: i }))
+      .filter((m) => m.arrow.line_id === arrow.line_id)
+      .sort((a, b) => (a.arrow.order ?? 0) - (b.arrow.order ?? 0))
+    entries.push({ kind: 'line', lineId: arrow.line_id, members })
+  })
+  return entries
 }
 
 export function AnnotationsList({
@@ -63,10 +100,36 @@ export function AnnotationsList({
   onCircleFillChange,
   onArrowDelete,
   onCircleDelete,
+  onArrowLink,
+  onArrowUnlink,
+  onLineColorChange,
+  onLineCategoryChange,
+  onLineCommentChange,
+  onLineStyleChange,
+  onLineReorderMove,
+  onLineDelete,
 }: Props) {
   const [open, setOpen] = useState(true)
+  // Index of the arrow (solo or a line's last member) currently armed to be chained to the
+  // next arrow clicked. Null = no link in progress.
+  const [linkFrom, setLinkFrom] = useState<number | null>(null)
 
   if (arrows.length === 0 && circles.length === 0) return null
+
+  const arrowEntries = groupArrowEntries(arrows)
+
+  function handleToggleLink(index: number, memberIndices: number[] = [index]) {
+    if (linkFrom !== null && memberIndices.includes(linkFrom)) {
+      setLinkFrom(null)
+      return
+    }
+    if (linkFrom === null) {
+      setLinkFrom(index)
+      return
+    }
+    onArrowLink(linkFrom, index)
+    setLinkFrom(null)
+  }
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col gap-2">
@@ -84,24 +147,45 @@ export function AnnotationsList({
       </CollapsibleTrigger>
       <CollapsibleContent>
         <ul className="flex flex-col gap-2">
-          {arrows.map((arrow, i) => (
-            <AnnotationRow
-              key={`arrow-${i}`}
-              icon={<ArrowIcon color={arrow.color} />}
-              label={arrowMoveLabel(fen, arrow.from_square as Square, arrow.to_square as Square)}
-              color={arrow.color}
-              category={arrow.category}
-              comment={arrow.comment}
-              lineStyle={arrow.line_style}
-              order={arrow.order}
-              onPickColor={(color) => onArrowColorChange(i, color)}
-              onPickCategory={(category) => onArrowCategoryChange(i, category)}
-              onCommentChange={(comment) => onArrowCommentChange(i, comment)}
-              onPickLineStyle={(lineStyle) => onArrowLineStyleChange(i, lineStyle)}
-              onOrderChange={(order) => onArrowOrderChange(i, order)}
-              onDelete={() => onArrowDelete(i)}
-            />
-          ))}
+          {arrowEntries.map((entry) =>
+            entry.kind === 'solo' ? (
+              <AnnotationRow
+                key={`arrow-${entry.index}`}
+                icon={<ArrowIcon color={entry.arrow.color} />}
+                label={arrowMoveLabel(fen, entry.arrow.from_square as Square, entry.arrow.to_square as Square)}
+                color={entry.arrow.color}
+                category={entry.arrow.category}
+                comment={entry.arrow.comment}
+                lineStyle={entry.arrow.line_style}
+                order={entry.arrow.order}
+                onPickColor={(color) => onArrowColorChange(entry.index, color)}
+                onPickCategory={(category) => onArrowCategoryChange(entry.index, category)}
+                onCommentChange={(comment) => onArrowCommentChange(entry.index, comment)}
+                onPickLineStyle={(lineStyle) => onArrowLineStyleChange(entry.index, lineStyle)}
+                onOrderChange={(order) => onArrowOrderChange(entry.index, order)}
+                onDelete={() => onArrowDelete(entry.index)}
+                linkPending={linkFrom === entry.index}
+                onToggleLink={() => handleToggleLink(entry.index)}
+              />
+            ) : (
+              <LineRow
+                key={`line-${entry.lineId}`}
+                fen={fen}
+                lineId={entry.lineId}
+                members={entry.members}
+                linkPending={linkFrom !== null && entry.members.some((m) => m.index === linkFrom)}
+                onToggleLink={() => handleToggleLink(entry.members[entry.members.length - 1].index, entry.members.map((m) => m.index))}
+                onColorChange={(color) => onLineColorChange(entry.lineId, color)}
+                onCategoryChange={(category) => onLineCategoryChange(entry.lineId, category)}
+                onCommentChange={(comment) => onLineCommentChange(entry.lineId, comment)}
+                onLineStyleChange={(lineStyle) => onLineStyleChange(entry.lineId, lineStyle)}
+                onMoveUp={(index) => onLineReorderMove(entry.lineId, index, 'up')}
+                onMoveDown={(index) => onLineReorderMove(entry.lineId, index, 'down')}
+                onUnlink={onArrowUnlink}
+                onDelete={() => onLineDelete(entry.lineId)}
+              />
+            ),
+          )}
           {circles.map((circle, i) => (
             <AnnotationRow
               key={`circle-${i}`}
@@ -144,6 +228,9 @@ type AnnotationRowProps = {
   fill?: boolean
   onFillChange?: (fill: boolean) => void
   onDelete: () => void
+  // Arrow-only: chain this arrow to another one to start/extend a plan.
+  linkPending?: boolean
+  onToggleLink?: () => void
 }
 
 function AnnotationRow({
@@ -162,6 +249,8 @@ function AnnotationRow({
   fill,
   onFillChange,
   onDelete,
+  linkPending,
+  onToggleLink,
 }: AnnotationRowProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [expanded, setExpanded] = useState(!!comment)
@@ -230,12 +319,198 @@ function AnnotationRow({
           )}
         </div>
         <div className="flex items-center gap-0.5">
+          {onToggleLink && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onToggleLink}
+              aria-label={linkPending ? 'Chaining… click another arrow (or click again to cancel)' : 'Chain into a plan'}
+              aria-pressed={!!linkPending}
+              className={cn('text-muted-foreground', linkPending && 'text-primary bg-muted')}
+            >
+              <Link2Icon />
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             onClick={onDelete}
             aria-label="Delete annotation"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2Icon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setExpanded(e => !e)}
+            aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
+            aria-expanded={expanded}
+          >
+            <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
+          </Button>
+        </div>
+      </div>
+      {expanded && (
+        editing ? (
+          <Textarea
+            autoFocus
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitComment}
+            placeholder="Add a comment…"
+            rows={rows}
+            className="text-sm"
+          />
+        ) : (
+          <div
+            onClick={() => setEditing(true)}
+            className="w-full text-foreground/80 text-sm rounded px-1.5 py-1 -mx-1.5 -my-1 whitespace-pre-wrap cursor-text hover:bg-muted transition-colors"
+          >
+            {highlightMoves(draft)}
+          </div>
+        )
+      )}
+    </li>
+  )
+}
+
+type LineRowProps = {
+  fen: string
+  lineId: string
+  members: ArrowMember[]
+  linkPending: boolean
+  onToggleLink: () => void
+  onColorChange: (color: string) => void
+  onCategoryChange: (category: AnnotationCategory | null) => void
+  onCommentChange: (comment: string | null) => void
+  onLineStyleChange: (lineStyle: AnnotationLineStyle) => void
+  onMoveUp: (index: number) => void
+  onMoveDown: (index: number) => void
+  onUnlink: (index: number) => void
+  onDelete: () => void
+}
+
+// A chained plan: a sequence of arrows (Nf6 -> Bg4 -> e3 -> Nc6) collapsed into one row.
+// Color/category/comment/line-style are edited once and apply to every member; each move
+// keeps its own reorder (swap step with a neighbor) and unlink (pull it out solo) controls.
+function LineRow({
+  fen,
+  members,
+  linkPending,
+  onToggleLink,
+  onColorChange,
+  onCategoryChange,
+  onCommentChange,
+  onLineStyleChange,
+  onMoveUp,
+  onMoveDown,
+  onUnlink,
+  onDelete,
+}: LineRowProps) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const first = members[0].arrow
+  const [expanded, setExpanded] = useState(!!first.comment)
+  const [editing, setEditing] = useState(!first.comment)
+  const [draft, setDraft] = useState(first.comment ?? '')
+
+  useEffect(() => {
+    setDraft(first.comment ?? '')
+    setExpanded(!!first.comment)
+    setEditing(!first.comment)
+  }, [first.comment])
+
+  function commitComment() {
+    const trimmed = draft.trim()
+    if (trimmed !== (first.comment ?? '')) onCommentChange(trimmed || null)
+    setEditing(!trimmed)
+  }
+
+  const rows = Math.min(8, Math.max(4, draft.split('\n').length))
+
+  return (
+    <li className="flex flex-col gap-2 bg-muted/50 rounded-lg p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 flex-wrap">
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Line color" />}>
+              <ArrowIcon color={first.color} />
+            </PopoverTrigger>
+            <PopoverContent className="w-auto flex-row gap-1.5 p-1.5">
+              {COLOR_ORDER.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => { onColorChange(c); setPickerOpen(false) }}
+                  className="w-4 h-4 rounded-full border border-border cursor-pointer hover:scale-110 transition-transform"
+                  style={{ backgroundColor: COLOR_HEX[c] }}
+                />
+              ))}
+            </PopoverContent>
+          </Popover>
+          <CategoryBadge category={first.category} onPickCategory={onCategoryChange} />
+          <LineStyleBadge lineStyle={first.line_style} onPickLineStyle={onLineStyleChange} />
+          {members.map((m, i) => (
+            <span key={m.index} className="flex items-center gap-1">
+              {i > 0 && <span className="text-muted-foreground text-xs">&rarr;</span>}
+              <span
+                className="inline-flex items-center gap-0.5 font-mono text-xs font-medium rounded px-1"
+                style={{ backgroundColor: `${TEXT_COLOR_HEX[first.color] ?? first.color}1a`, color: TEXT_COLOR_HEX[first.color] ?? first.color }}
+              >
+                {arrowMoveLabel(fen, m.arrow.from_square as Square, m.arrow.to_square as Square)}
+                <span className="flex flex-col -my-1">
+                  <button
+                    type="button"
+                    onClick={() => onMoveUp(m.index)}
+                    disabled={i === 0}
+                    aria-label="Move step earlier"
+                    className="disabled:opacity-20 hover:text-foreground cursor-pointer disabled:cursor-default"
+                  >
+                    <ChevronUpIcon size={10} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMoveDown(m.index)}
+                    disabled={i === members.length - 1}
+                    aria-label="Move step later"
+                    className="disabled:opacity-20 hover:text-foreground cursor-pointer disabled:cursor-default"
+                  >
+                    <ChevronDownIcon size={10} />
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onUnlink(m.index)}
+                  aria-label="Unlink this move from the plan"
+                  className="hover:text-destructive cursor-pointer"
+                >
+                  <XIcon size={10} />
+                </button>
+              </span>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onToggleLink}
+            aria-label={linkPending ? 'Chaining… click another arrow (or click again to cancel)' : 'Extend this plan'}
+            aria-pressed={linkPending}
+            className={cn('text-muted-foreground', linkPending && 'text-primary bg-muted')}
+          >
+            <Link2Icon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onDelete}
+            aria-label="Delete plan"
             className="text-muted-foreground hover:text-destructive"
           >
             <Trash2Icon />

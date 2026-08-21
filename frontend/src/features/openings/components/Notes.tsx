@@ -31,6 +31,14 @@ export type NotesProps = {
   onCircleFillChange: (index: number, fill: boolean) => void
   onArrowDelete: (index: number) => void
   onCircleDelete: (index: number) => void
+  onArrowLink: (indexA: number, indexB: number) => void
+  onArrowUnlink: (index: number) => void
+  onLineColorChange: (lineId: string, color: string) => void
+  onLineCategoryChange: (lineId: string, category: AnnotationCategory | null) => void
+  onLineCommentChange: (lineId: string, comment: string | null) => void
+  onLineStyleChange: (lineId: string, lineStyle: AnnotationLineStyle) => void
+  onLineReorderMove: (lineId: string, index: number, direction: 'up' | 'down') => void
+  onLineDelete: (lineId: string) => void
 }
 
 export function Notes({
@@ -54,6 +62,14 @@ export function Notes({
   onCircleFillChange,
   onArrowDelete,
   onCircleDelete,
+  onArrowLink,
+  onArrowUnlink,
+  onLineColorChange,
+  onLineCategoryChange,
+  onLineCommentChange,
+  onLineStyleChange,
+  onLineReorderMove,
+  onLineDelete,
 }: NotesProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden font-sans">
@@ -80,6 +96,14 @@ export function Notes({
           onCircleFillChange={onCircleFillChange}
           onArrowDelete={onArrowDelete}
           onCircleDelete={onCircleDelete}
+          onArrowLink={onArrowLink}
+          onArrowUnlink={onArrowUnlink}
+          onLineColorChange={onLineColorChange}
+          onLineCategoryChange={onLineCategoryChange}
+          onLineCommentChange={onLineCommentChange}
+          onLineStyleChange={onLineStyleChange}
+          onLineReorderMove={onLineReorderMove}
+          onLineDelete={onLineDelete}
         />
       </div>
     </div>

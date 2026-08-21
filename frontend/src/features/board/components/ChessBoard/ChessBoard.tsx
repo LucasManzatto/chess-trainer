@@ -256,6 +256,7 @@ function fromDrawShapes(
         comment: prev?.comment ?? null,
         line_style: prev?.line_style ?? 'solid',
         order: prev?.order ?? null,
+        line_id: prev?.line_id ?? null,
       }
     }),
     circles: shapes.filter(s => !isArrowShape(s)).map(s => {

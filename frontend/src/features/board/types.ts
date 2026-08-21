@@ -13,6 +13,10 @@ export type BoardAnnotationArrow = {
   line_style: AnnotationLineStyle
   // Step number in a multi-move plan (arrows 1, 2, 3 depicting a sequence). Null = unordered.
   order: number | null
+  // Groups this arrow with others into one chained plan (Nf6 -> Bg4 -> e3 -> Nc6), rendered
+  // as a single row in AnnotationsList and ordered by `order`. Client-generated (uuid), null
+  // for a standalone arrow.
+  line_id: string | null
 }
 export type BoardAnnotationCircle = {
   square: string

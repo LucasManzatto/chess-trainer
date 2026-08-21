@@ -59,6 +59,9 @@ class PositionAnnotationArrow(Base):
     # Step number in a multi-move plan (e.g. arrows 1, 2, 3 depicting a sequence) — null
     # means unordered.
     order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Groups arrows into one chained plan (e.g. Nf6 -> Bg4 -> e3 -> Nc6), ordered by
+    # `order`. Not a FK — just a shared tag, scoped implicitly to the position.
+    line_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
 
 
 class PositionAnnotationCircle(Base):

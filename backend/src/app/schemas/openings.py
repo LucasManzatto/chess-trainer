@@ -79,6 +79,9 @@ class PositionAnnotationArrowInput(BaseModel):
     comment: str | None = None
     line_style: AnnotationLineStyle = "solid"
     order: int | None = None
+    # Groups this arrow with others into one chained plan (Nf6 -> Bg4 -> e3 -> Nc6),
+    # ordered by `order`. Client-generated (uuid4), no server-side meaning beyond grouping.
+    line_id: str | None = None
 
 
 class PositionAnnotationArrowResponse(BaseModel):
@@ -93,6 +96,7 @@ class PositionAnnotationArrowResponse(BaseModel):
     comment: str | None
     line_style: AnnotationLineStyle
     order: int | None
+    line_id: str | None
 
 
 class PositionAnnotationCircleInput(BaseModel):
