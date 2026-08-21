@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { Chessground } from '@lichess-org/chessground'
 import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
@@ -276,6 +276,36 @@ function fromDrawShapes(
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
+// Position-derived facts chessground needs: whose turn, is it check, and (only while
+// interactive) the legal-move destinations map that drives move highlighting/restriction.
+function useChessPosition(fen: string, interactive: boolean) {
+  const chess = new Chess(fen)
+  const turn = chess.turn() === 'w' ? 'white' as const : 'black' as const
+  const check = chess.inCheck()
+  const dests = interactive ? getDests(chess.moves({ verbose: true })) : new Map()
+  return { turn, check, dests }
+}
+
+// Everything chessground needs for its `drawable` config: shapes to render, brushes to
+// render them with, and the reverse conversion (drawn shapes → our annotation shape) fed
+// back to the caller on change.
+function useDrawable(
+  arrows: ChessBoardProps['arrows'],
+  circles: ChessBoardProps['circles'],
+  orientation: 'white' | 'black',
+  onAnnotationsChange: NonNullable<ChessBoardProps['actions']['onDrawableChange']>,
+): Config['drawable'] {
+  const shapes = toDrawShapes(arrows, circles, orientation)
+  const brushes = SOLID_BRUSHES as unknown as DrawBrushes
+
+  function onChange(next: DrawShape[]) {
+    const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next, arrows, circles)
+    onAnnotationsChange(nextArrows, nextCircles)
+  }
+
+  return { shapes, brushes, onChange }
+}
+
 function useBoardConfig(
   state: ChessBoardProps['state'],
   arrows: ChessBoardProps['arrows'],
@@ -285,19 +315,8 @@ function useBoardConfig(
   const { fen, orientation, interactive, lastMove } = state
   const { applyMove, onDrawableChange: onAnnotationsChange = noop } = actions
 
-  const chess = new Chess(fen)
-  const turn = chess.turn() === 'w' ? 'white' as const : 'black' as const
-  const check = chess.inCheck()
-
-  const dests = interactive ? getDests(chess.moves({ verbose: true })) : new Map()
-
-  const shapes = toDrawShapes(arrows, circles, orientation)
-  const brushes = SOLID_BRUSHES as unknown as DrawBrushes
-
-  function onDrawableChange(next: DrawShape[]) {
-    const { arrows: nextArrows, circles: nextCircles } = fromDrawShapes(next, arrows, circles)
-    onAnnotationsChange(nextArrows, nextCircles)
-  }
+  const { turn, check, dests } = useChessPosition(fen, interactive)
+  const drawable = useDrawable(arrows, circles, orientation, onAnnotationsChange)
 
   return {
     fen,
@@ -313,18 +332,16 @@ function useBoardConfig(
       showDests: true,
       events: { after: (orig: Key, dest: Key) => applyMove(orig as Square, dest as Square) },
     },
-    drawable: {
-      shapes,
-      brushes,
-      onChange: onDrawableChange,
-    },
+    drawable,
     animation: { enabled: true, duration: 300 },
     highlight: { lastMove: true, check: true },
     premovable: { enabled: false },
   }
 }
 
-function useChessground(config: Config) {
+// Mounts the chessground instance on `elRef` once, then keeps it in sync with `config` on
+// every change. Destroys it on unmount.
+function useChessgroundInstance(config: Config) {
   const elRef = useRef<HTMLDivElement>(null)
   const apiRef = useRef<Api | null>(null)
 
@@ -342,19 +359,21 @@ function useChessground(config: Config) {
     apiRef.current?.set(config)
   }, [config])
 
-  // Chessground caches its bounding rect and only invalidates it on its own
-  // ResizeObserver (size change), window resize, or scroll — none of which
-  // fire when a sibling panel's width transitions and shifts the board
-  // sideways without resizing it. Recompute bounds once that transition ends.
+  return { elRef, apiRef }
+}
+
+// Chessground caches its bounding rect and only invalidates it on its own ResizeObserver
+// (size change), window resize, or scroll — none of which fire when a sibling panel's width
+// transitions and shifts the board sideways without resizing it. Recompute bounds once that
+// transition ends. Kept separate from mount/sync: a layout quirk, not lifecycle management.
+function useChessgroundResizeFix(apiRef: RefObject<Api | null>) {
   useEffect(() => {
     function onTransitionEnd(e: TransitionEvent) {
       if (e.propertyName === 'width') apiRef.current?.redrawAll()
     }
     window.addEventListener('transitionend', onTransitionEnd)
     return () => window.removeEventListener('transitionend', onTransitionEnd)
-  }, [])
-
-  return elRef
+  }, [apiRef])
 }
 
 function useBoardKeyNav(navigateBack: () => void, navigateForward: () => void) {
@@ -376,7 +395,8 @@ function useBoardKeyNav(navigateBack: () => void, navigateForward: () => void) {
 
 export function ChessBoard(props: ChessBoardProps) {
   const config = useBoardConfig(props.state, props.arrows, props.circles, props.actions)
-  const elRef = useChessground(config)
+  const { elRef, apiRef } = useChessgroundInstance(config)
+  useChessgroundResizeFix(apiRef)
   useBoardKeyNav(props.actions.navigateBack, props.actions.navigateForward)
 
   return (
