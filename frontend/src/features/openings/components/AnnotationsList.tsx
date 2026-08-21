@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { Square } from 'chess.js'
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, useDraggable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { horizontalListSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ChevronRightIcon, GripVerticalIcon, Link2Icon, Trash2Icon, XIcon } from 'lucide-react'
@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { COLOR_HEX, COLOR_ORDER, TEXT_COLOR_HEX } from './annotationConstants'
 import { ArrowIcon, CircleIcon, FillSquareIcon } from './AnnotationIcons'
@@ -54,6 +56,10 @@ type Props = {
 const memberId = (index: number) => `member-${index}`
 const memberIndexFromId = (id: string) => Number(id.slice('member-'.length))
 
+// Draggable id for a row's link/chain button — dragging it onto another row links them in one
+// motion (the click-arm-then-click-target flow still works as a fallback, see handleToggleLink).
+const linkSourceId = (rowId: string) => `linksrc-${rowId}`
+
 export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
   const [open, setOpen] = useState(true)
   // Index of the arrow (solo or a line's last member) currently armed to be chained to the
@@ -86,12 +92,24 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
   // Single DndContext for the whole arrows/lines block: a LineRow's member chips get their own
   // nested SortableContext (supported), but nesting a second DndContext inside this one is not
   // — dnd-kit only reliably delivers drag events to the outermost context, so a nested
-  // DndContext's onDragEnd never fires. Row vs. member drags are told apart here via each
-  // draggable's `data.type` instead.
+  // DndContext's onDragEnd never fires. Row/member/link-source drags are told apart here via
+  // each draggable's `data.type` instead.
   function handleArrowDragEnd({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return
-    if (active.data.current?.type === 'member') {
-      const lineId = active.data.current.lineId as string
+    const activeType = active.data.current?.type
+    if (activeType === 'link-source') {
+      // Dropping a row's link button onto another row chains them — same semantics as the
+      // click-arm-then-click-target flow (linkIndex is each row's "index to link at": its own
+      // index for a solo arrow, its last member's index for a line), just in one drag.
+      if (over.data.current?.type !== 'row') return
+      const fromIndex = active.data.current?.linkIndex as number
+      const toIndex = over.data.current.linkIndex as number
+      if (toIndex == null || fromIndex === toIndex) return
+      actions.linkArrows(fromIndex, toIndex)
+      return
+    }
+    if (activeType === 'member') {
+      const lineId = active.data.current?.lineId as string
       if (over.data.current?.type !== 'member' || over.data.current.lineId !== lineId) return
       actions.reorderLineMembers(lineId, memberIndexFromId(String(active.id)), memberIndexFromId(String(over.id)))
       return
@@ -128,6 +146,7 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
                   <ArrowAnnotationRow
                     key={arrowEntryKey(entry)}
                     sortableId={arrowEntryKey(entry)}
+                    linkIndex={entry.index}
                     fen={fen}
                     arrow={entry.arrow}
                     onChange={(patch) => actions.updateArrow(entry.index, patch)}
@@ -173,6 +192,7 @@ export function AnnotationsList({ fen, arrows, circles, actions }: Props) {
 
 function ArrowAnnotationRow({
   sortableId,
+  linkIndex,
   fen,
   arrow,
   onChange,
@@ -181,6 +201,7 @@ function ArrowAnnotationRow({
   onToggleLink,
 }: {
   sortableId: string
+  linkIndex: number
   fen: string
   arrow: BoardAnnotationArrow
   onChange: (patch: Partial<BoardAnnotationArrow>) => void
@@ -191,6 +212,7 @@ function ArrowAnnotationRow({
   return (
     <AnnotationRowShell
       sortableId={sortableId}
+      linkIndex={linkIndex}
       icon={<ArrowIcon color={arrow.color} />}
       label={arrowMoveLabel(fen, arrow.from_square as Square, arrow.to_square as Square)}
       color={arrow.color}
@@ -229,17 +251,24 @@ function CircleAnnotationRow({
       onChange={onChange}
       onDelete={onDelete}
       extraControls={
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className={cn('text-xs', circle.fill && 'bg-muted')}
-          aria-label={circle.fill ? 'Filled square' : 'Ring (click to fill square)'}
-          aria-pressed={circle.fill}
-          onClick={() => onChange({ fill: !circle.fill })}
-        >
-          <FillSquareIcon filled={circle.fill} color={TEXT_COLOR_HEX[circle.color] ?? circle.color} />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className={cn('text-xs', circle.fill && 'bg-muted')}
+                aria-label={circle.fill ? 'Filled square' : 'Ring (click to fill square)'}
+                aria-pressed={circle.fill}
+                onClick={() => onChange({ fill: !circle.fill })}
+              />
+            }
+          >
+            <FillSquareIcon filled={circle.fill} color={TEXT_COLOR_HEX[circle.color] ?? circle.color} />
+          </TooltipTrigger>
+          <TooltipContent side="top">{circle.fill ? 'Filled square — click for ring' : 'Ring — click to fill square'}</TooltipContent>
+        </Tooltip>
       }
     />
   )
@@ -277,10 +306,20 @@ function LineRow({
     first.comment,
     (comment) => onChange({ comment }),
   )
+  // Extending a plan links onto its *last* member (matches the click-arm-then-click-target
+  // flow's semantics) — used both as this row's drag-to-link target index and, below, as the
+  // link button's own drag-source index.
+  const linkIndex = members[members.length - 1].index
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sortableId,
-    data: { type: 'row' },
+    data: { type: 'row', linkIndex },
   })
+  const {
+    listeners: linkListeners,
+    attributes: linkAttributes,
+    setNodeRef: setLinkNodeRef,
+    transform: linkTransform,
+  } = useDraggable({ id: linkSourceId(sortableId), data: { type: 'link-source', linkIndex } })
 
   return (
     <li
@@ -290,19 +329,34 @@ function LineRow({
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1 flex-wrap">
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            aria-label="Drag to reorder"
-            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
-          >
-            <GripVerticalIcon size={14} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  {...attributes}
+                  {...listeners}
+                  aria-label="Drag to reorder"
+                  className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+                />
+              }
+            >
+              <GripVerticalIcon size={14} />
+            </TooltipTrigger>
+            <TooltipContent side="top">Drag to reorder</TooltipContent>
+          </Tooltip>
+          <Separator orientation="vertical" className="h-4" />
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-            <PopoverTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Line color" />}>
-              <ArrowIcon color={first.color} />
-            </PopoverTrigger>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <PopoverTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Line color" />}>
+                    <ArrowIcon color={first.color} />
+                  </PopoverTrigger>
+                }
+              />
+              <TooltipContent side="top">Line color</TooltipContent>
+            </Tooltip>
             <PopoverContent className="w-auto flex-row gap-1.5 p-1.5">
               {COLOR_ORDER.map((c) => (
                 <button
@@ -334,37 +388,66 @@ function LineRow({
           </SortableContext>
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onToggleLink}
-            aria-label={linkPending ? 'Chaining… click another arrow (or click again to cancel)' : 'Extend this plan'}
-            aria-pressed={linkPending}
-            className={cn('text-muted-foreground', linkPending && 'text-primary bg-muted')}
-          >
-            <Link2Icon />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onDelete}
-            aria-label="Delete plan"
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2Icon />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setExpanded(e => !e)}
-            aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
-            aria-expanded={expanded}
-          >
-            <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  {...linkListeners}
+                  {...linkAttributes}
+                  ref={setLinkNodeRef}
+                  onClick={onToggleLink}
+                  aria-label={linkPending ? 'Chaining… click another arrow (or click again to cancel)' : 'Extend this plan'}
+                  aria-pressed={linkPending}
+                  className={cn(
+                    'text-muted-foreground cursor-grab active:cursor-grabbing touch-none',
+                    linkPending && 'text-primary bg-muted',
+                  )}
+                  style={{ transform: CSS.Translate.toString(linkTransform) }}
+                />
+              }
+            >
+              <Link2Icon />
+            </TooltipTrigger>
+            <TooltipContent side="top">Drag onto another arrow to link, or click to arm/cancel</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setExpanded(e => !e)}
+                  aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
+                  aria-expanded={expanded}
+                />
+              }
+            >
+              <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
+            </TooltipTrigger>
+            <TooltipContent side="top">{expanded ? 'Collapse comment' : 'Expand comment'}</TooltipContent>
+          </Tooltip>
+          <Separator orientation="vertical" className="h-4" />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onDelete}
+                  aria-label="Delete plan"
+                  className="text-muted-foreground hover:text-destructive"
+                />
+              }
+            >
+              <Trash2Icon />
+            </TooltipTrigger>
+            <TooltipContent side="top">Delete plan</TooltipContent>
+          </Tooltip>
         </div>
       </div>
       {expanded && (
@@ -445,6 +528,10 @@ function LineMemberChip({
 
 type AnnotationRowShellProps = {
   sortableId: string
+  // This row's "index to link at" — its own draftArrows index. Doubles as the drag-to-link
+  // drop-target index (when another row is dropped here) and drag-source index (when this
+  // row's own link button is dragged). Circle rows don't link, so it's omitted for them.
+  linkIndex?: number
   icon: ReactNode
   label: string
   color: string
@@ -467,6 +554,7 @@ type AnnotationRowShellProps = {
 // living here.
 function AnnotationRowShell({
   sortableId,
+  linkIndex,
   icon,
   label,
   color,
@@ -486,8 +574,14 @@ function AnnotationRowShell({
   )
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sortableId,
-    data: { type: 'row' },
+    data: { type: 'row', linkIndex },
   })
+  const {
+    listeners: linkListeners,
+    attributes: linkAttributes,
+    setNodeRef: setLinkNodeRef,
+    transform: linkTransform,
+  } = useDraggable({ id: linkSourceId(sortableId), data: { type: 'link-source', linkIndex } })
 
   return (
     <li
@@ -497,15 +591,23 @@ function AnnotationRowShell({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            aria-label="Drag to reorder"
-            className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
-          >
-            <GripVerticalIcon size={14} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  {...attributes}
+                  {...listeners}
+                  aria-label="Drag to reorder"
+                  className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+                />
+              }
+            >
+              <GripVerticalIcon size={14} />
+            </TooltipTrigger>
+            <TooltipContent side="top">Drag to reorder</TooltipContent>
+          </Tooltip>
+          <Separator orientation="vertical" className="h-4" />
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger
               render={
@@ -538,38 +640,67 @@ function AnnotationRowShell({
         </div>
         <div className="flex items-center gap-0.5">
           {onToggleLink && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={onToggleLink}
-              aria-label={linkPending ? 'Chaining… click another arrow (or click again to cancel)' : 'Chain into a plan'}
-              aria-pressed={!!linkPending}
-              className={cn('text-muted-foreground', linkPending && 'text-primary bg-muted')}
-            >
-              <Link2Icon />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    {...linkListeners}
+                    {...linkAttributes}
+                    ref={setLinkNodeRef}
+                    onClick={onToggleLink}
+                    aria-label={linkPending ? 'Chaining… click another arrow (or click again to cancel)' : 'Chain into a plan'}
+                    aria-pressed={!!linkPending}
+                    className={cn(
+                      'text-muted-foreground cursor-grab active:cursor-grabbing touch-none',
+                      linkPending && 'text-primary bg-muted',
+                    )}
+                    style={{ transform: CSS.Translate.toString(linkTransform) }}
+                  />
+                }
+              >
+                <Link2Icon />
+              </TooltipTrigger>
+              <TooltipContent side="top">Drag onto another arrow to link, or click to arm/cancel</TooltipContent>
+            </Tooltip>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onDelete}
-            aria-label="Delete annotation"
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2Icon />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => setExpanded(e => !e)}
-            aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
-            aria-expanded={expanded}
-          >
-            <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setExpanded(e => !e)}
+                  aria-label={expanded ? 'Collapse comment' : 'Expand comment'}
+                  aria-expanded={expanded}
+                />
+              }
+            >
+              <ChevronRightIcon className={cn('transition-transform', expanded && 'rotate-90')} />
+            </TooltipTrigger>
+            <TooltipContent side="top">{expanded ? 'Collapse comment' : 'Expand comment'}</TooltipContent>
+          </Tooltip>
+          <Separator orientation="vertical" className="h-4" />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={onDelete}
+                  aria-label="Delete annotation"
+                  className="text-muted-foreground hover:text-destructive"
+                />
+              }
+            >
+              <Trash2Icon />
+            </TooltipTrigger>
+            <TooltipContent side="top">Delete annotation</TooltipContent>
+          </Tooltip>
         </div>
       </div>
       {expanded && (

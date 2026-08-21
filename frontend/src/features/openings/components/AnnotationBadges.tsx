@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ANNOTATION_CATEGORIES, ANNOTATION_CATEGORY_BY_VALUE, type AnnotationCategory, type AnnotationLineStyle } from '../../board/types'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { LINE_STYLES } from './annotationConstants'
 import { LineStyleIcon } from './AnnotationIcons'
@@ -18,19 +19,26 @@ export function CategoryBadge({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-xs"
-            aria-label={meta ? `Category: ${meta.label}` : 'Set category'}
-            style={meta ? { backgroundColor: `${meta.fill}1a`, color: meta.fill } : undefined}
-          />
-        }
-      >
-        {meta ? meta.glyph : <span className="text-muted-foreground">+</span>}
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-xs"
+                  aria-label={meta ? `Category: ${meta.label}` : 'Set category'}
+                  style={meta ? { backgroundColor: `${meta.fill}1a`, color: meta.fill } : undefined}
+                />
+              }
+            >
+              {meta ? meta.glyph : <span className="text-muted-foreground">+</span>}
+            </PopoverTrigger>
+          }
+        />
+        <TooltipContent side="top">{meta ? `Category: ${meta.label}` : 'Set category'}</TooltipContent>
+      </Tooltip>
       <PopoverContent className="w-auto flex-col gap-0.5 p-1">
         {ANNOTATION_CATEGORIES.map((c) => (
           <button
@@ -69,14 +77,20 @@ export function LineStyleBadge({
   onPickLineStyle: (lineStyle: AnnotationLineStyle) => void
 }) {
   const [open, setOpen] = useState(false)
+  const label = LINE_STYLES.find(s => s.value === lineStyle)?.label ?? lineStyle
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label={`Line style: ${lineStyle}`} />}
-      >
-        <LineStyleIcon dash={LINE_STYLES.find(s => s.value === lineStyle)?.dash ?? ''} />
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Line style: ${lineStyle}`} />}>
+              <LineStyleIcon dash={LINE_STYLES.find(s => s.value === lineStyle)?.dash ?? ''} />
+            </PopoverTrigger>
+          }
+        />
+        <TooltipContent side="top">{label}</TooltipContent>
+      </Tooltip>
       <PopoverContent className="w-auto flex-col gap-0.5 p-1">
         {LINE_STYLES.map((s) => (
           <button
@@ -105,22 +119,31 @@ export function OrderStepper({
   onOrderChange: (order: number | null) => void
 }) {
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-sm"
-      className="text-xs font-mono"
-      aria-label={order != null ? `Plan step ${order} (click to clear)` : 'Set plan step number'}
-      onClick={() => onOrderChange(order != null ? null : 1)}
-      onContextMenu={(e) => {
-        // Right-click bumps the step number instead of clearing it, so a multi-arrow plan can
-        // be numbered without reopening this control for every arrow.
-        if (order == null) return
-        e.preventDefault()
-        onOrderChange(order + 1)
-      }}
-    >
-      {order != null ? `#${order}` : <span className="text-muted-foreground">#</span>}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-xs font-mono"
+            aria-label={order != null ? `Plan step ${order} (click to clear)` : 'Set plan step number'}
+            onClick={() => onOrderChange(order != null ? null : 1)}
+            onContextMenu={(e) => {
+              // Right-click bumps the step number instead of clearing it, so a multi-arrow plan
+              // can be numbered without reopening this control for every arrow.
+              if (order == null) return
+              e.preventDefault()
+              onOrderChange(order + 1)
+            }}
+          />
+        }
+      >
+        {order != null ? `#${order}` : <span className="text-muted-foreground">#</span>}
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        {order != null ? `Plan step ${order} — click to clear, right-click to bump` : 'Set plan step number'}
+      </TooltipContent>
+    </Tooltip>
   )
 }

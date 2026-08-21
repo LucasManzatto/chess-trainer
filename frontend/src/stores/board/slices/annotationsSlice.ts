@@ -90,14 +90,22 @@ export const createAnnotationsSlice: StateCreator<ChessBoardStoreType, [], [], A
     ),
   linkArrows: (indexA, indexB) => {
     const arrows = get().draftArrows
-    const lineId = arrows[indexA].line_id ?? crypto.randomUUID()
-    const memberOrders = arrows.filter(a => a.line_id === lineId).map(a => a.order ?? 0)
+    const a = arrows[indexA]
+    const b = arrows[indexB]
+    // Reuse whichever side already belongs to a plan (matters when a solo row is linked onto an
+    // existing chain — previously this always minted a new line from indexA, silently splitting
+    // indexB out of its real plan instead of joining it). Only mint a new line when neither side
+    // has one yet.
+    const lineId = a.line_id ?? b.line_id ?? crypto.randomUUID()
+    const isNewLine = a.line_id == null && b.line_id == null
+    const memberOrders = arrows.filter(x => x.line_id === lineId).map(x => x.order ?? 0)
     const nextOrder = (memberOrders.length ? Math.max(...memberOrders) : 0) + 1
     get().setDraftAnnotations(
-      arrows.map((a, i) => {
-        if (i === indexB) return { ...a, line_id: lineId, order: nextOrder }
-        if (i === indexA && a.line_id == null) return { ...a, line_id: lineId, order: 1 }
-        return a
+      arrows.map((arrow, i) => {
+        if (arrow.line_id === lineId) return arrow // already a member of the target line — leave its order alone
+        if (i === indexA) return { ...arrow, line_id: lineId, order: isNewLine ? 1 : nextOrder }
+        if (i === indexB) return { ...arrow, line_id: lineId, order: nextOrder }
+        return arrow
       }),
       get().draftCircles,
     )
