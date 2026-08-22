@@ -1,5 +1,5 @@
 // Pure conversion between our annotation model (BoardAnnotationArrow/Circle) and chessground's
-// DrawShape/DrawBrushes — geometry, SVG generation, and hover-dim math. No React, no chessground
+// DrawShape/DrawBrushes — geometry, SVG generation, and hover-highlight math. No React, no chessground
 // instance access, so it's testable and reusable standalone.
 //
 // Ordered top-down: constants → public API (toDrawShapes/fromDrawShapes/pointToSquare) →
@@ -25,11 +25,6 @@ import {
 const BASE_SHAPE_OPACITY = 0.9
 const BASE_LINE_WIDTH = 10
 const HOVERED_LINE_WIDTH = 13
-// Opacity a non-hovered shape falls to while another annotation is hovered (in the list or on
-// the board itself) — low enough to read as "not this one" without vanishing entirely, so the
-// board doesn't jump around as the pointer moves. This is a multiplier on BASE_SHAPE_OPACITY, not
-// the final rendered opacity (that's BASE_SHAPE_OPACITY * DIMMED_OPACITY, see shapeHoverState).
-const DIMMED_OPACITY = 0.15
 
 const BASE_BRUSHES = {
   green:  { key: 'green',  color: '#15781B', opacity: BASE_SHAPE_OPACITY, lineWidth: BASE_LINE_WIDTH },
@@ -78,10 +73,7 @@ const ORDER_BADGE_ANCHOR_FRACTION = 0.18
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-// Shapes to draw plus the brushes they reference — brushes are generated per distinct
-// (color, opacity, lineWidth) combination actually in use (not the shared SOLID_BRUSHES map)
-// because dimming one hovered-elsewhere shape without touching every other shape of the same
-// color/category requires that shape to own its own opacity/lineWidth.
+// Shapes to draw plus the brushes they reference.
 export function toDrawShapes(
   arrows: BoardAnnotationArrow[],
   circles: BoardAnnotationCircle[],
@@ -95,26 +87,25 @@ export function toDrawShapes(
   // BASE_BRUSHES, so this satisfies the type directly — no cast needed.
   const brushes: DrawBrushes = { ...SOLID_BRUSHES } as DrawBrushes
 
-  // Registers (or reuses) the brush for one (isGhost, hex, opacity) combination and returns its
-  // key. Shapes that land on the same combination — the common case: most shapes share the same
-  // base opacity when nothing is hovered — share one brush entry instead of minting a new one
-  // per shape. lineWidth is deliberately NOT part of this: chessground's own DrawShape.modifiers
-  // already carries a per-shape lineWidth override (see arrowShapes below), so baking it into the
-  // brush too would just fragment the brush cache for no benefit.
-  const ensureBrush = (isGhost: boolean, hex: string, opacity: number): string => {
-    const key = `annotation-${isGhost ? 'ghost' : hex}-${opacity}`
+  // Registers (or reuses) the brush for one (isGhost, hex) combination and returns its key.
+  // Opacity is always BASE_SHAPE_OPACITY (no per-shape dimming), so it's baked into the brush
+  // table directly rather than threaded through here. lineWidth is deliberately NOT part of this
+  // either: chessground's own DrawShape.modifiers already carries a per-shape lineWidth override
+  // (see arrowShapes below), so baking it into the brush too would just fragment the brush cache
+  // for no benefit.
+  const ensureBrush = (isGhost: boolean, hex: string): string => {
+    const key = `annotation-${isGhost ? 'ghost' : hex}`
     if (!brushes[key]) {
-      // chessground's shapeHash (see its svg.ts) includes both `brush` (this key) and
-      // `modifiers` directly, so either one changing is enough to bust its redraw cache on its
-      // own — the brush key doesn't need to carry lineWidth too just to force a redraw.
-      //
       // Ghost shapes must stay 'transparent', not just opacity: 0 — chessground's own opacity()
       // helper does `brush.opacity || 1`, so a literal 0 falls back to full opacity 1. Without a
       // transparent color that fallback would render the hidden native line at full strength,
-      // permanently masking this shape's actual (correctly dimming) customSvg opacity. Non-ghost
-      // shapes bake opacity into the color itself (see hexWithOpacity) rather than the brush's own
-      // opacity field, since that field only dims the shaft — the arrowhead marker ignores it.
-      brushes[key] = { key, color: isGhost ? 'transparent' : hexWithOpacity(hex, opacity), opacity: 1, lineWidth: BASE_LINE_WIDTH }
+      // permanently masking this shape's customSvg underneath.
+      //
+      // Known tradeoff: native opacity only applies to the <line>, not the <marker> arrowhead
+      // (SVG markers don't inherit the referencing element's opacity), so the shaft sits at
+      // BASE_SHAPE_OPACITY while the head stays full-strength — visible as a seam where the two
+      // meet. Accepted rather than baking opacity into the color as an alpha byte.
+      brushes[key] = { key, color: isGhost ? 'transparent' : hex, opacity: BASE_SHAPE_OPACITY, lineWidth: BASE_LINE_WIDTH }
     }
     return key
   }
@@ -123,41 +114,35 @@ export function toDrawShapes(
     const hex = resolveHex(a.color, a.category)
     const { angle, lengthSquares } = arrowGeometry(a.from_square, a.to_square, orientation)
     const isGhost = arrowBrushKey(a.color, a.category, a.line_style) === GHOST_BRUSH_KEY
-    const key = arrowKey(a)
-    const isHovered = hoveredKey != null && key === hoveredKey
-    const isDimmed = hoveredKey != null && key !== hoveredKey
-    const { opacity, lineWidth } = shapeHoverState(key, hoveredKey)
-    const brushKey = ensureBrush(isGhost, hex, opacity)
-    const { customSvg: rawCustomSvg, label } = arrowOverlay(hex, a.category, a.order, a.line_style, angle, lengthSquares, isDimmed)
+    const lineWidth = hoverLineWidth(arrowKey(a), hoveredKey)
+    const brushKey = ensureBrush(isGhost, hex)
+    const { customSvg: rawCustomSvg, label } = arrowOverlay(hex, a.category, a.order, a.line_style, angle, lengthSquares)
     return {
       orig: a.from_square as Key,
       dest: a.to_square as Key,
       brush: brushKey,
       // Native override for this one shape's width, instead of a dedicated brush per width —
       // chessground merges this into the rendered line + arrowhead marker (see makeCustomBrush
-      // in its svg.ts) and folds it into its own redraw-cache hash automatically. `hilite` is
-      // chessground's own "this one's highlighted" primitive (a blurred glow behind the line) —
-      // safe to use only for the actually-hovered arrow, since renderArrow forces opacity to 1
-      // whenever hilite is set, which is already this shape's own state.
-      modifiers: isHovered ? { lineWidth, hilite: hex } : { lineWidth },
+      // in its svg.ts) and folds it into its own redraw-cache hash automatically.
+      //
+      // NOT using `hilite` here: chessground's renderArrow draws it as a *second*, blurred
+      // backdrop line+arrowhead layered behind the normal one. The blur spreads that backdrop
+      // wider than the crisp solid arrowhead on top, so it shows through as a stray line inside/
+      // around the arrowhead. lineWidth alone is enough of a hover cue without that artifact.
+      modifiers: { lineWidth },
       label,
-      customSvg: rawCustomSvg && { ...rawCustomSvg, html: svgOpacityWrap(rawCustomSvg.html, opacity) },
+      customSvg: rawCustomSvg && { ...rawCustomSvg, html: svgOpacityWrap(rawCustomSvg.html) },
     }
   })
   const circleShapes = circles.map(c => {
     const hex = resolveHex(c.color, c.category)
     const isGhost = circleBrushKey(c.color, c.category, c.line_style, c.fill) === GHOST_BRUSH_KEY
-    // Circles have no hover-width cue: chessground's renderCircle draws its ring at a fixed
-    // width from its own circleWidth() constant and never reads brush.lineWidth or
-    // shape.modifiers — so unlike arrows, there is nothing to widen here. Opacity is the only
-    // lever; only that is used below.
-    const { opacity } = shapeHoverState(c.square, hoveredKey)
-    const brushKey = ensureBrush(isGhost, hex, opacity)
+    const brushKey = ensureBrush(isGhost, hex)
     const rawCustomSvg = circleCustomSvg(hex, c.category, c.line_style, c.fill)
     return {
       orig: c.square as Key,
       brush: brushKey,
-      customSvg: rawCustomSvg && { ...rawCustomSvg, html: svgOpacityWrap(rawCustomSvg.html, opacity) },
+      customSvg: rawCustomSvg && { ...rawCustomSvg, html: svgOpacityWrap(rawCustomSvg.html) },
     }
   })
 
@@ -241,35 +226,18 @@ function circleBrushKey(
   return lineStyle === 'solid' && !fill ? baseBrushKey(color, category) : GHOST_BRUSH_KEY
 }
 
-// Per-shape opacity/lineWidth given the currently hovered annotation key (from AnnotationsList
-// or from hovering the shape itself on the board) — full strength when nothing is hovered or
-// this shape is the hovered one, dimmed otherwise. Callers feed `opacity` into the shape's brush
-// color and `lineWidth` into its native `modifiers.lineWidth` (arrows only — see toDrawShapes).
-function shapeHoverState(key: string, hoveredKey: string | null | undefined): { opacity: number; lineWidth: number } {
-  if (!hoveredKey) return { opacity: BASE_SHAPE_OPACITY, lineWidth: BASE_LINE_WIDTH }
-  return key === hoveredKey
-    ? { opacity: BASE_SHAPE_OPACITY, lineWidth: HOVERED_LINE_WIDTH }
-    : { opacity: BASE_SHAPE_OPACITY * DIMMED_OPACITY, lineWidth: BASE_LINE_WIDTH }
-}
-
-// A native arrow's head is an SVG <marker> referenced via marker-end — markers don't inherit
-// the referencing line's `opacity` attribute (an SVG quirk), only their own fill. Baking the
-// opacity into the color itself (as an 8-digit hex alpha channel) dims the shaft and the
-// arrowhead together, instead of leaving the arrowhead permanently at full strength.
-function hexWithOpacity(hex: string, opacity: number): string {
-  // resolveHex only ever returns a brush-table color (always #rrggbb) or, in principle, a raw
-  // a.color that failed to resolve — guard against appending an alpha byte to something that
-  // isn't 6-digit hex, which would otherwise silently produce an invalid CSS color.
-  if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex
-  const alpha = Math.round(Math.min(1, Math.max(0, opacity)) * 255).toString(16).padStart(2, '0')
-  return `${hex}${alpha}`
+// Arrow's own lineWidth given the currently hovered annotation key (from AnnotationsList or
+// from hovering the shape itself on the board) — widens only the hovered arrow, as the highlight
+// cue. Feeds into the shape's native `modifiers.lineWidth` (see toDrawShapes).
+function hoverLineWidth(key: string, hoveredKey: string | null | undefined): number {
+  return hoveredKey != null && key === hoveredKey ? HOVERED_LINE_WIDTH : BASE_LINE_WIDTH
 }
 
 // customSvg is drawn on top of the native brush at full alpha regardless of the brush's own
-// opacity, so dimming a custom-drawn shape (dashed/dotted arrows, filled squares, glyphs, order
-// badges) needs its own wrapper — this is that wrapper.
-function svgOpacityWrap(html: string, opacity: number): string {
-  return opacity === 1 ? html : `<g opacity="${opacity}">${html}</g>`
+// opacity, so a custom-drawn shape (dashed/dotted arrows, filled squares, glyphs, order badges)
+// needs its own wrapper to sit at the same BASE_SHAPE_OPACITY as everything else.
+function svgOpacityWrap(html: string): string {
+  return `<g opacity="${BASE_SHAPE_OPACITY}">${html}</g>`
 }
 
 // Arrow overlay content: category glyph (customSvg, always hand-drawn — no native equivalent)
@@ -277,11 +245,9 @@ function svgOpacityWrap(html: string, opacity: number): string {
 //
 // Native `label` gets chessground's built-in multi-arrow collision avoidance for free (its
 // labelCoords/slot math in svg.ts nudges the badge clear of other arrows converging on the same
-// square) — but renderLabel never applies opacity, so a native label on a dimmed arrow would
-// stay full-bright while the rest of the shape fades, breaking the hover-dim language. It's only
-// used when `isDimmed` is false. A categorized arrow keeps the old hand-positioned combo (glyph +
-// badge offset from each other) even when not dimmed, since native label and the glyph would
-// otherwise land on the same spot with no collision avoidance between the two of *our* elements.
+// square). A categorized arrow keeps the old hand-positioned combo (glyph + badge offset from
+// each other) regardless, since native label and the glyph would otherwise land on the same spot
+// with no collision avoidance between the two of *our* elements.
 function arrowOverlay(
   hex: string,
   category: BoardAnnotationArrow['category'],
@@ -289,11 +255,13 @@ function arrowOverlay(
   lineStyle: AnnotationLineStyle,
   angle: number,
   lengthSquares: number,
-  isDimmed: boolean,
 ): { customSvg: DrawShape['customSvg']; label: DrawShape['label'] } {
   const glyph = category ? ANNOTATION_CATEGORY_BY_VALUE[category] : null
-  const useNativeLabel = order != null && !glyph && !isDimmed
-  const label: DrawShape['label'] = useNativeLabel ? { text: String(order), fill: hex } : undefined
+  const useNativeLabel = order != null && !glyph
+  // fill omitted — chessground's renderShape defaults label.fill to the shape's own brush color
+  // (plain, opaque `hex`, same value this arrow resolved to), so passing it here would just
+  // restate that.
+  const label: DrawShape['label'] = useNativeLabel ? { text: String(order) } : undefined
   const inlineOrder = order != null && !useNativeLabel
 
   if (lineStyle === 'solid') {
