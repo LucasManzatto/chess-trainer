@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { MovesList } from '../../../components/MovesList/MovesList'
 import { Notes } from '../../../features/openings/components/Notes'
 import { useNearestOpening, useOpeningBranches, usePositionComments, usePosition, usePositionAnnotations } from '../../../data/hooks/usePositions'
+import { useBoardAnnotations } from '../../../features/board/hooks/useBoardAnnotations'
 import { PositionName } from '../../../features/openings/components/PositionName'
 import { SaveAnnotationsButton } from '../../../features/openings/components/SaveAnnotationsButton'
 import { AddToDrill } from '../../../features/train/components/AddToDrill'
@@ -137,9 +138,6 @@ function BrowsePageInner() {
   const [drillDialogOpen, setDrillDialogOpen] = useState(false)
   const [pageMode, setPageMode] = useState<PageMode>({ type: 'default' })
   const [gamesFilters, setGamesFilters] = useState<GamesFilters>({ result: null, color: null, has_critical_moves: null, reviewed: null, first_critical_move: null, left_repertoire: null })
-  // Key of the annotation currently hovered — set from either AnnotationsList (row hover) or
-  // ChessBoard (shape hover) — so both sides highlight the same annotation and dim the rest.
-  const [hoveredAnnotationKey, setHoveredAnnotationKey] = useState<string | null>(null)
 
   // ─── API data: position (eval, notes, comments, annotations) ────────────────
   const { score: evalScore, isLoading: evalLoading } = usePositionEvaluation(boardState.fen)
@@ -186,6 +184,11 @@ function BrowsePageInner() {
   const selectedGame = pageMode.type === 'game_review' ? gamesData?.items.find(g => g.id === selectedGameId) ?? null : null
   const criticalMoveIndices = selectedGame?.critical_moves ?? []
   const bestMoveArrow = getBestMoveArrow(boardState.activeMove, selectedGame, config.showBestMove, annotations.draftArrows)
+  const boardAnnotations = useBoardAnnotations(
+    trainHideOverlay ? [] : [...annotations.draftArrows, ...bestMoveArrow],
+    trainHideOverlay ? [] : annotations.draftCircles,
+    annotations.setDraftAnnotations,
+  )
   const lastMove = boardState.lastMove
     ? (() => {
         const from = boardState.lastMove.slice(0, 2)
@@ -310,16 +313,16 @@ function BrowsePageInner() {
               <div className="relative">
                 <ChessBoard
                   state={boardState}
-                  arrows={trainHideOverlay ? [] : [...annotations.draftArrows, ...bestMoveArrow]}
-                  circles={trainHideOverlay ? [] : annotations.draftCircles}
+                  arrows={boardAnnotations.arrows}
+                  circles={boardAnnotations.circles}
                   config={{ showBestMove: trainHideOverlay ? false : config.showBestMove, boardSize: config.boardSize }}
-                  hoveredKey={hoveredAnnotationKey}
+                  hoveredKey={boardAnnotations.hoveredKey}
                   actions={{
                     applyMove: boardState.applyMove,
                     navigateBack: boardState.navigateBack,
                     navigateForward: boardState.navigateForward,
-                    onDrawableChange: annotations.setDraftAnnotations,
-                    onHoverEntry: setHoveredAnnotationKey,
+                    onDrawableChange: boardAnnotations.onChange,
+                    onHoverEntry: boardAnnotations.onHoverEntry,
                   }}
                 />
                 <ChessBoardSettings
@@ -361,8 +364,8 @@ function BrowsePageInner() {
             lastMove={lastMove}
             lastNotes={parentPositionDetail.comments}
             annotationActions={annotations}
-            hoveredAnnotationKey={hoveredAnnotationKey}
-            onHoverAnnotation={setHoveredAnnotationKey}
+            hoveredAnnotationKey={boardAnnotations.hoveredKey}
+            onHoverAnnotation={boardAnnotations.setHoveredKey}
           />
         )}
       </section>
